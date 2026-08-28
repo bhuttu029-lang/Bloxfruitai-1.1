@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "AdminAccount": {
+      "title": "Admin Account",
+      "description": "Authorized administrator or owner credentials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "username", "password", "isActive"]
+    },
+    "FruitOverride": {
+      "title": "Fruit Override",
+      "description": "User value overrides for fruits/items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customPrice": { "type": "number" },
+        "customDemand": { "type": "string" },
+        "customTrend": { "type": "string" },
+        "customRarity": { "type": "string" },
+        "customCategory": { "type": "string" },
+        "customNotes": { "type": "string" },
+        "customWidgetTag": { "type": "string" },
+        "customImageEmoji": { "type": "string" },
+        "customIconUrl": { "type": "string" },
+        "customAccentColor": { "type": "string" },
+        "customName": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id"]
+    },
+    "CustomItem": {
+      "title": "Custom Item",
+      "description": "Custom items or fruits created by owners",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "value": { "type": "number" },
+        "price": { "type": "number" },
+        "demand": { "type": "string" },
+        "trend": { "type": "string" },
+        "rarity": { "type": "string" },
+        "imageEmoji": { "type": "string" },
+        "iconUrl": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "widgetTag": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "value"]
+    },
+    "DeletedItem": {
+      "title": "Deleted Item",
+      "description": "Deleted fruit/item IDs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" }
+      },
+      "required": ["id"]
+    },
+    "CustomResponse": {
+      "title": "Custom AI Response",
+      "description": "Custom automated AI response triggers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "triggerKeywords": { "type": "string" },
+        "botResponse": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "matchType": { "type": "string" },
+        "priority": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "triggerKeywords", "botResponse"]
+    }
+  },
+  "firestore": {
+    "/admin_accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/AdminAccount" },
+      "description": "Stores administrator and owner user credentials"
+    },
+    "/fruit_overrides/{overrideId}": {
+      "schema": { "$ref": "#/entities/FruitOverride" },
+      "description": "Stores value, demand, and trend overrides for trading items"
+    },
+    "/custom_items/{itemId}": {
+      "schema": { "$ref": "#/entities/CustomItem" },
+      "description": "Stores custom added trading items and fruits"
+    },
+    "/deleted_items/{itemId}": {
+      "schema": { "$ref": "#/entities/DeletedItem" },
+      "description": "Stores deleted item IDs"
+    },
+    "/custom_responses/{responseId}": {
+      "schema": { "$ref": "#/entities/CustomResponse" },
+      "description": "Stores custom automated AI bot trigger responses"
+    }
+  }
+}

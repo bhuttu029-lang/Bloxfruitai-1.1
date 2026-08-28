@@ -1,0 +1,6 @@
+{
+  "name": "Blox Fruits Master Hub & Companion",
+  "description": "All-in-one Blox Fruits companion: Blox Fruit Mutation Lab with dual-fruit fusions, boss raid gauntlets, catalyst gacha roulette, and Tier-3 awakening skill trees, plus 33 master knowledge categories, Race V4 gear matrix, PvP combo simulator, sea progression routes, obtainment codex, trade calculator, and Solas AI Sensei.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

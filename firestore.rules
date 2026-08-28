@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Fruit value overrides - Global persistent cross-session sync
+    match /fruit_overrides/{overrideId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['id']);
+    }
+
+    // Custom items - Global persistent cross-session sync
+    match /custom_items/{itemId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['id', 'name', 'category']);
+    }
+
+    // Deleted item markers - Global persistent cross-session sync
+    match /deleted_items/{itemId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['id']);
+    }
+
+    // Custom AI responses - Global persistent cross-session sync
+    match /custom_responses/{responseId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['id', 'triggerKeywords', 'botResponse']);
+    }
+
+    // Admin accounts - Secured authentication documents
+    match /admin_accounts/{accountId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['username', 'password', 'isActive']);
+    }
+
+    // Default protection fallback
+    match /{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
