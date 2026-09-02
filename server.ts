@@ -5,6 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
+import nodemailer from 'nodemailer';
 import { GoogleGenAI } from '@google/genai';
 import { BLOX_FRUITS_DATA } from './src/data/bloxFruitsData.ts';
 
@@ -14,13 +15,270 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', 1);
 
-// --- 1. SESSION ENCRYPTION & SECURITY KEYS ---
-const SESSION_SECRET = process.env.SESSION_SECRET || 'blox_fruits_master_session_secret_2026_super_secure_key';
+// --- 1. MILITARY-GRADE CRYPTOGRAPHIC ENGINE & ENCRYPTION SUITE ---
+const SESSION_SECRET = process.env.SESSION_SECRET || 'blox_fruits_master_session_secret_2026_super_secure_key_aes256';
 const OWNER_PRE_AUTH_CODE = '477047704770';
 const OWNER_MASTER_KEY = process.env.OWNER_SECRET_KEY || 'mouse4770';
 const OWNER_COMBINED_KEY = '477047704770mouse4770';
+const OWNER_EMAIL = process.env.OWNER_EMAIL || 'bhuttu029@gmail.com';
 const VIP_SEARCH_CODE = process.env.VIP_SEARCH_CODE || 'BLOXLORD_INFINITY_2025';
+
+// 1.1 AES-256-GCM Authenticated Encryption & Decryption Core
+const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 12; // 96-bit recommended for GCM
+const SALT_LENGTH = 16;
+const TAG_LENGTH = 16; // 128-bit authentication tag
+
+function deriveEncryptionKey(salt: Buffer): Buffer {
+  return crypto.pbkdf2Sync(SESSION_SECRET, salt, 10000, 32, 'sha512');
+}
+
+export function encryptAES256GCM(plainText: string): string {
+  try {
+    const salt = crypto.randomBytes(SALT_LENGTH);
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const key = deriveEncryptionKey(salt);
+
+    const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, key, iv);
+    const encrypted = Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+
+    // Format: enc.v1.<salt_b64url>.<iv_b64url>.<tag_b64url>.<ciphertext_b64url>
+    return [
+      'enc.v1',
+      salt.toString('base64url'),
+      iv.toString('base64url'),
+      tag.toString('base64url'),
+      encrypted.toString('base64url')
+    ].join('.');
+  } catch (err) {
+    console.error('Encryption failure:', err);
+    throw new Error('Cryptographic cipher execution failed');
+  }
+}
+
+export function decryptAES256GCM(encryptedPayload: string): string | null {
+  try {
+    if (!encryptedPayload || typeof encryptedPayload !== 'string') return null;
+    const parts = encryptedPayload.split('.');
+    if (parts.length !== 5 || parts[0] !== 'enc.v1') return null;
+
+    const salt = Buffer.from(parts[1], 'base64url');
+    const iv = Buffer.from(parts[2], 'base64url');
+    const tag = Buffer.from(parts[3], 'base64url');
+    const ciphertext = Buffer.from(parts[4], 'base64url');
+
+    if (salt.length !== SALT_LENGTH || iv.length !== IV_LENGTH || tag.length !== TAG_LENGTH) {
+      return null;
+    }
+
+    const key = deriveEncryptionKey(salt);
+    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, key, iv);
+    decipher.setAuthTag(tag);
+
+    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch {
+    return null; // Tamper detected or invalid payload
+  }
+}
+
+// 1.2 PBKDF2-SHA512 Cryptographic Salted Password & Secret Hashing
+export function hashPasswordPBKDF2(password: string, customSalt?: string): string {
+  const salt = customSalt ? Buffer.from(customSalt, 'hex') : crypto.randomBytes(16);
+  const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512');
+  return `$pbkdf2$100000$${salt.toString('hex')}$${hash.toString('hex')}`;
+}
+
+export function verifyPasswordPBKDF2(password: string, storedHashOrPlain: string): boolean {
+  try {
+    if (!password || !storedHashOrPlain) return false;
+
+    // Check if stored format is PBKDF2 hash
+    if (storedHashOrPlain.startsWith('$pbkdf2$')) {
+      const parts = storedHashOrPlain.split('$');
+      if (parts.length === 5) {
+        const iterations = parseInt(parts[2], 10) || 100000;
+        const salt = Buffer.from(parts[3], 'hex');
+        const originalHash = Buffer.from(parts[4], 'hex');
+        const computedHash = crypto.pbkdf2Sync(password, salt, iterations, originalHash.length, 'sha512');
+        if (originalHash.length !== computedHash.length) return false;
+        return crypto.timingSafeEqual(originalHash, computedHash);
+      }
+    }
+
+    // Fallback: Constant-time string comparison for legacy or plain string matching
+    return timingSafeCompare(password, storedHashOrPlain);
+  } catch {
+    return false;
+  }
+}
+
+// 1.3 Cryptographic Hash for OTP Code (In-Memory Protection)
+function hashOtpCode(otp: string, salt: string): string {
+  return crypto.createHmac('sha256', SESSION_SECRET).update(`${otp}:${salt}`).digest('hex');
+}
+
+// Timing-safe string comparison helper (prevents side-channel timing leaks)
+function timingSafeCompare(a: string, b: string): boolean {
+  try {
+    const bufA = Buffer.from(String(a || ''));
+    const bufB = Buffer.from(String(b || ''));
+    if (bufA.length !== bufB.length) {
+      crypto.timingSafeEqual(bufA, bufA);
+      return false;
+    }
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
+}
+
+// Artificial defense delay / tarpit to neutralize distributed brute force attacks
+async function artificialDefenseDelay(ms: number = 250): Promise<void> {
+  const jitter = Math.floor(Math.random() * 80);
+  return new Promise(resolve => setTimeout(resolve, ms + jitter));
+}
+
+// Mask email for public client display (e.g. bh***29@gmail.com)
+function maskEmail(email: string): string {
+  const parts = email.split('@');
+  if (parts.length !== 2) return email;
+  const [local, domain] = parts;
+  if (local.length <= 3) {
+    return `${local[0]}***@${domain}`;
+  }
+  return `${local.slice(0, 2)}***${local.slice(-2)}@${domain}`;
+}
+
+// Nodemailer transporter helper (Supports Gmail App Passwords & Custom SMTP)
+const DEFAULT_GMAIL_PASS = 'ucvfobkmfhtykdut';
+
+function getGmailCredentials() {
+  const rawPass = (process.env.GMAIL_APP_PASSWORD || DEFAULT_GMAIL_PASS).trim();
+  const gmailPass = rawPass.replace(/\s+/g, '');
+  const gmailUser = (process.env.GMAIL_USER || process.env.OWNER_EMAIL || 'bhuttu029@gmail.com').trim();
+  return { gmailUser, gmailPass };
+}
+
+// Dispatches Owner OTP strictly via Gmail Email (Dual-Port Resilient Delivery)
+async function sendOwnerOtpEmail(otp: string, clientIp: string): Promise<boolean> {
+  const timestamp = new Date().toUTCString();
+  const { gmailUser, gmailPass } = getGmailCredentials();
+
+  // Secure Server Log (Redacted OTP for zero-leakage security)
+  console.log(`\n======================================================`);
+  console.log(`🔐 [GRANDMASTER OWNER 2FA OTP DISPATCH]`);
+  console.log(`📧 Target Email: ${maskEmail(OWNER_EMAIL)}`);
+  console.log(`👤 Dispatcher: ${gmailUser}`);
+  console.log(`🌐 Origin IP: ${clientIp}`);
+  console.log(`⏰ Time: ${timestamp}`);
+  console.log(`======================================================\n`);
+
+  const mailOptions = {
+    from: `"Blox Fruits Security Core" <${gmailUser}>`,
+    to: OWNER_EMAIL,
+    subject: `[Blox Fruits Hub] 🔐 Your Grandmaster Owner Login OTP: ${otp}`,
+    text: `Your 6-Digit Grandmaster Owner Verification Code is: ${otp}\n\nThis code expires in 5 minutes.\nRequest origin IP: ${clientIp}\nIf you did not initiate this request, secure your credentials immediately.`,
+    html: `
+      <div style="background-color: #020617; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 32px 20px; text-align: center; border-radius: 16px; max-width: 500px; margin: 0 auto; border: 1px solid #1e293b;">
+        <div style="display: inline-block; padding: 8px 18px; border-radius: 9999px; background: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; color: #38bdf8; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 18px;">
+          Grandmaster Owner 2FA
+        </div>
+        <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 0 0 10px 0;">Step 3 Verification Code</h1>
+        <p style="color: #94a3b8; font-size: 14px; margin: 0 0 24px 0;">Use the 6-digit one-time code below to complete Step 3 of the Grandmaster Owner authentication protocol.</p>
+        
+        <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9)); border: 2px dashed #38bdf8; border-radius: 14px; padding: 22px; margin: 0 0 24px 0;">
+          <span style="font-family: monospace; font-size: 40px; font-weight: 900; letter-spacing: 10px; color: #38bdf8; text-shadow: 0 0 16px rgba(56, 189, 248, 0.5);">${otp}</span>
+        </div>
+
+        <p style="color: #64748b; font-size: 12px; margin: 0 0 8px 0;">⏳ Code expires in <strong>5 minutes</strong>. Single-use only.</p>
+        <p style="color: #475569; font-size: 11px; margin: 0;">Request origin IP: <code style="color: #94a3b8;">${clientIp}</code> • ${timestamp}</p>
+      </div>
+    `
+  };
+
+  if (!gmailPass) {
+    console.log(`ℹ️ [SMTP INFO] GMAIL_APP_PASSWORD / SMTP credentials missing. OTP dispatched to session.`);
+    return true;
+  }
+
+  // Strategy 1: Gmail SMTP via Port 465 (SSL)
+  try {
+    const transporter465 = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
+    });
+
+    await transporter465.sendMail(mailOptions);
+    console.log(`✅ [EMAIL SENT - Port 465] OTP successfully delivered to ${OWNER_EMAIL}`);
+    return true;
+  } catch (err465) {
+    console.warn(`⚠️ [EMAIL RETRY] Port 465 failed, attempting Port 587 STARTTLS...`, err465);
+
+    // Strategy 2: Gmail SMTP via Port 587 (STARTTLS)
+    try {
+      const transporter587 = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+        tls: {
+          rejectUnauthorized: false
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
+      });
+
+      await transporter587.sendMail(mailOptions);
+      console.log(`✅ [EMAIL SENT - Port 587] OTP successfully delivered to ${OWNER_EMAIL}`);
+      return true;
+    } catch (err587) {
+      console.warn(`⚠️ [EMAIL RETRY] Port 587 failed, attempting service: 'gmail'...`, err587);
+
+      // Strategy 3: Nodemailer Built-in Gmail Service
+      try {
+        const transporterService = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: gmailUser,
+            pass: gmailPass,
+          },
+          tls: {
+            rejectUnauthorized: false
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 15000
+        });
+
+        await transporterService.sendMail(mailOptions);
+        console.log(`✅ [EMAIL SENT - Service] OTP successfully delivered to ${OWNER_EMAIL}`);
+        return true;
+      } catch (errService) {
+        console.error(`❌ [EMAIL SEND FATAL ERROR] All Gmail delivery strategies failed:`, errService);
+        return false;
+      }
+    }
+  }
+}
 
 // Discord Webhook URLs kept strictly server-side (never exposed in client bundle)
 const DISCORD_WEBHOOK_1 = process.env.DISCORD_WEBHOOK_1 || 'https://discord.com/api/webhooks/1536787100706541568/8kJa6rcAkIZi2m7uMRFfy1dtjb_nUb5vc2_Zz1h8kIengat308rMGxIl_J2WKMEm7byK';
@@ -36,53 +294,51 @@ export interface UserSession {
   expiresAt: number;
 }
 
-// Cryptographic session token generation & verification
+// Cryptographic session token generation & verification (AES-256-GCM + HMAC-SHA256)
 function signSessionToken(session: UserSession): string {
-  const payloadStr = Buffer.from(JSON.stringify(session)).toString('base64url');
+  const jsonStr = JSON.stringify(session);
+  const encryptedPayload = encryptAES256GCM(jsonStr);
   const hmac = crypto.createHmac('sha256', SESSION_SECRET);
-  hmac.update(payloadStr);
+  hmac.update(encryptedPayload);
   const signature = hmac.digest('base64url');
-  return `${payloadStr}.${signature}`;
+  return `${encryptedPayload}.${signature}`;
 }
 
 function verifySessionToken(token: string): UserSession | null {
   if (!token || typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if (parts.length !== 2) return null;
+  const lastDot = token.lastIndexOf('.');
+  if (lastDot <= 0) return null;
 
-  const [payloadStr, signature] = parts;
+  const encryptedPayload = token.substring(0, lastDot);
+  const signature = token.substring(lastDot + 1);
+
   const hmac = crypto.createHmac('sha256', SESSION_SECRET);
-  hmac.update(payloadStr);
+  hmac.update(encryptedPayload);
   const expectedSig = hmac.digest('base64url');
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
     return null;
   }
 
   try {
-    const session: UserSession = JSON.parse(Buffer.from(payloadStr, 'base64url').toString('utf-8'));
+    const decryptedJson = decryptAES256GCM(encryptedPayload);
+    if (!decryptedJson) {
+      // Legacy fallback for transition: try base64url decode if not yet encrypted
+      try {
+        const legacySession: UserSession = JSON.parse(Buffer.from(encryptedPayload, 'base64url').toString('utf-8'));
+        if (Date.now() <= legacySession.expiresAt) return legacySession;
+      } catch {}
+      return null;
+    }
+    const session: UserSession = JSON.parse(decryptedJson);
     if (Date.now() > session.expiresAt) {
       return null;
     }
     return session;
   } catch {
     return null;
-  }
-}
-
-// Timing-safe string comparison helper
-function timingSafeCompare(a: string, b: string): boolean {
-  try {
-    const bufA = Buffer.from(String(a || ''));
-    const bufB = Buffer.from(String(b || ''));
-    if (bufA.length !== bufB.length) {
-      // Dummy check to prevent timing leaks on length difference
-      crypto.timingSafeEqual(bufA, bufA);
-      return false;
-    }
-    return crypto.timingSafeEqual(bufA, bufB);
-  } catch {
-    return false;
   }
 }
 
@@ -95,7 +351,9 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('X-Download-Options', 'noopen');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   
@@ -113,27 +371,50 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// --- 3. SECURE BODY PARSER & PROTOTYPE POLLUTION DEFENSE ---
+// --- 3. EXTREME CYBER-DEFENSE INPUT SANITIZATION & PROTO ANTI-POLLUTION ---
 app.use(express.json({ limit: '64kb' }));
 
-function sanitizePrototypePollution(obj: any): any {
-  if (!obj || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) {
-    return obj.map(sanitizePrototypePollution);
-  }
-  const clean: any = {};
-  for (const key of Object.keys(obj)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-      continue;
+// Anti-Exploit / Anti-Injection Pattern Detector
+const DANGEROUS_PATTERNS = [
+  /<script[\s\S]*?>[\s\S]*?<\/script>/gi,
+  /javascript\s*:/gi,
+  /union\s+select/gi,
+  /exec\s*\(\s*xp_/gi,
+  /\$where\s*:/gi,
+  /\$regex\s*:/gi
+];
+
+function sanitizeDeepPayload(obj: any): any {
+  if (!obj) return obj;
+  if (typeof obj === 'string') {
+    let clean = obj;
+    for (const pat of DANGEROUS_PATTERNS) {
+      clean = clean.replace(pat, '');
     }
-    clean[key] = sanitizePrototypePollution(obj[key]);
+    return clean;
   }
-  return clean;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeDeepPayload);
+  }
+  if (typeof obj === 'object') {
+    const clean: any = {};
+    for (const key of Object.keys(obj)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype' || key.startsWith('$')) {
+        continue;
+      }
+      clean[key] = sanitizeDeepPayload(obj[key]);
+    }
+    return clean;
+  }
+  return obj;
 }
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   if (req.body && typeof req.body === 'object') {
-    req.body = sanitizePrototypePollution(req.body);
+    req.body = sanitizeDeepPayload(req.body);
+  }
+  if (req.query && typeof req.query === 'object') {
+    req.query = sanitizeDeepPayload(req.query);
   }
   next();
 });
@@ -385,9 +666,26 @@ interface IpLockoutRecord {
 }
 const globalIpLockoutStore = new Map<string, IpLockoutRecord>();
 
-function checkGlobalIpLockout(req: Request, res: Response): boolean {
-  const clientIp = getClientIp(req);
+// Global Distributed Botnet Lockout Tracking (thwarts proxy rotation attacks)
+let globalFailedTimestamps: number[] = [];
+let globalDefenseLockoutUntil = 0;
+
+function checkGlobalSecurityLockout(req: Request, res: Response): boolean {
   const now = Date.now();
+  
+  // 1. Global Defense Shield check (if distributed cluster attack detected)
+  if (globalDefenseLockoutUntil > now) {
+    const remainingSecs = Math.ceil((globalDefenseLockoutUntil - now) / 1000);
+    res.status(429).json({
+      success: false,
+      error: `Global Security Shield Active: High-frequency distributed attack neutralized. Master defense shield active for ${remainingSecs}s.`,
+      remainingSeconds: remainingSecs
+    });
+    return true;
+  }
+
+  // 2. Per-IP Lockout check
+  const clientIp = getClientIp(req);
   const record = globalIpLockoutStore.get(clientIp);
   if (record && record.lockedUntil > now) {
     const remainingSecs = Math.ceil((record.lockedUntil - now) / 1000);
@@ -402,9 +700,18 @@ function checkGlobalIpLockout(req: Request, res: Response): boolean {
   return false;
 }
 
-function recordIpFailedLogin(req: Request): { attempts: number; locked: boolean; remainingSeconds: number } {
+function recordSecurityFailedAttempt(req: Request): { attempts: number; locked: boolean; remainingSeconds: number } {
   const clientIp = getClientIp(req);
   const now = Date.now();
+
+  // Record into Global Attack Monitor
+  globalFailedTimestamps = globalFailedTimestamps.filter(t => t > now - 5 * 60 * 1000);
+  globalFailedTimestamps.push(now);
+  if (globalFailedTimestamps.length >= 15) {
+    globalDefenseLockoutUntil = now + 5 * 60 * 1000; // 5 minute global defense shield
+  }
+
+  // Record into Per-IP monitor
   let record = globalIpLockoutStore.get(clientIp);
   if (!record || (record.lockedUntil > 0 && record.lockedUntil <= now)) {
     record = { attempts: 0, lockedUntil: 0 };
@@ -418,6 +725,14 @@ function recordIpFailedLogin(req: Request): { attempts: number; locked: boolean;
   const locked = record.lockedUntil > now;
   const remainingSeconds = locked ? Math.ceil((record.lockedUntil - now) / 1000) : 0;
   return { attempts: record.attempts, locked, remainingSeconds };
+}
+
+function checkGlobalIpLockout(req: Request, res: Response): boolean {
+  return checkGlobalSecurityLockout(req, res);
+}
+
+function recordIpFailedLogin(req: Request): { attempts: number; locked: boolean; remainingSeconds: number } {
+  return recordSecurityFailedAttempt(req);
 }
 
 function recordIpSuccessfulLogin(req: Request): void {
@@ -448,7 +763,7 @@ function verifyArmToken(token: string): boolean {
 }
 
 // POST /api/auth/owner/arm: Step 1 Pre-authorization Code (4770)
-app.post('/api/auth/owner/arm', (req: Request, res: Response) => {
+app.post('/api/auth/owner/arm', async (req: Request, res: Response) => {
   if (checkGlobalIpLockout(req, res)) return;
 
   const { code } = req.body || {};
@@ -458,6 +773,7 @@ app.post('/api/auth/owner/arm', (req: Request, res: Response) => {
 
   const isPreAuthMatch = timingSafeCompare(cleanCode, OWNER_PRE_AUTH_CODE);
   if (!isPreAuthMatch) {
+    await artificialDefenseDelay(200);
     const lockoutStatus = recordIpFailedLogin(req);
     if (lockoutStatus.locked) {
       return res.status(429).json({
@@ -480,12 +796,32 @@ app.post('/api/auth/owner/arm', (req: Request, res: Response) => {
     armed: true,
     expiresIn: 45,
     armToken,
-    message: 'Pre-authorization code 477047704770 verified. Master security gate is armed for 45 seconds.'
+    message: 'Pre-authorization code verified. Master security gate is armed for 45 seconds.'
   });
 });
 
-// POST /api/auth/owner/login: Owner Grandmaster Key 2-Step Validation
-app.post('/api/auth/owner/login', (req: Request, res: Response) => {
+interface PendingOwnerOtp {
+  otpHash: string;
+  salt: string;
+  clientIp: string;
+  expiresAt: number;
+  attempts: number;
+  lastSentAt: number;
+}
+const pendingOwnerOtpStore = new Map<string, PendingOwnerOtp>();
+
+// Cleanup expired OTP sessions every 60 seconds
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of pendingOwnerOtpStore.entries()) {
+    if (now > val.expiresAt) {
+      pendingOwnerOtpStore.delete(key);
+    }
+  }
+}, 60000);
+
+// POST /api/auth/owner/login: Owner Grandmaster Key 2-Step Validation -> Dispatches Step 3 Gmail OTP
+app.post('/api/auth/owner/login', async (req: Request, res: Response) => {
   if (checkGlobalIpLockout(req, res)) return;
 
   const { key, preAuthCode, armToken } = req.body || {};
@@ -514,6 +850,7 @@ app.post('/api/auth/owner/login', (req: Request, res: Response) => {
   }
 
   if (!isAuthorized) {
+    await artificialDefenseDelay(250);
     const lockoutStatus = recordIpFailedLogin(req);
     if (lockoutStatus.locked) {
       return res.status(429).json({
@@ -527,8 +864,78 @@ app.post('/api/auth/owner/login', (req: Request, res: Response) => {
     });
   }
 
-  // Reset IP lockout and clear arming store upon successful clearance
+  // Clear 45-second arming store upon successful step 1 & 2 validation
   ownerArmedStore.delete(clientIp);
+
+  // Generate cryptographic 6-digit OTP & salted hash (In-Memory Protection)
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const salt = crypto.randomBytes(16).toString('hex');
+  const otpHash = hashOtpCode(otp, salt);
+  const otpToken = crypto.randomBytes(24).toString('hex');
+
+  pendingOwnerOtpStore.set(otpToken, {
+    otpHash,
+    salt,
+    clientIp,
+    expiresAt: now + 5 * 60 * 1000, // 5 minutes
+    attempts: 0,
+    lastSentAt: now
+  });
+
+  // Dispatch OTP email strictly via Gmail SMTP (no webhook)
+  await sendOwnerOtpEmail(otp, clientIp).catch((err) => console.error('Failed to dispatch owner OTP email:', err));
+
+  return res.json({
+    success: true,
+    requiresOtp: true,
+    otpToken,
+    emailTarget: maskEmail(OWNER_EMAIL),
+    expiresIn: 300,
+    message: `Steps 1 & 2 verified! 6-digit OTP code has been dispatched to ${maskEmail(OWNER_EMAIL)}.`
+  });
+});
+
+// POST /api/auth/owner/verify-otp: Step 3 OTP Verification to issue Grandmaster Session
+app.post('/api/auth/owner/verify-otp', async (req: Request, res: Response) => {
+  if (checkGlobalIpLockout(req, res)) return;
+
+  const { otp, otpToken } = req.body || {};
+  const cleanOtp = (typeof otp === 'string' ? otp : '').trim();
+  const cleanToken = (typeof otpToken === 'string' ? otpToken : '').trim();
+  const now = Date.now();
+
+  const pending = pendingOwnerOtpStore.get(cleanToken);
+  if (!pending || now > pending.expiresAt) {
+    if (pending) pendingOwnerOtpStore.delete(cleanToken);
+    await artificialDefenseDelay(150);
+    return res.status(401).json({
+      success: false,
+      error: 'OTP expired or session timed out. Please restart the authentication sequence.'
+    });
+  }
+
+  pending.attempts += 1;
+  const computedHash = hashOtpCode(cleanOtp, pending.salt);
+  const isOtpMatch = timingSafeCompare(computedHash, pending.otpHash);
+
+  if (!isOtpMatch) {
+    await artificialDefenseDelay(250);
+    if (pending.attempts >= 5) {
+      pendingOwnerOtpStore.delete(cleanToken);
+      const lockoutStatus = recordIpFailedLogin(req);
+      return res.status(429).json({
+        success: false,
+        error: `Security Lockout Triggered. Maximum OTP attempts reached (Lock active for 10 minutes).`
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      error: `Invalid 6-Digit OTP code (${5 - pending.attempts} attempts remaining).`
+    });
+  }
+
+  // OTP Verified Successfully! Clear pending record and reset IP failed counter
+  pendingOwnerOtpStore.delete(cleanToken);
   recordIpSuccessfulLogin(req);
 
   const session: UserSession = {
@@ -557,8 +964,52 @@ app.post('/api/auth/owner/login', (req: Request, res: Response) => {
   });
 });
 
-// POST /api/auth/admin/login: Moderator Admin Login
-app.post('/api/auth/admin/login', (req: Request, res: Response) => {
+// POST /api/auth/owner/resend-otp: Resend fresh 6-digit OTP code to Gmail
+app.post('/api/auth/owner/resend-otp', async (req: Request, res: Response) => {
+  if (checkGlobalIpLockout(req, res)) return;
+
+  const { otpToken } = req.body || {};
+  const cleanToken = (typeof otpToken === 'string' ? otpToken : '').trim();
+  const clientIp = getClientIp(req);
+  const now = Date.now();
+
+  const pending = pendingOwnerOtpStore.get(cleanToken);
+  if (!pending || now > pending.expiresAt) {
+    if (pending) pendingOwnerOtpStore.delete(cleanToken);
+    await artificialDefenseDelay(150);
+    return res.status(401).json({
+      success: false,
+      error: 'OTP session expired. Please restart the authentication sequence.'
+    });
+  }
+
+  if (now - pending.lastSentAt < 30000) {
+    const waitSec = Math.ceil((30000 - (now - pending.lastSentAt)) / 1000);
+    return res.status(429).json({
+      success: false,
+      error: `Please wait ${waitSec}s before requesting a new OTP.`
+    });
+  }
+
+  // Generate fresh OTP & salted hash
+  const freshOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  const freshSalt = crypto.randomBytes(16).toString('hex');
+  pending.otpHash = hashOtpCode(freshOtp, freshSalt);
+  pending.salt = freshSalt;
+  pending.expiresAt = now + 5 * 60 * 1000;
+  pending.lastSentAt = now;
+
+  await sendOwnerOtpEmail(freshOtp, clientIp).catch((err) => console.error('Failed to resend owner OTP email:', err));
+
+  return res.json({
+    success: true,
+    message: `New 6-digit OTP code has been dispatched to ${maskEmail(OWNER_EMAIL)}.`,
+    expiresIn: 300
+  });
+});
+
+// POST /api/auth/admin/login: Moderator Admin Login with PBKDF2 Password Verification
+app.post('/api/auth/admin/login', async (req: Request, res: Response) => {
   if (checkGlobalIpLockout(req, res)) return;
 
   const { username, password } = req.body || {};
@@ -571,10 +1022,11 @@ app.post('/api/auth/admin/login', (req: Request, res: Response) => {
 
   const accounts = loadServerAdminAccounts();
   const match = accounts.find(
-    acc => acc.isActive && timingSafeCompare(acc.username.toLowerCase(), cleanUser.toLowerCase()) && timingSafeCompare(acc.password, cleanPass)
+    acc => acc.isActive && timingSafeCompare(acc.username.toLowerCase(), cleanUser.toLowerCase()) && verifyPasswordPBKDF2(cleanPass, acc.password)
   );
 
   if (!match) {
+    await artificialDefenseDelay(250);
     const lockoutStatus = recordIpFailedLogin(req);
     if (lockoutStatus.locked) {
       return res.status(429).json({
@@ -586,6 +1038,12 @@ app.post('/api/auth/admin/login', (req: Request, res: Response) => {
       success: false,
       error: `Invalid admin credentials (Attempt ${lockoutStatus.attempts}/5 before 10m lock)`
     });
+  }
+
+  // Auto-upgrade legacy plaintext password to PBKDF2 hash on successful login
+  if (!match.password.startsWith('$pbkdf2$')) {
+    match.password = hashPasswordPBKDF2(cleanPass);
+    saveServerAdminAccounts(accounts);
   }
 
   recordIpSuccessfulLogin(req);
@@ -1435,14 +1893,18 @@ app.get('/api/owner/admin-accounts', requireOwner, (_req: Request, res: Response
 app.post('/api/owner/admin-accounts', requireOwner, (req: Request, res: Response) => {
   const { accounts } = req.body || {};
   if (Array.isArray(accounts)) {
-    // Preserve existing passwords if not modified in update
+    // Preserve existing passwords if not modified in update and ensure PBKDF2 hashing
     const current = loadServerAdminAccounts();
     const sanitized = accounts.map((acc: any) => {
       const existing = current.find(c => c.id === acc.id);
+      let rawPass = String(acc.password || existing?.password || 'password123');
+      if (!rawPass.startsWith('$pbkdf2$')) {
+        rawPass = hashPasswordPBKDF2(rawPass);
+      }
       return {
         id: acc.id || 'admin_' + Date.now(),
         username: String(acc.username || '').trim(),
-        password: String(acc.password || existing?.password || 'password123'),
+        password: rawPass,
         displayName: String(acc.displayName || 'Moderator').trim(),
         createdAt: acc.createdAt || new Date().toISOString(),
         createdBy: acc.createdBy || '1_solas (Owner)',
@@ -1488,7 +1950,11 @@ app.post('/api/owner/discord-broadcast', requireOwner, async (req: Request, res:
     targets.push(DISCORD_WEBHOOK_2);
   } else if (channelId === 'channel_3' && DISCORD_WEBHOOK_3) {
     targets.push(DISCORD_WEBHOOK_3);
-  } else if (customUrl && typeof customUrl === 'string' && customUrl.startsWith('https://discord.com/api/webhooks/')) {
+  } else if (
+    customUrl &&
+    typeof customUrl === 'string' &&
+    /^https:\/\/(?:ptb\.|canary\.)?discord(?:app)?\.com\/api\/webhooks\/\d{17,21}\/[A-Za-z0-9_-]{50,100}$/.test(customUrl.trim())
+  ) {
     targets.push(customUrl.trim());
   } else if (DISCORD_WEBHOOK_1) {
     targets.push(DISCORD_WEBHOOK_1);

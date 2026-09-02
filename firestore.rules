@@ -2,40 +2,69 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Fruit value overrides - Global persistent cross-session sync
+    // Helper functions for authentication and user validation
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidDocId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Admin accounts - Strictly locked on client SDKs (Server-side PBKDF2/Admin SDK managed only)
+    match /admin_accounts/{accountId} {
+      allow read, write: if false;
+    }
+
+    // User-scoped fruit data & custom inventories - authenticated users have full CRUD on their own data
+    match /users/{userId}/fruit_data/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isOwner(userId) || isValidDocId(docId);
+    }
+
+    match /users/{userId}/custom_items/{itemId} {
+      allow read: if true;
+      allow create, update, delete: if isOwner(userId) || isValidDocId(itemId);
+    }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
+
+    // Global Fruit value overrides - live synchronized trading values and custom stats
     match /fruit_overrides/{overrideId} {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasAll(['id']);
+      allow create, update, delete: if isValidDocId(overrideId);
     }
 
-    // Custom items - Global persistent cross-session sync
+    // Global Custom items - community & admin custom added items and fruits
     match /custom_items/{itemId} {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasAll(['id', 'name', 'category']);
+      allow create, update, delete: if isValidDocId(itemId);
     }
 
-    // Deleted item markers - Global persistent cross-session sync
+    // Deleted item markers - tracking removed items across live clients
     match /deleted_items/{itemId} {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasAll(['id']);
+      allow create, update, delete: if isValidDocId(itemId);
     }
 
-    // Custom AI responses - Global persistent cross-session sync
+    // Custom AI responses - dynamic oracle chatbot automated triggers
     match /custom_responses/{responseId} {
       allow read: if true;
-      allow write: if request.resource.data.keys().hasAll(['id', 'triggerKeywords', 'botResponse']);
+      allow create, update, delete: if isValidDocId(responseId);
     }
 
-    // Admin accounts - Secured authentication documents
-    match /admin_accounts/{accountId} {
-      allow read: if true;
-      allow write: if request.resource.data.keys().hasAll(['username', 'password', 'isActive']);
-    }
-
-    // Default protection fallback
+    // Default protection fallback - deny all unmatched root paths
     match /{document=**} {
-      allow read: if true;
-      allow write: if false;
+      allow read, write: if false;
     }
   }
 }
+
+

@@ -31,7 +31,11 @@ import {
   MessageSquarePlus,
   ToggleLeft,
   ToggleRight,
-  MessageSquare
+  MessageSquare,
+  Mail,
+  RefreshCw,
+  ArrowLeft,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -39,6 +43,8 @@ import {
   formatValueNumber, 
   getEffectiveFruitList, 
   loginOwnerWithServer,
+  verifyOwnerOtpWithServer,
+  resendOwnerOtpWithServer,
   logoutFromServer,
   getOwnerAuthStatus, 
   setOwnerAuthStatus, 
@@ -87,6 +93,29 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<VaultTab>('edit_values');
   
+  // Step 3 Gmail OTP state
+  const [isOtpPending, setIsOtpPending] = useState<boolean>(false);
+  const [otpToken, setOtpToken] = useState<string>('');
+  const [otpInput, setOtpInput] = useState<string>('');
+  const [maskedEmail, setMaskedEmail] = useState<string>('bh***29@gmail.com');
+  const [otpTimerSeconds, setOtpTimerSeconds] = useState<number>(300);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
+
+  useEffect(() => {
+    let interval: any = null;
+    if (isOtpPending && otpTimerSeconds > 0) {
+      interval = setInterval(() => {
+        setOtpTimerSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isOtpPending, otpTimerSeconds]);
+
   // Edit Tab State
   const [allItems, setAllItems] = useState<FruitItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
@@ -258,12 +287,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       if (isAuth) {
         setIsAuthenticated(true);
       } else if (initialPrefillKey) {
-        loginOwnerWithServer(initialPrefillKey, '477047704770').then(res => {
-          if (res.success) {
-            setIsAuthenticated(true);
-            reloadData();
-          }
-        });
+        setKeyInput(initialPrefillKey);
       }
       reloadData();
     }
@@ -292,18 +316,80 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
     const res = await loginOwnerWithServer(effectiveKey, effectivePreAuth);
     if (res.success) {
+      if (res.requiresOtp && res.otpToken) {
+        setIsOtpPending(true);
+        setOtpToken(res.otpToken);
+        setMaskedEmail(res.emailTarget || 'bh***29@gmail.com');
+        setOtpTimerSeconds(res.expiresIn || 300);
+        setResendCooldown(30);
+        setAuthError(null);
+        soundFX.playPop();
+        return;
+      }
       setIsAuthenticated(true);
       setAuthError(null);
       soundFX.playWin();
       reloadData();
     } else {
-      setAuthError(res.error || '⛔ Access Denied. Pre-authorization code (477047704770) and Master Key (mouse4770) required.');
+      setAuthError(res.error || '⛔ Access Denied. Valid Pre-authorization code and Master Key required.');
       soundFX.playPop();
     }
   };
 
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanOtp = otpInput.trim();
+    if (!cleanOtp) {
+      setAuthError('Please enter the 6-digit OTP code sent to your Gmail.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setAuthError(null);
+
+    const res = await verifyOwnerOtpWithServer(cleanOtp, otpToken);
+    setIsVerifyingOtp(false);
+
+    if (res.success) {
+      setIsOtpPending(false);
+      setIsAuthenticated(true);
+      setOtpInput('');
+      setAuthError(null);
+      soundFX.playWin();
+      reloadData();
+    } else {
+      setAuthError(res.error || 'Invalid 6-Digit OTP code. Please check your Gmail inbox.');
+      soundFX.playPop();
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || !otpToken) return;
+    const res = await resendOwnerOtpWithServer(otpToken);
+    if (res.success) {
+      setResendMessage(res.message || 'New 6-digit OTP sent to your Gmail.');
+      setResendCooldown(30);
+      setOtpTimerSeconds(300);
+      setTimeout(() => setResendMessage(null), 5000);
+      soundFX.playPop();
+    } else {
+      setAuthError(res.error || 'Failed to resend code. Please try again.');
+    }
+  };
+
+  const handleCancelOtp = () => {
+    setIsOtpPending(false);
+    setOtpToken('');
+    setOtpInput('');
+    setAuthError(null);
+    setResendMessage(null);
+  };
+
   const handleLogout = async () => {
     setIsAuthenticated(false);
+    setIsOtpPending(false);
+    setOtpToken('');
+    setOtpInput('');
     await logoutFromServer();
     setStep1Input('');
     setKeyInput('');
@@ -568,82 +654,183 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
           {/* 1. AUTHENTICATION GATE */}
           {!isAuthenticated ? (
-            <div className="max-w-md mx-auto py-8 text-center space-y-6">
-              <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400/20 via-cyan-400/20 to-indigo-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
-                <Lock className="w-10 h-10 animate-pulse" />
-              </div>
-
-              <div>
-                <h4 className="text-xl font-black text-white">Grandmaster Two-Factor Authorization</h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Enforce strict two-step protocol to unlock the live Blox Fruits core database and control center.
-                </p>
-              </div>
-
-              <form onSubmit={handleLogin} className="space-y-3.5 text-left">
-                {/* Step 1: Pre-authorization Code */}
-                <div>
-                  <label className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center justify-between mb-1.5">
-                    <span>Step 1: Pre-Authorization Code</span>
-                    <span className="text-[10px] text-slate-500 font-mono">Mandatory</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={step1Input}
-                      onChange={(e) => setStep1Input(e.target.value)}
-                      placeholder="Enter pre-authorization code (e.g. 477047704770)..."
-                      className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-amber-500/40 focus:border-amber-400 rounded-2xl text-sm font-mono text-amber-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-                    />
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 font-black">#1</span>
+            isOtpPending ? (
+              /* STEP 3: GMAIL OTP VERIFICATION */
+              <div className="max-w-md mx-auto py-6 text-center space-y-5">
+                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-400/20 via-blue-500/20 to-indigo-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 relative shadow-lg shadow-cyan-500/20">
+                  <Mail className="w-10 h-10 animate-bounce text-cyan-300" />
+                  <div className="absolute -bottom-1 -right-1 p-1 bg-amber-400 rounded-full text-slate-950">
+                    <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                {/* Step 2: Master Access Key */}
                 <div>
-                  <label className="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center justify-between mb-1.5">
-                    <span>Step 2: Master Clearance Key</span>
-                    <span className="text-[10px] text-slate-500 font-mono">Grandmaster Secret</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showKeyText ? 'text' : 'password'}
-                      value={keyInput}
-                      onChange={(e) => setKeyInput(e.target.value)}
-                      placeholder="Enter master clearance key (e.g. mouse4770)..."
-                      className="w-full pl-10 pr-12 py-3 bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 rounded-2xl text-sm font-mono text-cyan-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                    />
-                    <Key className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-[11px] font-bold uppercase tracking-wider mb-2">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Step 3: Gmail Two-Factor Authentication</span>
+                  </div>
+                  <h4 className="text-xl font-black text-white">Enter 6-Digit Email OTP</h4>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Pre-authorization & Master Key verified! A one-time 6-digit code has been dispatched to <strong className="text-cyan-300 font-mono">{maskedEmail}</strong>.
+                  </p>
+                </div>
+
+                <form onSubmit={handleVerifyOtp} className="space-y-4 text-left">
+                  <div>
+                    <label className="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center justify-between mb-1.5">
+                      <span>One-Time Passcode (OTP)</span>
+                      <span className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Expires in: {Math.floor(otpTimerSeconds / 60)}:{String(otpTimerSeconds % 60).padStart(2, '0')}
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        autoFocus
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="••••••"
+                        className="w-full text-center tracking-[0.6em] text-2xl font-mono py-3.5 bg-slate-950 border-2 border-cyan-500/50 focus:border-cyan-400 rounded-2xl text-cyan-200 placeholder-slate-700 focus:outline-none focus:ring-4 focus:ring-cyan-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  {resendMessage && (
+                    <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-xs text-emerald-300 font-semibold flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{resendMessage}</span>
+                    </div>
+                  )}
+
+                  {authError && (
+                    <div className="p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-xs text-red-300 font-semibold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 pt-1">
                     <button
-                      type="button"
-                      onClick={() => setShowKeyText(!showKeyText)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      type="submit"
+                      disabled={isVerifyingOtp || otpInput.length < 6}
+                      className="w-full py-3.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 disabled:opacity-50 text-slate-950 font-black rounded-2xl transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      {showKeyText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {isVerifyingOtp ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Unlock className="w-4 h-4" />
+                      )}
+                      <span>{isVerifyingOtp ? 'Verifying OTP...' : 'Unlock Grandmaster Vault'}</span>
                     </button>
+
+                    <div className="flex items-center justify-between gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelOtp}
+                        className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-400 hover:text-white font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Restart Protocol</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={resendCooldown > 0}
+                        className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 disabled:opacity-50 text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${resendCooldown > 0 ? '' : 'text-cyan-400'}`} />
+                        <span>{resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : 'Resend Email OTP'}</span>
+                      </button>
+                    </div>
                   </div>
+                </form>
+
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-500 text-left space-y-1">
+                  <p>🔒 <strong>3-Factor Security Gate:</strong> Verification email dispatched to <code className="text-cyan-300">{maskedEmail}</code>. One-time passcodes expire after 5 minutes.</p>
+                </div>
+              </div>
+            ) : (
+              /* STEPS 1 & 2: PRE-AUTH + MASTER KEY */
+              <div className="max-w-md mx-auto py-8 text-center space-y-6">
+                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400/20 via-cyan-400/20 to-indigo-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                  <Lock className="w-10 h-10 animate-pulse" />
                 </div>
 
-                {authError && (
-                  <div className="p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-xs text-red-300 font-semibold flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-                    <span>{authError}</span>
+                <div>
+                  <h4 className="text-xl font-black text-white">Grandmaster 3-Factor Authorization</h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Enforce mandatory pre-authorization, master clearance key, and Gmail OTP verification to unlock the control center.
+                  </p>
+                </div>
+
+                <form onSubmit={handleLogin} className="space-y-3.5 text-left">
+                  {/* Step 1: Pre-authorization Code */}
+                  <div>
+                    <label className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center justify-between mb-1.5">
+                      <span>Step 1: Pre-Authorization Code</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Mandatory</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={step1Input}
+                        onChange={(e) => setStep1Input(e.target.value)}
+                        placeholder="Enter pre-authorization clearance code..."
+                        className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-amber-500/40 focus:border-amber-400 rounded-2xl text-sm font-mono text-amber-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                      />
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-amber-400 font-black">#1</span>
+                    </div>
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-cyan-400 to-indigo-600 hover:from-amber-300 hover:to-indigo-500 text-slate-950 font-black rounded-2xl transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
-                >
-                  <Unlock className="w-4 h-4" />
-                  <span>Verify Two-Factor Clearance</span>
-                </button>
-              </form>
+                  {/* Step 2: Master Access Key */}
+                  <div>
+                    <label className="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center justify-between mb-1.5">
+                      <span>Step 2: Master Clearance Key</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Grandmaster Secret</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showKeyText ? 'text' : 'password'}
+                        value={keyInput}
+                        onChange={(e) => setKeyInput(e.target.value)}
+                        placeholder="Enter master clearance key..."
+                        className="w-full pl-10 pr-12 py-3 bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 rounded-2xl text-sm font-mono text-cyan-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+                      />
+                      <Key className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <button
+                        type="button"
+                        onClick={() => setShowKeyText(!showKeyText)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showKeyText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-500 text-left space-y-1">
-                <p>🔒 <strong>Zero-Trust Protocol:</strong> Entering Step 1 (<code className="text-amber-300">477047704770</code>) followed by Step 2 (<code className="text-cyan-300">mouse4770</code>) validates owner credentials with cryptographic constant-time verification.</p>
+                  {authError && (
+                    <div className="p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-xs text-red-300 font-semibold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-cyan-400 to-indigo-600 hover:from-amber-300 hover:to-indigo-500 text-slate-950 font-black rounded-2xl transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                  >
+                    <Unlock className="w-4 h-4" />
+                    <span>Proceed to Step 3 (Gmail OTP)</span>
+                  </button>
+                </form>
+
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-500 text-left space-y-1">
+                  <p>🔒 <strong>Zero-Trust 3FA Protocol:</strong> Verification requires Step 1 Pre-Auth + Step 2 Master Key. A single-use 6-digit OTP will be dispatched to your verified email address.</p>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             /* 2. AUTHENTICATED OWNER CONTROL MATRIX */
             <div className="space-y-5">

@@ -55,6 +55,7 @@ import {
   setOwnerAuthStatus,
   setAdminAuthStatus,
   loginOwnerWithServer, 
+  verifyOwnerOtpWithServer,
   armOwnerSequenceOnServer,
   loginAdminWithServer 
 } from '../data/bloxFruitsData';
@@ -224,6 +225,8 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ownerStep1TimeRef = useRef<number>(0);
   const ownerStep1TextCountRef = useRef<number>(0);
+  const ownerOtpTokenRef = useRef<string | null>(null);
+  const ownerOtpExpiresRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleInsertNewline = () => {
@@ -367,6 +370,53 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     const clean = textToSend.trim();
     const lower = clean.toLowerCase();
 
+    // 0. Check if awaiting Step 3 OTP verification
+    const is6DigitOtp = /^\d{6}$/.test(clean) || /^(\/otp|otp:?)\s*(\d{6})$/i.test(clean);
+    if (ownerOtpTokenRef.current && Date.now() < ownerOtpExpiresRef.current && is6DigitOtp) {
+      const match = clean.match(/\d{6}/);
+      const otpCode = match ? match[0] : clean;
+      const verifyRes = await verifyOwnerOtpWithServer(otpCode, ownerOtpTokenRef.current);
+      if (verifyRes.success) {
+        ownerOtpTokenRef.current = null;
+        ownerOtpExpiresRef.current = 0;
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        const unlockedProfile = unlockOwnerSession(authProfile);
+        setAuthProfile(unlockedProfile);
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
+        }
+
+        soundFX.playWin();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            sender: 'ai',
+            text: `👑 **GRANDMASTER OWNER CLEARANCE FULLY ACCEPTED**\n\n• **Clearance:** Grandmaster Verified (1_solas Core)\n• **Security Gate:** 3-Factor Gmail OTP Passed\n• **Status:** Secret Control Center & Unlimited Searches active!\n\n⚡ *Opening the Grandmaster Owner Vault now...*`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setIsLoading(false);
+        return;
+      } else {
+        soundFX.playPop();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            sender: 'ai',
+            text: `❌ **Invalid OTP Code**\n${verifyRes.error || 'The 6-digit code does not match.'}\n\nPlease check the verification email sent to **bhuttu029@gmail.com**, or restart the authorization sequence.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     // 0a. Step 1 of Mandatory Owner Protocol: "477047704770" (Silent Arming)
     const isStep1Input = lower === '477047704770' || lower === '/477047704770' || lower === 'code 477047704770' || lower === 'code: 477047704770' || lower === 'code:477047704770' || clean === '477047704770';
     if (isStep1Input) {
@@ -387,39 +437,60 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     const isCombinedFullKey = lower === '477047704770mouse4770' || lower === '477047704770 mouse4770' || lower === '/owner 477047704770mouse4770' || lower === '/vault 477047704770mouse4770';
 
     if (isMasterKeyInput || isCombinedFullKey) {
-      // ONLY trigger the Grandmaster vault if sequence was armed within 45s / 3 texts or combined key provided
+      // ONLY trigger if sequence was armed within 45s / 3 texts or combined key provided
       if (isSequenceArmed || isCombinedFullKey) {
-        // Unlock immediately on client
-        setOwnerAuthStatus(true);
-        setAdminAuthStatus(true);
-        const unlockedProfile = unlockOwnerSession(authProfile);
-        setAuthProfile(unlockedProfile);
-
         // Reset armed state
         ownerStep1TimeRef.current = 0;
         ownerStep1TextCountRef.current = 0;
 
-        // Dispatch open event to pop up the Grandmaster Owner Vault
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: { prefillKey: 'mouse4770' } }));
-        }
+        // Trigger Step 3 Gmail OTP flow with backend
+        const loginRes = await loginOwnerWithServer('mouse4770', '477047704770');
+        if (loginRes.requiresOtp && loginRes.otpToken) {
+          ownerOtpTokenRef.current = loginRes.otpToken;
+          ownerOtpExpiresRef.current = Date.now() + 300000;
 
-        soundFX.playWin();
-
-        // Notify server session in background
-        loginOwnerWithServer('mouse4770', '477047704770').catch(() => {});
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            sender: 'ai',
-            text: `🔐 **GRANDMASTER OWNER CLEARANCE ACCEPTED**\n\n• **Clearance:** Grandmaster Verified (1_solas Core)\n• **Two-Factor Sequence:** Authenticated\n• **Status:** Secret Control Center & Unlimited Searches active!\n\n⚡ *Opening the Grandmaster Owner Vault now...*`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          // Dispatch event to open modal
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
           }
-        ]);
-        setIsLoading(false);
-        return;
+
+          soundFX.playPop();
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              sender: 'ai',
+              text: `🔐 **GRANDMASTER OWNER PROTOCOL — STEP 3 (GMAIL OTP REQUIRED)**\n\n• **Step 1 (Pre-Auth):** ✅ Clearance Code Verified\n• **Step 2 (Master Key):** ✅ Master Key Verified\n• **Step 3 (MANDATORY):** A secure 6-digit OTP code has been dispatched to **bhuttu029@gmail.com**.\n\n⚡ *Please reply with your 6-digit OTP code into this chat or enter it directly in the Owner Vault modal to unlock access.*`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+          setIsLoading(false);
+          return;
+        } else if (loginRes.success) {
+          setOwnerAuthStatus(true);
+          setAdminAuthStatus(true);
+          const unlockedProfile = unlockOwnerSession(authProfile);
+          setAuthProfile(unlockedProfile);
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
+          }
+
+          soundFX.playWin();
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              sender: 'ai',
+              text: `👑 **GRANDMASTER OWNER CLEARANCE ACCEPTED**\n\n• **Clearance:** Grandmaster Verified (1_solas Core)\n• **Security Gate:** Authenticated\n• **Status:** Secret Control Center & Unlimited Searches active!\n\n⚡ *Opening the Grandmaster Owner Vault now...*`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+          setIsLoading(false);
+          return;
+        }
       } else {
         // If entered out-of-sequence or expired: silently reset and act completely normal (zero hints)
         ownerStep1TimeRef.current = 0;

@@ -88,24 +88,7 @@ export function initRealtimeFirebaseSync(): () => void {
     }, (err) => console.warn('Realtime deleted items sync warning:', err));
     unsubscribes.push(unsubDeleted);
 
-    // 4. Live admin accounts listener
-    const unsubAdmins = onSnapshot(collection(db, ADMIN_ACCOUNTS_COLLECTION), (snapshot) => {
-      const accounts: AdminAccount[] = [];
-      snapshot.forEach((docSnap) => {
-        accounts.push(docSnap.data() as AdminAccount);
-      });
-      if (accounts.length > 0) {
-        const next = JSON.stringify(accounts);
-        const prev = localStorage.getItem(STORAGE_KEY_ADMIN_ACCOUNTS);
-        if (prev !== next) {
-          localStorage.setItem(STORAGE_KEY_ADMIN_ACCOUNTS, next);
-          window.dispatchEvent(new Event('blox_fruits_admin_accounts_updated'));
-        }
-      }
-    }, (err) => console.warn('Realtime admins sync warning:', err));
-    unsubscribes.push(unsubAdmins);
-
-    // 5. Live custom responses listener
+    // 4. Live custom responses listener
     const unsubResponses = onSnapshot(collection(db, CUSTOM_RESPONSES_COLLECTION), (snapshot) => {
       const responses: CustomResponseEntry[] = [];
       snapshot.forEach((docSnap) => {
@@ -127,51 +110,6 @@ export function initRealtimeFirebaseSync(): () => void {
     unsubscribes.forEach(unsub => unsub());
     isRealtimeInitialized = false;
   };
-}
-
-export async function syncAdminAccountsFromFirebase(): Promise<void> {
-  if (typeof window === 'undefined') return;
-  try {
-    const snapshot = await getDocs(collection(db, ADMIN_ACCOUNTS_COLLECTION));
-    if (!snapshot.empty) {
-      const accounts: AdminAccount[] = [];
-      snapshot.forEach((docSnap) => {
-        accounts.push(docSnap.data() as AdminAccount);
-      });
-      if (accounts.length > 0) {
-        const prev = localStorage.getItem(STORAGE_KEY_ADMIN_ACCOUNTS);
-        const next = JSON.stringify(accounts);
-        if (prev !== next) {
-          localStorage.setItem(STORAGE_KEY_ADMIN_ACCOUNTS, next);
-          window.dispatchEvent(new Event('blox_fruits_admin_accounts_updated'));
-        }
-      }
-    }
-  } catch (err) {
-    // Silent catch for offline / initial state
-  }
-}
-
-export async function pushAdminAccountsToFirebase(accounts: AdminAccount[]): Promise<void> {
-  if (typeof window === 'undefined') return;
-  try {
-    for (const acc of accounts) {
-      if (acc.id) {
-        await setDoc(doc(db, ADMIN_ACCOUNTS_COLLECTION, acc.id), acc, { merge: true });
-      }
-    }
-  } catch (err) {
-    console.error('Failed to push admin accounts to Firebase:', err);
-  }
-}
-
-export async function deleteAdminAccountFromFirebase(id: string): Promise<void> {
-  if (typeof window === 'undefined') return;
-  try {
-    await deleteDoc(doc(db, ADMIN_ACCOUNTS_COLLECTION, id));
-  } catch (err) {
-    console.error('Failed to delete admin account from Firebase:', err);
-  }
 }
 
 export async function syncFruitDataFromFirebase(): Promise<void> {
@@ -291,6 +229,7 @@ export async function pushFruitDataToFirebase(
       const img = val.customIconUrl || val.customImageUrl || (val as any).iconUrl || (val as any).imageUrl;
       const payload = {
         ...val,
+        id: itemId,
         itemId,
         customIconUrl: img || val.customIconUrl || val.customImageUrl || '',
         customImageUrl: img || val.customImageUrl || val.customIconUrl || '',
@@ -302,6 +241,7 @@ export async function pushFruitDataToFirebase(
         const img = item.iconUrl || item.imageUrl || (item as any).customIconUrl || (item as any).customImageUrl;
         const payload = {
           ...item,
+          id: item.id,
           iconUrl: img || item.iconUrl || item.imageUrl || '',
           imageUrl: img || item.imageUrl || item.iconUrl || '',
         };

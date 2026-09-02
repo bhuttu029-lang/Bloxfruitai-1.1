@@ -105,6 +105,14 @@
     "/custom_responses/{responseId}": {
       "schema": { "$ref": "#/entities/CustomResponse" },
       "description": "Stores custom automated AI bot trigger responses"
+    },
+    "/users/{userId}/fruit_data/{docId}": {
+      "schema": { "$ref": "#/entities/FruitOverride" },
+      "description": "Stores user-specific fruit value overrides and customized fruit data"
+    },
+    "/users/{userId}/custom_items/{itemId}": {
+      "schema": { "$ref": "#/entities/CustomItem" },
+      "description": "Stores user-created custom fruits, items, and accessories"
     }
   }
 }

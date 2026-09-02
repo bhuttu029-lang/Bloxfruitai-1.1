@@ -789,9 +789,6 @@ import { db } from '../lib/firebase';
 import { secureTimingSafeEqual } from '../utils/security';
 import { BACKUP_BLOX_FRUITS_DATA } from './officialBackupData';
 import {
-  syncAdminAccountsFromFirebase,
-  pushAdminAccountsToFirebase,
-  deleteAdminAccountFromFirebase,
   syncFruitDataFromFirebase,
   pushFruitDataToFirebase,
   deleteFruitOverrideFromFirebase,
@@ -867,11 +864,13 @@ if (typeof window !== 'undefined') {
 
 export function syncAdminAccountsWithServer(): void {
   if (typeof window === 'undefined') return;
-  syncAdminAccountsFromFirebase().catch(() => {});
   fetch('/api/owner/admin-accounts')
-    .then((res) => res.json())
+    .then((res) => {
+      if (res.ok) return res.json();
+      return null;
+    })
     .then((data) => {
-      if (data && Array.isArray(data.accounts) && data.accounts.length > 0) {
+      if (data && Array.isArray(data.accounts)) {
         localStorage.setItem(STORAGE_KEY_ADMIN_ACCOUNTS, JSON.stringify(data.accounts));
         window.dispatchEvent(new Event('blox_fruits_admin_accounts_updated'));
       }
@@ -883,7 +882,6 @@ export function pushAdminAccountsToServer(): void {
   if (typeof window === 'undefined') return;
   try {
     const accounts = getStoredAdminAccounts();
-    pushAdminAccountsToFirebase(accounts).catch(() => {});
     const payload = { accounts };
     fetch('/api/owner/admin-accounts', {
       method: 'POST',
@@ -968,7 +966,6 @@ export function createOrUpdateAdminAccount(username: string, password?: string, 
 export function deleteAdminAccount(id: string): void {
   const accounts = getStoredAdminAccounts().filter(a => a.id !== id);
   saveAdminAccounts(accounts);
-  deleteAdminAccountFromFirebase(id).catch(() => {});
 }
 
 export async function loginAdminWithServer(username: string, password: string): Promise<{ success: boolean; account?: any; error?: string }> {
@@ -979,72 +976,22 @@ export async function loginAdminWithServer(username: string, password: string): 
     return { success: false, error: 'Username and admin key/password are required.' };
   }
 
-  // 1. Attempt server API endpoint verification
+  // Server-Authoritative PBKDF2 verification via protected backend endpoint
   try {
     const res = await fetch('/api/auth/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: cleanUser, password: cleanPass })
     });
-    if (res.ok) {
-      const data = await res.json();
+    const data = await res.json();
+    if (res.ok && data.success) {
       setAdminAuthStatus(true);
       return { success: true, account: data.account };
     }
-  } catch (err) {}
-
-  // 2. Direct real-time Firebase Firestore verification against admin_accounts collection
-  try {
-    const snapshot = await getDocs(collection(db, 'admin_accounts'));
-    if (!snapshot.empty) {
-      let matchedAcc: AdminAccount | null = null;
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const docUser = String(data.username || data.name || data.user || docSnap.id).trim();
-        const docPass = String(data.password || data.key || data.adminKey || data.pass || data.secret || '').trim();
-        const isActive = data.isActive !== false;
-
-        if (
-          isActive &&
-          docUser.toLowerCase() === cleanUser.toLowerCase() &&
-          (docPass === cleanPass || docSnap.id === cleanPass)
-        ) {
-          matchedAcc = {
-            id: docSnap.id,
-            username: docUser,
-            displayName: data.displayName || data.name || docUser,
-            createdAt: data.createdAt || new Date().toISOString(),
-            createdBy: data.createdBy || 'Firebase Firestore',
-            isActive: true
-          };
-        }
-      });
-
-      if (matchedAcc) {
-        setAdminAuthStatus(true);
-        return { success: true, account: matchedAcc };
-      }
-    }
-  } catch (err) {
-    console.warn('Firebase direct admin auth check warning:', err);
+    return { success: false, error: data.error || 'Invalid admin credentials' };
+  } catch (err: any) {
+    return { success: false, error: 'Authentication service connection error. Please try again.' };
   }
-
-  // 3. Fallback verification against locally synced admin accounts cache
-  try {
-    const accounts = getStoredAdminAccounts();
-    const match = accounts.find(
-      acc => acc.isActive !== false &&
-      acc.username.trim().toLowerCase() === cleanUser.toLowerCase() &&
-      (acc.password?.trim() === cleanPass || acc.id === cleanPass)
-    );
-
-    if (match) {
-      setAdminAuthStatus(true);
-      return { success: true, account: match };
-    }
-  } catch (err) {}
-
-  return { success: false, error: 'Invalid admin username or key/password' };
 }
 
 export async function armOwnerSequenceOnServer(code: string): Promise<{ success: boolean; armed?: boolean; armToken?: string; error?: string }> {
@@ -1064,7 +1011,17 @@ export async function armOwnerSequenceOnServer(code: string): Promise<{ success:
   }
 }
 
-export async function loginOwnerWithServer(key: string, preAuthCode?: string, armToken?: string): Promise<{ success: boolean; error?: string }> {
+export interface OwnerLoginResponse {
+  success: boolean;
+  requiresOtp?: boolean;
+  otpToken?: string;
+  emailTarget?: string;
+  expiresIn?: number;
+  message?: string;
+  error?: string;
+}
+
+export async function loginOwnerWithServer(key: string, preAuthCode?: string, armToken?: string): Promise<OwnerLoginResponse> {
   try {
     const res = await fetch('/api/auth/owner/login', {
       method: 'POST',
@@ -1073,6 +1030,16 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
     });
     const data = await res.json();
     if (res.ok && data.success) {
+      if (data.requiresOtp) {
+        return {
+          success: true,
+          requiresOtp: true,
+          otpToken: data.otpToken,
+          emailTarget: data.emailTarget,
+          expiresIn: data.expiresIn,
+          message: data.message
+        };
+      }
       setOwnerAuthStatus(true);
       setAdminAuthStatus(true);
       return { success: true };
@@ -1080,6 +1047,42 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
     return { success: false, error: data.error || 'Access Denied: Invalid Grandmaster Owner sequence' };
   } catch {
     return { success: false, error: 'Connection error during authentication' };
+  }
+}
+
+export async function verifyOwnerOtpWithServer(otp: string, otpToken: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/auth/owner/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ otp, otpToken })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setOwnerAuthStatus(true);
+      setAdminAuthStatus(true);
+      return { success: true };
+    }
+    return { success: false, error: data.error || 'Invalid 6-Digit OTP code.' };
+  } catch {
+    return { success: false, error: 'Connection error during OTP verification' };
+  }
+}
+
+export async function resendOwnerOtpWithServer(otpToken: string): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const res = await fetch('/api/auth/owner/resend-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ otpToken })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      return { success: true, message: data.message };
+    }
+    return { success: false, error: data.error || 'Failed to resend OTP code' };
+  } catch {
+    return { success: false, error: 'Connection error while resending OTP' };
   }
 }
 

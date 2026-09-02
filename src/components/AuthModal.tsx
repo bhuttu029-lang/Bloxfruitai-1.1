@@ -78,7 +78,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }, 600);
     } else {
       soundFX.playPop();
-      setAdminAuthError(res.error || '⛔ Invalid Admin Credentials. Key & Username verified against Firebase Firestore.');
+      setAdminAuthError(res.error || '⛔ Invalid Admin Credentials. Please verify your username and password.');
     }
   };
 
