@@ -55,7 +55,7 @@ export default function App() {
     };
   }, []);
 
-  // Listen for secret grandmaster control & admin panel opening events from chat unlock sequences
+  // Listen for secret grandmaster control & admin panel opening events from chat unlock sequences, hotkeys, or URL
   useEffect(() => {
     const handleOpenVault = (e: any) => {
       if (e.detail?.prefillKey) {
@@ -70,12 +70,33 @@ export default function App() {
       setIsAdminPanelOpen(true);
     };
 
+    // Keyboard shortcut listener (Alt+O or Ctrl+Shift+O or F8)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.altKey && (e.key === 'o' || e.key === 'O')) || 
+          (e.ctrlKey && e.shiftKey && (e.key === 'o' || e.key === 'O')) ||
+          e.key === 'F8') {
+        e.preventDefault();
+        soundFX.playPop();
+        setIsOwnerVaultOpen(true);
+      }
+    };
+
+    // URL hash check (#owner or ?owner=true)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('owner') === '1' || urlParams.get('owner') === 'true' || window.location.hash === '#owner') {
+        setIsOwnerVaultOpen(true);
+      }
+    }
+
     window.addEventListener('blox_fruits_open_owner_vault', handleOpenVault);
     window.addEventListener('blox_fruits_open_admin_panel', handleOpenAdminPanel);
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('blox_fruits_open_owner_vault', handleOpenVault);
       window.removeEventListener('blox_fruits_open_admin_panel', handleOpenAdminPanel);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 

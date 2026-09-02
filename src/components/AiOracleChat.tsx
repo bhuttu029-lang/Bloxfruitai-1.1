@@ -417,7 +417,26 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       }
     }
 
-    // 0a. Step 1 of Mandatory Owner Protocol: "477047704770" (Silent Arming)
+    // 0a. Direct /owner or /vault command to open Grandmaster Vault modal
+    if (lower === '/owner' || lower === '/vault' || lower === '/grandmaster' || lower === 'owner' || lower === 'vault') {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
+      }
+      soundFX.playPop();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault modal... Enter **477047704770** and **mouse4770** or use Instant Fast-Pass to manage all values and AI settings!`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
+    // 0b. Step 1 of Mandatory Owner Protocol: "477047704770" (Silent Arming)
     const isStep1Input = lower === '477047704770' || lower === '/477047704770' || lower === 'code 477047704770' || lower === 'code: 477047704770' || lower === 'code:477047704770' || clean === '477047704770';
     if (isStep1Input) {
       ownerStep1TimeRef.current = Date.now();
