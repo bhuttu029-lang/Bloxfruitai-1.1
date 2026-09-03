@@ -1063,10 +1063,11 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
   const cleanKey = (key || '').trim();
   const cleanPre = (preAuthCode || '').trim();
 
-  // 1. Check client-side credential validity first for instant verification
-  const isDirectOwnerMatch = isOwnerCredentialMatch(cleanKey, cleanPre) || cleanKey === 'mouse4770' || cleanKey === 'mouse4770!';
+  if (!cleanKey && !cleanPre) {
+    return { success: false, error: 'Pre-authorization code and Master Clearance Key are required.' };
+  }
 
-  // 2. Try Server verification endpoint
+  // 1. Try Express backend endpoint
   try {
     const res = await fetch('/api/auth/owner/login', {
       method: 'POST',
@@ -1076,7 +1077,7 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
-        if (data.requiresOtp) {
+        if (data.requiresOtp && data.otpToken) {
           return {
             success: true,
             requiresOtp: true,
@@ -1086,31 +1087,59 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
             message: data.message
           };
         }
-        setOwnerAuthStatus(true);
-        setAdminAuthStatus(true);
-        return { success: true };
+        return { success: false, error: 'OTP verification is mandatory. Please restart authorization.' };
       }
-      // If server explicitly denied credentials
-      if (data.error && !isDirectOwnerMatch) {
+      if (data.error) {
         return { success: false, error: data.error };
       }
     }
-  } catch (err) {
-    // Backend offline / Netlify static hosting mode
+  } catch {
+    // Express backend unreachable, fallback to Netlify function below
   }
 
-  // 3. Fallback for Netlify / Static hosting: direct unlock when owner credentials match
-  if (isDirectOwnerMatch || cleanPre === '477047704770') {
-    setOwnerAuthStatus(true);
-    setAdminAuthStatus(true);
-    return { success: true };
+  // 2. Try Netlify Serverless Function endpoint (works automatically on Netlify)
+  try {
+    const netlifyRes = await fetch('/.netlify/functions/owner-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', key: cleanKey, preAuthCode: cleanPre, armToken })
+    });
+    if (netlifyRes.ok) {
+      const netlifyData = await netlifyRes.json();
+      if (netlifyData.success) {
+        if (netlifyData.requiresOtp && netlifyData.otpToken) {
+          return {
+            success: true,
+            requiresOtp: true,
+            otpToken: netlifyData.otpToken,
+            emailTarget: netlifyData.emailTarget,
+            expiresIn: netlifyData.expiresIn,
+            message: netlifyData.message
+          };
+        }
+        return { success: false, error: 'OTP verification is mandatory. Please restart authorization.' };
+      }
+      if (netlifyData.error) {
+        return { success: false, error: netlifyData.error };
+      }
+    }
+  } catch {
+    // Netlify function unreachable
   }
 
-  return { success: false, error: 'Access Denied: Invalid Grandmaster Owner sequence (Pre-Auth: 477047704770 & Key: mouse4770 required)' };
+  return {
+    success: false,
+    error: 'Access Denied: Invalid credentials or authentication service unreachable. Please ensure Netlify serverless functions or backend server is running.'
+  };
 }
 
 export async function verifyOwnerOtpWithServer(otp: string, otpToken: string): Promise<{ success: boolean; error?: string }> {
   const cleanOtp = (otp || '').trim();
+  if (!cleanOtp || !otpToken || cleanOtp.length !== 6) {
+    return { success: false, error: 'Please enter the complete 6-digit numeric OTP code.' };
+  }
+
+  // 1. Try Express backend verification
   try {
     const res = await fetch('/api/auth/owner/verify-otp', {
       method: 'POST',
@@ -1126,19 +1155,35 @@ export async function verifyOwnerOtpWithServer(otp: string, otpToken: string): P
       }
       return { success: false, error: data.error || 'Invalid 6-Digit OTP code.' };
     }
-  } catch {}
-
-  // Fallback for Netlify / Static hosting or master bypass codes
-  if (cleanOtp.length === 6 || cleanOtp === '477047' || cleanOtp === '477000' || cleanOtp === '123456') {
-    setOwnerAuthStatus(true);
-    setAdminAuthStatus(true);
-    return { success: true };
+  } catch {
+    // Express backend unreachable, fallback to Netlify function
   }
 
-  return { success: false, error: 'Invalid OTP code. Please check your email or enter your 6-digit passcode.' };
+  // 2. Try Netlify Serverless Function verification
+  try {
+    const netlifyRes = await fetch('/.netlify/functions/owner-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'verify', otp: cleanOtp, otpToken })
+    });
+    if (netlifyRes.ok) {
+      const netlifyData = await netlifyRes.json();
+      if (netlifyData.success) {
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        return { success: true };
+      }
+      return { success: false, error: netlifyData.error || 'Invalid 6-Digit OTP code.' };
+    }
+  } catch {
+    // Netlify function unreachable
+  }
+
+  return { success: false, error: 'Invalid 6-digit OTP code or authentication service unreachable. Check your Gmail inbox.' };
 }
 
-export async function resendOwnerOtpWithServer(otpToken: string): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function resendOwnerOtpWithServer(otpToken: string): Promise<{ success: boolean; message?: string; otpToken?: string; error?: string }> {
+  // 1. Try Express backend
   try {
     const res = await fetch('/api/auth/owner/resend-otp', {
       method: 'POST',
@@ -1148,12 +1193,29 @@ export async function resendOwnerOtpWithServer(otpToken: string): Promise<{ succ
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
-        return { success: true, message: data.message };
+        return { success: true, message: data.message, otpToken: data.otpToken };
       }
       return { success: false, error: data.error || 'Failed to resend OTP code' };
     }
   } catch {}
-  return { success: true, message: 'Fresh 6-digit OTP code ready. You may also unlock directly with master key.' };
+
+  // 2. Try Netlify serverless function
+  try {
+    const netlifyRes = await fetch('/.netlify/functions/owner-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'resend', otpToken })
+    });
+    if (netlifyRes.ok) {
+      const netlifyData = await netlifyRes.json();
+      if (netlifyData.success) {
+        return { success: true, message: netlifyData.message, otpToken: netlifyData.otpToken };
+      }
+      return { success: false, error: netlifyData.error || 'Failed to resend OTP code' };
+    }
+  } catch {}
+
+  return { success: false, error: 'Failed to resend OTP code. Please retry in a few moments.' };
 }
 
 export async function logoutFromServer(): Promise<void> {

@@ -324,10 +324,7 @@ export async function redeemVipPasscodeOnServer(code: string): Promise<{ success
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.isOwner) {
-        setOwnerAuthStatus(true);
-      }
-      return { success: data.success, isOwner: Boolean(data.isOwner) };
+      return { success: data.success, isOwner: false };
     }
     return { success: false, error: 'Invalid passcode or unauthorized request' };
   } catch {

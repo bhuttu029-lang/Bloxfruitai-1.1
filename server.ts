@@ -1084,10 +1084,8 @@ app.post('/api/auth/vip/unlock', (req: Request, res: Response) => {
   const cleanCode = (typeof code === 'string' ? code : '').trim().toLowerCase();
 
   const isVipMatch = timingSafeCompare(cleanCode, VIP_SEARCH_CODE.toLowerCase());
-  const isOwnerMatch = timingSafeCompare(cleanCode, OWNER_COMBINED_KEY.toLowerCase()) ||
-                        timingSafeCompare(cleanCode, `${OWNER_PRE_AUTH_CODE} ${OWNER_MASTER_KEY}`.toLowerCase());
 
-  if (!isVipMatch && !isOwnerMatch) {
+  if (!isVipMatch) {
     const lockoutStatus = recordIpFailedLogin(req);
     if (lockoutStatus.locked) {
       return res.status(429).json({
@@ -1097,18 +1095,16 @@ app.post('/api/auth/vip/unlock', (req: Request, res: Response) => {
     }
     return res.status(401).json({
       success: false,
-      error: `Invalid Unlock Passcode (Attempt ${lockoutStatus.attempts}/5 before 10m lock)`
+      error: `Invalid VIP Passcode (Attempt ${lockoutStatus.attempts}/5 before 10m lock)`
     });
   }
 
   recordIpSuccessfulLogin(req);
 
-  const newRole: 'owner' | 'vip' = isOwnerMatch ? 'owner' : 'vip';
-
   const session: UserSession = {
-    role: newRole,
-    username: isOwnerMatch ? '1_solas' : (req.userSession?.username || 'VIP Member'),
-    displayName: isOwnerMatch ? 'Grandmaster Owner' : (req.userSession?.displayName || 'VIP Member'),
+    role: 'vip',
+    username: req.userSession?.username || 'VIP Member',
+    displayName: req.userSession?.displayName || 'VIP Member',
     discordId: req.userSession?.discordId,
     issuedAt: Date.now(),
     expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000
@@ -1125,8 +1121,8 @@ app.post('/api/auth/vip/unlock', (req: Request, res: Response) => {
 
   return res.json({
     success: true,
-    role: newRole,
-    isOwner: isOwnerMatch,
+    role: 'vip',
+    isOwner: false,
     token
   });
 });

@@ -428,7 +428,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
-          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault modal... Enter your Pre-Auth Code (**477047704770**) and Master Key (**mouse4770**) or complete Gmail OTP verification to manage all values and AI settings!`,
+          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault modal. Please enter your Pre-Auth Clearance Code and Master Key, then complete Gmail OTP verification to access administrative controls.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -486,24 +486,14 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
           ]);
           setIsLoading(false);
           return;
-        } else if (loginRes.success) {
-          setOwnerAuthStatus(true);
-          setAdminAuthStatus(true);
-          const unlockedProfile = unlockOwnerSession(authProfile);
-          setAuthProfile(unlockedProfile);
-
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
-          }
-
-          soundFX.playWin();
-
+        } else {
+          soundFX.playPop();
           setMessages((prev) => [
             ...prev,
             {
               id: (Date.now() + 1).toString(),
               sender: 'ai',
-              text: `👑 **GRANDMASTER OWNER CLEARANCE ACCEPTED**\n\n• **Clearance:** Grandmaster Verified (1_solas Core)\n• **Security Gate:** Authenticated\n• **Status:** Secret Control Center & Unlimited Searches active!\n\n⚡ *Opening the Grandmaster Owner Vault now...*`,
+              text: `⛔ **Mandatory OTP Required**\n\nGrandmaster clearance requires verified 6-digit OTP entry. Access cannot be granted without OTP verification.`,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }
           ]);
