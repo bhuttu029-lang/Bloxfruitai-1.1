@@ -21,6 +21,22 @@
   </head>
   <body class="bg-slate-950 text-slate-100 select-auto">
     <div id="root"></div>
+    <script type="text/javascript">
+      // Restore URL path redirected from 404 fallback on static hosts
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var p = params.get('p');
+        if (p) {
+          params.delete('p');
+          var restOfSearch = params.toString();
+          var newSearch = restOfSearch ? '?' + restOfSearch : '';
+          var decodedPath = decodeURIComponent(p);
+          try {
+            window.history.replaceState(null, null, decodedPath + newSearch + window.location.hash);
+          } catch (_) {}
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

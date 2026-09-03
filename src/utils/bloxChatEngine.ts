@@ -1513,6 +1513,28 @@ function formatFruitItemResponse(item: FruitItem, query: string): string {
  * Thematic fallback synthesizers for broad or multi-part questions
  */
 function generateThematicSynthesisResponse(query: string): string | null {
+  // 0. Max Level & Update 27.4 Cap
+  if (
+    query.includes('max level') ||
+    query.includes('level cap') ||
+    query.includes('max lvl') ||
+    query.includes('update 27') ||
+    query.includes('27.4') ||
+    query.includes('what is the max level') ||
+    query.includes('what is max level') ||
+    query.includes('highest level') ||
+    query.includes('2800')
+  ) {
+    return `👑 **Max Level Cap: 2800 (Update 27.4):**\n\n` +
+      `• **Current Max Level:** **Level 2800** as of the latest **Update 27.4**!\n` +
+      `• **Total Stat Points:** **8,400 Stat Points** (3 points awarded per level from Lv 1 to 2800).\n` +
+      `• **Max Points Per Stat:** Up to **2,800** in any single stat category (Melee, Defense, Sword, Gun, or Blox Fruit).\n\n` +
+      `**Optimal Stat Allocations at Lv 2800:**\n` +
+      `• **Sword / Buddha Main:** 2800 Melee, 2800 Defense, 2800 Sword (0 Gun, 0 Fruit).\n` +
+      `• **Fruit Main (Kitsune, Dough, Dragon, Portal):** 2800 Melee, 2800 Defense, 2800 Blox Fruit (0 Sword, 0 Gun).\n` +
+      `• **Endgame Zone:** Grind past Tiki Outpost into the **Submerged Abyss & Astral Bastion** to achieve max level 2800!`;
+  }
+
   // 1. Leveling & Grinding
   if (
     query.includes('how to level') ||
@@ -1521,16 +1543,17 @@ function generateThematicSynthesisResponse(query: string): string | null {
     query.includes('grinding guide') ||
     query.includes('best fruit for grind')
   ) {
-    return `🗺️ **Ultimate Blox Fruits Leveling Blueprint (Lv 1 - 2550):**\n\n` +
+    return `🗺️ **Ultimate Blox Fruits Leveling Blueprint (Lv 1 - 2800 Update 27.4):**\n\n` +
       `**Optimal Fruit Strategy:**\n` +
       `• **First Sea (Lv 1 - 700):** Use **Light / Magma / Ice** for Elemental Logia immunity and ultra-fast travel across islands.\n` +
-      `• **Second & Third Sea (Lv 700 - 2550):** Eat **Buddha (Awakened Z Move)**! Buddha increases your melee hit range by 800% and grants massive damage reduction.\n\n` +
+      `• **Second & Third Sea (Lv 700 - 2800):** Eat **Buddha (Awakened Z Move)**! Buddha increases your melee hit range by 800% and grants massive damage reduction.\n\n` +
       `**Stat Distribution Formula:**\n` +
-      `• For Buddha Main: Put **60% Melee, 40% Defense, 0% Fruit** (Fruit stats do not boost Buddha M1 clicks!).\n` +
+      `• For Buddha Main: Put **60% Melee, 40% Defense, 0% Fruit** (Fruit stats do not boost Buddha M1 clicks!). Max 2800 per stat.\n` +
       `• For Fruit Main: Put **40% Melee, 40% Defense, 20% Fruit**.\n\n` +
       `**Sea Transition Milestones:**\n` +
       `• **Lv 700:** Talk to Military Detective at Prison ➔ Defeat Ice Admiral ➔ Unlock Second Sea.\n` +
-      `• **Lv 1500:** Defeat Don Swan at Mansion ➔ Talk to King Red Head at Colosseum ➔ Defeat rip_indra ➔ Unlock Third Sea!`;
+      `• **Lv 1500:** Defeat Don Swan at Mansion ➔ Talk to King Red Head at Colosseum ➔ Defeat rip_indra ➔ Unlock Third Sea!\n` +
+      `• **Lv 2800:** Reach pinnacle max level in Update 27.4 with 8,400 total stat points!`;
   }
 
   // 2. Fighting Styles general
@@ -1626,7 +1649,7 @@ export function generateIntelligentBloxFruitsFallback(query: string): string {
     `⚔️ **My Ken Haki dodged that one—I don't know the answer!**\n\nThat falls outside our Blox Fruits arena. I'm primed for fighting style combos (Godhuman, Sanguine Art), accessory buffs, and raid strategies. Pitch me a battle scenario!`,
 
     // 7. The Ship Captain's Logbook
-    `📜 **Captain's Log: I don't know this query!**\n\nI flipped through every page of the ancient Third Sea archives and couldn't find a match. Ask me about leveling routes from Lv 1 to 2550, sea danger levels, or True Triple Katana!`,
+    `📜 **Captain's Log: I don't know this query!**\n\nI flipped through every page of the ancient Third Sea archives and couldn't find a match. Ask me about leveling routes from Lv 1 to 2800 (Update 27.4), sea danger levels, or True Triple Katana!`,
 
     // 8. The Fruit Gourmet / Chef
     `🍎 **I don't know about that—it's not on the Devil Fruit menu!**\n\nI've tasted everything from Rocket to Kitsune, but that topic is completely outside the orchard. What fruit values or moveset awakenings are you curious about?`,
@@ -1710,7 +1733,7 @@ export function generateIntelligentBloxFruitsFallback(query: string): string {
     `🔨 **I don't know, sailor! My hammer only builds boats and tunes Blox Fruits strategies.**\n\nNeed to know how to build the Beast Hunter ship, or which accessories give the biggest sword damage boosts? Let's talk gear!`,
 
     // 35. The Pirate Starter Island Veteran
-    `🏝️ **I don't know! Even the Bandit Boss on Island 1 hasn't heard of that.**\n\nFrom level 1 Bandit grinding all the way to max level 2550 Tiki Outpost, I have all the progression secrets. What guide do you need?`,
+    `🏝️ **I don't know! Even the Bandit Boss on Island 1 hasn't heard of that.**\n\nFrom level 1 Bandit grinding all the way to max level 2800 Submerged Abyss & Tiki Outpost (Update 27.4), I have all the progression secrets. What guide do you need?`,
 
     // 36. The Friendly Developer Salute
     `✨ **I don't know that one! My creator Nolan (1_solas) programmed me as the ultimate Blox Fruits Sensei.**\n\nTry asking me for a trade calculation, fruit values, boss spawn guides, or click on any of the suggestion chips above to get started!`

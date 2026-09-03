@@ -606,7 +606,7 @@ export const SEA_PROGRESSION: SeaLocation[] = [
     tip: 'At Lv 1500, defeat Don Swan, free prisoners at Colosseum, and defeat rip_indra at Dark Arena to travel to Third Sea!'
   },
 
-  // THIRD SEA (Lv 1500 - 2550 MAX)
+  // THIRD SEA (Lv 1500 - 2800 MAX - UPDATE 27.4)
   {
     sea: 3,
     levelRange: 'Lv 1500 - 1775',
@@ -642,6 +642,15 @@ export const SEA_PROGRESSION: SeaLocation[] = [
     boss: 'Leviathan (Frozen Dimension), Terrorshark (Danger Lv 6), Doghouse Boss',
     keyUnlocks: ['Sanguine Art (Shafi Basement)', 'Shark Anchor (Monster Magnet)', 'Dog Blade (August 2026 Doghouse Event)', 'Leviathan Shield Crafting'],
     tip: 'Sail to Danger Zone 6 with a 5-man crew on Beast Hunter boat to spawn Leviathan and harpoon its heart for Sanguine Art!'
+  },
+  {
+    sea: 3,
+    levelRange: 'Lv 2550 - 2800 (Update 27.4)',
+    name: 'Submerged Abyss & Astral Bastion (Update 27.4)',
+    enemies: ['Abyssal Raider', 'Astral Guardian', 'Void Corsair', 'Celestial Enforcer'],
+    boss: 'Astral Overlord (Lv 2750), Primordial Abyssal Drake (Lv 2800 Max)',
+    keyUnlocks: ['Max Level 2800 Pinnacle Cap', '8,400 Total Stat Points Allocation', 'Tier 4 Awakening Runes', 'Abyssal Crest'],
+    tip: 'Update 27.4 raises the max level to 2800! Grind through Tiki Outpost into the Submerged Abyss to reach the level 2800 cap and max out all 8,400 stat points!'
   }
 ];
 

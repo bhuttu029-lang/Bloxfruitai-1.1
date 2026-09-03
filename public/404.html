@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blox Fruits Master Hub</title>
+    <script type="text/javascript">
+      // SPA Fallback Redirect for GitHub Pages & static web servers
+      (function() {
+        var l = window.location;
+        var segments = l.pathname.split('/').filter(Boolean);
+        var knownPages = [
+          'sensei', 'calculator', 'database', 'values', 'tradeladder', 'ladder',
+          'checklist', 'crafter', 'pvp', 'faq', 'obtainment', 'progression',
+          'mutationlab', 'mutation', 'suggestions', 'owner', 'vault', 'admin', 'copyright'
+        ];
+        
+        var isSubFolder = segments.length > 1 && !knownPages.includes(segments[0]);
+        var base = isSubFolder ? '/' + segments[0] : '';
+        var routePath = l.pathname.slice(base.length);
+
+        // Redirect to base with route in query parameter so index.html loads and restores the route
+        var targetUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          base + '/?p=' + encodeURIComponent(routePath + (l.search ? l.search : '')) + l.hash;
+
+        l.replace(targetUrl);
+      })();
+    </script>
+  </head>
+  <body style="background:#020617;color:#f8fafc;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+    <div style="text-align:center;">
+      <h2 style="margin-bottom:8px;">Loading Blox Fruits Master Hub...</h2>
+      <p style="color:#94a3b8;font-size:14px;">Routing your destination...</p>
+    </div>
+  </body>
+</html>

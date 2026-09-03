@@ -428,7 +428,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
-          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault modal... Enter **477047704770** and **mouse4770** or use Instant Fast-Pass to manage all values and AI settings!`,
+          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault modal... Enter your Pre-Auth Code (**477047704770**) and Master Key (**mouse4770**) or complete Gmail OTP verification to manage all values and AI settings!`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);

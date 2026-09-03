@@ -33,11 +33,11 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
   const [selectedAccessory, setSelectedAccessory] = useState(ACCESSORIES_DATA[1]); // Pale Scarf
   const [isV4Awakened, setIsV4Awakened] = useState<boolean>(true);
 
-  // Stat point allocation (Total max 7650, 2550 per category)
+  // Stat point allocation (Total max 8400, 2800 per category as of Update 27.4)
   const [stats, setStats] = useState<{ melee: number; defense: number; sword: number; gun: number; fruit: number }>({
-    melee: 2550,
-    defense: 2550,
-    sword: 2550,
+    melee: 2800,
+    defense: 2800,
+    sword: 2800,
     gun: 0,
     fruit: 0
   });
@@ -89,9 +89,9 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
     if (acc) setSelectedAccessory(acc);
 
     if (preset.playstyle.includes('Sword')) {
-      setStats({ melee: 2550, defense: 2550, sword: 2550, gun: 0, fruit: 0 });
+      setStats({ melee: 2800, defense: 2800, sword: 2800, gun: 0, fruit: 0 });
     } else {
-      setStats({ melee: 2550, defense: 2550, sword: 0, gun: 0, fruit: 2550 });
+      setStats({ melee: 2800, defense: 2800, sword: 0, gun: 0, fruit: 2800 });
     }
   };
 
@@ -127,7 +127,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 <Swords className="w-3.5 h-3.5" /> PvP & Combo Studio
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Max Lv 2550
+                Max Lv 2800 (Update 27.4)
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -340,14 +340,14 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 <div className="flex items-center gap-2">
                   <Target className="w-4 h-4 text-amber-400" />
                   <span className="text-sm font-bold text-white">Stat Allocation</span>
-                  <span className="text-xs text-slate-500">(Max 2550 / Stat • Budget 7650)</span>
+                  <span className="text-xs text-slate-500">(Max 2800 / Stat • Budget 8400 - Update 27.4)</span>
                 </div>
                 <button
                   onClick={() => {
                     if (stats.sword > 0) {
-                      setStats({ melee: 2550, defense: 2550, sword: 0, gun: 0, fruit: 2550 });
+                      setStats({ melee: 2800, defense: 2800, sword: 0, gun: 0, fruit: 2800 });
                     } else {
-                      setStats({ melee: 2550, defense: 2550, sword: 2550, gun: 0, fruit: 0 });
+                      setStats({ melee: 2800, defense: 2800, sword: 2800, gun: 0, fruit: 0 });
                     }
                   }}
                   className="text-xs text-cyan-400 hover:text-cyan-300 font-bold transition-colors"

@@ -798,7 +798,7 @@ ${customLore}`;
               {/* Dummy Health & Combo Display */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-center relative">
                 <div className="text-4xl my-1 animate-bounce">🤖</div>
-                <div className="text-xs font-bold text-slate-300">Level 2550 Obsidian Training Dummy</div>
+                <div className="text-xs font-bold text-slate-300">Level 2800 Obsidian Training Dummy (Update 27.4 Max)</div>
 
                 {/* Dummy HP Bar */}
                 <div className="w-full bg-slate-900 rounded-full h-3.5 overflow-hidden border border-slate-800 p-0.5">

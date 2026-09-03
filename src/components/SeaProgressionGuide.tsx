@@ -21,7 +21,7 @@ export const SeaProgressionGuide: React.FC = () => {
                 <Compass className="w-3.5 h-3.5" /> Complete Game Progression
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                Lv 1 → Lv 2550 MAX
+                Lv 1 → Lv 2800 MAX (Update 27.4)
               </span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -69,7 +69,7 @@ export const SeaProgressionGuide: React.FC = () => {
               {[
                 { sea: 1, name: 'First Sea (Old World)', lvl: 'Lv 1 - 700', badge: 'Early Game' },
                 { sea: 2, name: 'Second Sea (Dressrosa)', lvl: 'Lv 700 - 1500', badge: 'Mid Game' },
-                { sea: 3, name: 'Third Sea (New World)', lvl: 'Lv 1500 - 2550', badge: 'Endgame / PvP' },
+                { sea: 3, name: 'Third Sea (New World)', lvl: 'Lv 1500 - 2800 (Update 27.4)', badge: 'Endgame / PvP' },
               ].map(s => (
                 <button
                   key={s.sea}

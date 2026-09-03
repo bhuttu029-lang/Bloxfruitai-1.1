@@ -92,7 +92,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
         strategyTip: 'In raw trade points, Portal and Buddha are close, but Buddha is the most wanted grinding fruit in the entire game. Post in Discord: "[H] Portal [W] Buddha".',
         recommendedLocation: 'Discord Trading / Reddit',
         timeEstimate: '1 hour',
-        whyItWorks: 'Buddha has 10/10 demand. Every single player reaching Sea 2 needs Buddha to level up to 2550.'
+        whyItWorks: 'Buddha has 10/10 demand. Every single player reaching Sea 2 needs Buddha to level up to 2800.'
       },
       {
         stepNumber: 5,
@@ -192,7 +192,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
         strategyTip: 'Find players who already have Buddha awakened and are bored of spamming M1s; they often switch to Blizzard for PvP.',
         recommendedLocation: 'Second Sea Café',
         timeEstimate: '2 - 3 hours',
-        whyItWorks: 'Buddha has massive utility, but players at max level 2550 often want to trade it away for PvP fruits.'
+        whyItWorks: 'Buddha has massive utility, but players at max level 2800 often want to trade it away for PvP fruits.'
       }
     ]
   },

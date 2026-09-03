@@ -14,15 +14,18 @@ import {
   Radio,
   Key,
   Shield,
-  Palette
+  Palette,
+  Share2,
+  Link2
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { NavTabType } from './Sidebar';
 import { soundFX } from '../utils/audio';
 import { getInitialAuthProfile, DISCORD_OAUTH_URL, logoutDiscordAccount } from '../utils/aiQuota';
 import { UserAuthProfile } from '../types';
 import { AuthModal } from './AuthModal';
 import { AppTheme, getStoredTheme, setStoredTheme } from '../utils/theme';
+import { getShareablePageLink, getRouteForTab } from '../utils/routes';
 
 interface TopHudProps {
   activeTab: NavTabType;
@@ -42,10 +45,23 @@ export const TopHud: React.FC<TopHudProps> = ({
   onThemeChange
 }) => {
   const [copiedCredit, setCopiedCredit] = useState(false);
+  const [copiedLinkType, setCopiedLinkType] = useState<'clean' | 'hash' | null>(null);
+  const [showShareOptions, setShowShareOptions] = useState(false);
   const [serverTime, setServerTime] = useState<string>('');
   const [fullMoonPhase, setFullMoonPhase] = useState<string>('🌕 Full Moon in 14m');
   const [authProfile, setAuthProfile] = useState<UserAuthProfile>(() => getInitialAuthProfile());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const handleCopyPageLink = (format: 'clean' | 'hash' = 'clean') => {
+    const url = getShareablePageLink(activeTab, format);
+    navigator.clipboard.writeText(url);
+    setCopiedLinkType(format);
+    soundFX.playPop();
+    setTimeout(() => {
+      setCopiedLinkType(null);
+      setShowShareOptions(false);
+    }, 2500);
+  };
 
   useEffect(() => {
     const handleProfileUpdate = (e: any) => {
@@ -129,7 +145,7 @@ export const TopHud: React.FC<TopHudProps> = ({
       case 'progression':
         return {
           title: 'Sea 1-3 Progression Guide',
-          subtitle: 'Level 1 to 2550 questlines, boss locations, sea transitions, and Mirage Island secrets',
+          subtitle: 'Level 1 to 2800 questlines, boss locations, sea transitions, and Mirage Island secrets',
           tag: 'Sea 1 • 2 • 3',
           color: 'from-blue-400 to-teal-500'
         };
@@ -294,8 +310,97 @@ export const TopHud: React.FC<TopHudProps> = ({
             </p>
           </div>
 
-          {/* Quick Action Navigation Pills */}
+          {/* Quick Action Navigation Pills & Share Link */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            {/* Share / Copy Link Button */}
+            <div className="relative">
+              <button
+                id="top-hud-share-page-btn"
+                onClick={() => handleCopyPageLink('clean')}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setShowShareOptions(!showShareOptions);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border shadow-sm cursor-pointer ${
+                  copiedLinkType
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-emerald-950/40 font-extrabold'
+                    : 'bg-slate-900 hover:bg-slate-800 text-cyan-300 hover:text-cyan-200 border-cyan-500/30 hover:border-cyan-400/60'
+                }`}
+                title="Click to copy direct page link. Right-click or hold for universal host options."
+              >
+                {copiedLinkType ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Link Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Copy Page Link</span>
+                  </>
+                )}
+              </button>
+
+              {/* Host Options Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setShowShareOptions(!showShareOptions)}
+                className="ml-1 p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[10px]"
+                title="Choose URL format for specific hosts (Netlify, Vercel, GitHub Pages, etc.)"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Share Options Dropdown */}
+              <AnimatePresence>
+                {showShareOptions && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    className="absolute right-0 top-full mt-2 z-50 w-72 p-3 bg-slate-950/95 backdrop-blur-xl border border-cyan-500/40 rounded-2xl shadow-2xl space-y-2 text-left"
+                  >
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+                      <span className="text-[11px] font-black uppercase text-cyan-300">Share This Page</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Cross-Host Ready</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      Copy a direct link to this page compatible with all cloud and static hosts:
+                    </p>
+
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={() => handleCopyPageLink('clean')}
+                        className="w-full px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-left text-xs font-semibold text-white flex items-center justify-between border border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer"
+                      >
+                        <div>
+                          <div className="font-bold text-cyan-300 text-[11px]">Clean URL (Recommended)</div>
+                          <div className="text-[10px] text-slate-400 font-mono">/{activeTab}</div>
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/30 text-cyan-300">Netlify/Vercel</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleCopyPageLink('hash')}
+                        className="w-full px-2.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-left text-xs font-semibold text-white flex items-center justify-between border border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer"
+                      >
+                        <div>
+                          <div className="font-bold text-amber-300 text-[11px]">Universal Hash URL</div>
+                          <div className="text-[10px] text-slate-400 font-mono">/#/{activeTab}</div>
+                        </div>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 border border-amber-500/30 text-amber-300">All Hosts / 100%</span>
+                      </button>
+                    </div>
+
+                    <div className="text-[10px] text-slate-500 pt-1">
+                      Works on Netlify, Vercel, GitHub Pages, Firebase, Apache & Nginx.
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button
               onClick={() => {
                 soundFX.playPop();

@@ -34,6 +34,7 @@ import { soundFX } from '../utils/audio';
 import { getInitialAuthProfile } from '../utils/aiQuota';
 import { UserAuthProfile } from '../types';
 import { AuthModal } from './AuthModal';
+import { getRouteForTab } from '../utils/routes';
 
 export type NavTabType = 
   | 'checklist' 
@@ -122,7 +123,7 @@ const NAV_ITEMS: NavItemConfig[] = [
     shortLabel: 'Sea Routes',
     icon: Compass,
     accentColor: 'from-blue-400 to-teal-500',
-    description: 'Level 1-2550 questlines & islands'
+    description: 'Level 1-2800 questlines & islands'
   },
   {
     id: 'calculator',
@@ -280,13 +281,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     )}
                   </div>
                 )}
-                <motion.button
+                <motion.a
                   id={`sidebar-tab-${item.id}`}
-                  onClick={() => handleSelectTab(item.id)}
+                  href={getRouteForTab(item.id).path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectTab(item.id);
+                  }}
                   whileHover={{ x: collapsed ? 0 : 3 }}
                   whileTap={{ scale: 0.98 }}
                   title={collapsed ? `${item.label} - ${item.description}` : undefined}
-                  className={`relative w-full rounded-2xl transition-all flex items-center gap-3 p-2.5 text-left group overflow-hidden ${
+                  className={`relative w-full rounded-2xl transition-all flex items-center gap-3 p-2.5 text-left group overflow-hidden cursor-pointer ${
                     isActive
                       ? isGameItem
                         ? 'bg-purple-950/80 text-white shadow-lg border border-pink-500/60'
@@ -351,7 +356,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       </p>
                     </div>
                   )}
-                </motion.button>
+                </motion.a>
               </React.Fragment>
             );
           })}

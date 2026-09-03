@@ -25,10 +25,19 @@ import { initSecurityProtection, COPYRIGHT_DATA } from './utils/security';
 import { initContinuousBrowserWikiSync } from './utils/browserWikiSync';
 import { soundFX } from './utils/audio';
 import { AppTheme, getStoredTheme, setStoredTheme, applyThemeClass } from './utils/theme';
+import { resolveTabFromLocation, navigateToRoute, getRouteForTab } from './utils/routes';
 import { Flame, Swords, Compass, Bot, Calculator, Database, BookOpen, Brain, ShieldCheck, Lock, AlertTriangle, CheckSquare } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<NavTabType>('sensei');
+  const [activeTab, setActiveTabState] = useState<NavTabType>(() => {
+    return resolveTabFromLocation().tab;
+  });
+
+  const setActiveTab = (tab: NavTabType, replace = false) => {
+    setActiveTabState(tab);
+    navigateToRoute(tab, replace);
+  };
+
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [currentTheme, setCurrentTheme] = useState<AppTheme>(getStoredTheme());
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
@@ -40,6 +49,46 @@ export default function App() {
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState<boolean>(false);
   const [activeAdminUsername, setActiveAdminUsername] = useState<string>('Admin');
   const [securityToast, setSecurityToast] = useState<string | null>(null);
+
+  // Synchronize route on initial load and handle browser back/forward buttons
+  useEffect(() => {
+    const initial = resolveTabFromLocation();
+    if (initial.tab !== activeTab) {
+      setActiveTabState(initial.tab);
+    }
+    // Update document title and metadata without adding redundant history step
+    navigateToRoute(initial.tab, true);
+
+    if (initial.openModal === 'owner') {
+      setIsOwnerVaultOpen(true);
+    } else if (initial.openModal === 'admin') {
+      setIsAdminPanelOpen(true);
+    } else if (initial.openModal === 'copyright') {
+      setIsCopyrightModalOpen(true);
+    }
+
+    const handleLocationChange = () => {
+      const res = resolveTabFromLocation();
+      setActiveTabState(res.tab);
+      const routeInfo = getRouteForTab(res.tab);
+      if (routeInfo?.title) {
+        document.title = routeInfo.title;
+      }
+      if (res.openModal === 'owner') setIsOwnerVaultOpen(true);
+      if (res.openModal === 'admin') setIsAdminPanelOpen(true);
+      if (res.openModal === 'copyright') setIsCopyrightModalOpen(true);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('blox_fruits_route_changed', handleLocationChange);
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('blox_fruits_route_changed', handleLocationChange);
+    };
+  }, []);
 
   // Initialize anti-tamper security protection, console warnings, direct free browser wiki sync, and cloud sync
   useEffect(() => {

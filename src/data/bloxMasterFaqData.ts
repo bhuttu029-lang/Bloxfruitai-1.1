@@ -1026,18 +1026,19 @@ export const BLOX_MASTER_FAQ: FaqQuestionEntry[] = [
     categoryName: 'PvP, Bounty & Stats',
     question: 'How do I allocate my stat points for a Sword, Fruit, or Gun build, and how do I reset stats?',
     aliases: ['stat points allocation', 'how to reset stats', 'sword build stats', 'fruit main stats', 'plokster stat reset'],
-    shortAnswer: 'Max Level 2550 gives 7,650 stat points (Max 2550 per stat). Buddha/Melee: 2550 Melee, 2550 Defense, 2550 Sword. Fruit Main: 2550 Melee, 2550 Defense, 2550 Fruit. Reset stats via Plokster ($2.5k Frags at Bridge), promo codes, or 75 Robux.',
-    fullAnswer: `📊 **Stat Allocation & Reset Blueprint (Max Cap: 2550 per stat):**\n\n` +
+    shortAnswer: 'Max Level 2800 (Update 27.4) gives 8,400 stat points (Max 2800 per stat). Buddha/Melee: 2800 Melee, 2800 Defense, 2800 Sword. Fruit Main: 2800 Melee, 2800 Defense, 2800 Fruit. Reset stats via Plokster ($2.5k Frags at Bridge), promo codes, or 75 Robux.',
+    fullAnswer: `📊 **Stat Allocation & Reset Blueprint (Max Cap: 2800 per stat - Update 27.4):**\n\n` +
       `• **Buddha / Sword Main Build:**\n` +
-      `  - **Melee:** 2,550 (Max Energy & Melee damage)\n` +
-      `  - **Defense:** 2,550 (Max Health)\n` +
-      `  - **Sword:** 2,550 (Max Sword burst damage)\n` +
+      `  - **Melee:** 2,800 (Max Energy & Melee damage)\n` +
+      `  - **Defense:** 2,800 (Max Health)\n` +
+      `  - **Sword:** 2,800 (Max Sword burst damage)\n` +
       `  - *Gun & Fruit:* 0 points.\n\n` +
       `• **Fruit Main Build (Kitsune, Dough, Dragon, Portal):**\n` +
-      `  - **Melee:** 2,550\n` +
-      `  - **Defense:** 2,550\n` +
-      `  - **Blox Fruit:** 2,550\n` +
+      `  - **Melee:** 2,800\n` +
+      `  - **Defense:** 2,800\n` +
+      `  - **Blox Fruit:** 2,800\n` +
       `  - *Sword & Gun:* 0 points.\n\n` +
+      `• **Total Points:** 8,400 points total (3 stat points per level up to level 2800).\n\n` +
       `• **How to Reset Stats:**\n` +
       `  1. **Plokster NPC:** Talk to Plokster on the bridge between Green Zone and Kingdom of Rose (Sea 2) or at Castle on the Sea. Pay **2,500 Fragments**.\n` +
       `  2. **Free Promo Codes:** Redeem active stat reset codes (e.g. \`SUB2GAMERROBOT_RESET1\`).\n` +
@@ -1186,18 +1187,18 @@ export const BLOX_MASTER_FAQ: FaqQuestionEntry[] = [
     id: 'c15-fastest-leveling-path',
     categoryNumber: 15,
     categoryName: 'Leveling & Grinding Efficiency',
-    question: 'What is the fastest way to level up from Lv 1 to 2550 and which fruit is best?',
-    aliases: ['fastest way to level up', 'island guide by level', 'light vs buddha sea 1', 'best grinding fruit'],
-    shortAnswer: 'Sea 1 (1-700): Eat Light Fruit for Logia immunity & fast flight. Sea 2 & 3 (700-2550): Eat Buddha, awaken Z move (Shift), put all stats into Melee and Defense, and spam Sharkman Karate M1 clicks.',
-    fullAnswer: `📈 **Ultimate 1 to 2550 Leveling Blueprint:**\n\n` +
+    question: 'What is the fastest way to level up from Lv 1 to 2800 and which fruit is best?',
+    aliases: ['fastest way to level up', 'island guide by level', 'light vs buddha sea 1', 'best grinding fruit', 'max level 2800', 'update 27.4 leveling'],
+    shortAnswer: 'Sea 1 (1-700): Eat Light Fruit for Logia immunity & fast flight. Sea 2 & 3 (700-2800): Eat Buddha, awaken Z move (Shift), put all stats into Melee and Defense, and spam Sharkman Karate M1 clicks to reach Max Lv 2800.',
+    fullAnswer: `📈 **Ultimate 1 to 2800 Leveling Blueprint (Update 27.4):**\n\n` +
       `**1. First Sea (Lv 1 - 700):**\n` +
       `• **Fruit:** **Light Fruit** is #1 (Fastest flight in early game + light sword M1 hits + Elemental Logia immunity).\n` +
       `• **Stat Priority:** 60% Melee, 40% Defense, 0% Fruit.\n\n` +
-      `**2. Second & Third Sea (Lv 700 - 2550 Max):**\n` +
+      `**2. Second & Third Sea (Lv 700 - 2800 Max):**\n` +
       `• **Fruit:** **Buddha Fruit (Awakened Z)** is the undisputed king of grinding!\n` +
       `• **Awakened Z Shift:** Gives +50% damage reduction, massive attack reach, and allows you to use fighting styles while giant.\n` +
       `• **Fighting Style:** Use **Sharkman Karate** or **Electric Claw** for lightning-fast M1 auto-attacks!\n` +
-      `• **Stat Priority:** 2550 Melee + 2550 Defense + 2550 Sword. Zero points in Fruit needed!`,
+      `• **Stat Priority:** 2800 Melee + 2800 Defense + 2800 Sword. Zero points in Fruit needed to max out your 8,400 stat points!`,
     tags: ['leveling', 'grinding', 'light vs buddha', 'fast exp', 'sea progression']
   },
 
@@ -1342,11 +1343,11 @@ export const BLOX_MASTER_FAQ: FaqQuestionEntry[] = [
     id: 'c23-comparisons-decision-making',
     categoryNumber: 23,
     categoryName: 'Direct Comparison & Decision-Making',
-    question: 'Should I reach Max Level 2550 or get Godhuman first? / Light vs Magma for Sea 1? / CDK vs TTK? / Mink vs Cyborg V4?',
-    aliases: ['level 2450 vs godhuman first', 'light or magma sea 1', 'cdk vs ttk', 'buddha or blizzard raids', 'mink or cyborg v4 first'],
-    shortAnswer: '1) Level to Max Level first with Buddha, then farm Godhuman masteries. 2) Light is better for Sea 1 (faster flight + M1 sword). 3) CDK is better for burst PvP combos than TTK. 4) Cyborg V4 is better for aggressive PvP (Ken breaking); Mink V4 is better for speed/hit-and-run.',
+    question: 'Should I reach Max Level 2800 or get Godhuman first? / Light vs Magma for Sea 1? / CDK vs TTK? / Mink vs Cyborg V4?',
+    aliases: ['level 2800 vs godhuman first', 'light or magma sea 1', 'cdk vs ttk', 'buddha or blizzard raids', 'mink or cyborg v4 first', 'max level 2800 update 27.4'],
+    shortAnswer: '1) Level to Max Level 2800 (Update 27.4) first with Buddha, then farm Godhuman masteries. 2) Light is better for Sea 1 (faster flight + M1 sword). 3) CDK is better for burst PvP combos than TTK. 4) Cyborg V4 is better for aggressive PvP (Ken breaking); Mink V4 is better for speed/hit-and-run.',
     fullAnswer: `⚖️ **Sensei Direct Comparison & Strategy Breakdown:**\n\n` +
-      `• **Max Level 2550 vs Godhuman First:** **Reach Max Level first!** Leveling to max with Buddha gives you 7,650 stat points, making mastery farming on Superhuman, Death Step, Sharkman, E-Claw, and Dragon Talon 5x faster.\n` +
+      `• **Max Level 2800 vs Godhuman First (Update 27.4):** **Reach Max Level 2800 first!** Leveling to max with Buddha gives you the full 8,400 stat points (2,800 Melee/Defense/Sword), making mastery farming on Superhuman, Death Step, Sharkman, E-Claw, and Dragon Talon 5x faster.\n` +
       `• **Light vs Magma for First Sea:** **Light Fruit wins for Sea 1!** Light provides high-speed flight between islands and has a built-in light blade M1. Magma is better for Sea Beasts in Sea 2 & 3.\n` +
       `• **CDK vs TTK:** **CDK wins for PvP!** Cursed Dual Katana has faster startup frames, a long dash stun (CDK Z), and massive knockup (CDK X). True Triple Katana (TTK) has higher single-hit damage but slower combo links.\n` +
       `• **Buddha vs Blizzard for Raids:** **Buddha is #1 for soloing raids** due to 50% defense and giant M1 reach. Blizzard is amazing for crowd control.\n` +

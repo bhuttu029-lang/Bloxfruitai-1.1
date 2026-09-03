@@ -48,6 +48,8 @@ import {
   logoutFromServer,
   getOwnerAuthStatus, 
   setOwnerAuthStatus, 
+  getAdminAuthStatus,
+  setAdminAuthStatus,
   saveFullItemOverride, 
   removeUserValueOverride,
   addCustomFruitItem, 
@@ -86,7 +88,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   onClose,
   initialPrefillKey = ''
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => getOwnerAuthStatus());
   const [step1Input, setStep1Input] = useState<string>('');
   const [keyInput, setKeyInput] = useState<string>(initialPrefillKey);
   const [showKeyText, setShowKeyText] = useState<boolean>(false);
@@ -115,7 +117,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       if (interval) clearInterval(interval);
     };
   }, [isOtpPending, otpTimerSeconds]);
-
+  
   // Edit Tab State
   const [allItems, setAllItems] = useState<FruitItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
@@ -326,6 +328,8 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
         soundFX.playPop();
         return;
       }
+      setOwnerAuthStatus(true);
+      setAdminAuthStatus(true);
       setIsAuthenticated(true);
       setAuthError(null);
       soundFX.playWin();
@@ -343,6 +347,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
     if (keyToTest.includes('mouse4770') || cleanStep1 === '477047704770' || keyToTest.includes('4770')) {
       setOwnerAuthStatus(true);
+      setAdminAuthStatus(true);
       setIsAuthenticated(true);
       setIsOtpPending(false);
       setAuthError(null);
@@ -370,6 +375,8 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
     if (res.success) {
       setIsOtpPending(false);
+      setOwnerAuthStatus(true);
+      setAdminAuthStatus(true);
       setIsAuthenticated(true);
       setOtpInput('');
       setAuthError(null);
@@ -408,6 +415,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setIsOtpPending(false);
     setOtpToken('');
     setOtpInput('');
+    setOwnerAuthStatus(false);
     await logoutFromServer();
     setStep1Input('');
     setKeyInput('');
@@ -873,8 +881,8 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
           ) : (
             /* 2. AUTHENTICATED OWNER CONTROL MATRIX */
             <div className="space-y-5">
-              {/* Navigation Tabs */}
-              <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto no-scrollbar">
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => {
                     soundFX.playPop();

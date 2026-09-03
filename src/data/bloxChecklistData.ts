@@ -65,7 +65,7 @@ export const CHECKLIST_CATEGORIES: ChecklistCategoryMeta[] = [
     id: 'milestones',
     name: 'Sea & Account Milestones',
     icon: '🌟',
-    description: 'Major progression milestones, Sea unlocks, max level 2550, and essential gamepasses.',
+    description: 'Major progression milestones, Sea unlocks, max level 2800 (Update 27.4), and essential gamepasses.',
     color: 'from-blue-500 to-purple-600'
   }
 ];
@@ -709,12 +709,12 @@ export const BLOX_CHECKLIST_ITEMS: ChecklistItem[] = [
   },
   {
     id: 'mile-max-level',
-    name: 'Max Level 2550 Reached',
+    name: 'Max Level 2800 Reached (Update 27.4)',
     category: 'milestones',
     rarity: 'Mythical',
     sea: 3,
-    description: 'Achieved the maximum level cap of 2550 with 7,650 maximum stat points allocated.',
-    howToGet: 'Grind through Tiki Outpost quests to reach level 2550.'
+    description: 'Achieved the maximum level cap of 2800 with 8,400 maximum stat points allocated as of Update 27.4.',
+    howToGet: 'Grind through Tiki Outpost and Submerged Abyss quests to reach the level 2800 cap.'
   },
   {
     id: 'mile-blue-gear',
