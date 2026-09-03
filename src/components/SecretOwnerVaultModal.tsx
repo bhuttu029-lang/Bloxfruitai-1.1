@@ -79,6 +79,13 @@ interface SecretOwnerVaultModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPrefillKey?: string;
+  initialOtpData?: {
+    otpPending?: boolean;
+    otpToken?: string;
+    emailTarget?: string;
+    expiresIn?: number;
+    forceOtp?: boolean;
+  } | null;
 }
 
 type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
@@ -86,7 +93,8 @@ type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'manage_items' 
 export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   isOpen,
   onClose,
-  initialPrefillKey = ''
+  initialPrefillKey = '',
+  initialOtpData = null
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => getOwnerAuthStatus());
   const [step1Input, setStep1Input] = useState<string>('');
@@ -285,15 +293,56 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const isAuth = getOwnerAuthStatus();
-      if (isAuth) {
-        setIsAuthenticated(true);
-      } else if (initialPrefillKey) {
-        setKeyInput(initialPrefillKey);
+      if (initialOtpData?.otpPending && initialOtpData?.otpToken) {
+        setIsAuthenticated(false);
+        setIsOtpPending(true);
+        setOtpToken(initialOtpData.otpToken);
+        setMaskedEmail(initialOtpData.emailTarget || 'bh***29@gmail.com');
+        setOtpTimerSeconds(initialOtpData.expiresIn || 300);
+        setResendCooldown(30);
+        setOtpInput('');
+        setAuthError(null);
+      } else if (initialOtpData?.forceOtp) {
+        setIsAuthenticated(false);
+        setIsOtpPending(true);
+      } else {
+        const isAuth = getOwnerAuthStatus();
+        if (isAuth) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          if (initialPrefillKey) {
+            setKeyInput(initialPrefillKey);
+          }
+        }
       }
       reloadData();
     }
-  }, [isOpen, initialPrefillKey]);
+  }, [isOpen, initialPrefillKey, initialOtpData]);
+
+  useEffect(() => {
+    const handleVaultOpenEvent = (e: any) => {
+      const detail = e?.detail;
+      if (detail?.forceOtp || detail?.otpPending) {
+        setIsAuthenticated(false);
+        setIsOtpPending(true);
+        if (detail.otpToken) setOtpToken(detail.otpToken);
+        if (detail.emailTarget) setMaskedEmail(detail.emailTarget);
+        if (detail.expiresIn) setOtpTimerSeconds(detail.expiresIn);
+        setResendCooldown(30);
+        setOtpInput('');
+        setAuthError(null);
+      } else if (detail?.authenticated) {
+        setIsAuthenticated(true);
+        setIsOtpPending(false);
+      }
+    };
+
+    window.addEventListener('blox_fruits_open_owner_vault', handleVaultOpenEvent);
+    return () => {
+      window.removeEventListener('blox_fruits_open_owner_vault', handleVaultOpenEvent);
+    };
+  }, []);
 
   useEffect(() => {
     const handleDataUpdate = () => {

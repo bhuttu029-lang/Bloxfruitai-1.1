@@ -46,6 +46,13 @@ export default function App() {
   const [isCopyrightModalOpen, setIsCopyrightModalOpen] = useState<boolean>(false);
   const [isOwnerVaultOpen, setIsOwnerVaultOpen] = useState<boolean>(false);
   const [prefillOwnerKey, setPrefillOwnerKey] = useState<string>('');
+  const [ownerVaultOtpData, setOwnerVaultOtpData] = useState<{
+    otpPending?: boolean;
+    otpToken?: string;
+    emailTarget?: string;
+    expiresIn?: number;
+    forceOtp?: boolean;
+  } | null>(null);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState<boolean>(false);
   const [activeAdminUsername, setActiveAdminUsername] = useState<string>('Admin');
   const [securityToast, setSecurityToast] = useState<string | null>(null);
@@ -109,6 +116,17 @@ export default function App() {
     const handleOpenVault = (e: any) => {
       if (e.detail?.prefillKey) {
         setPrefillOwnerKey(e.detail.prefillKey);
+      }
+      if (e.detail?.forceOtp || e.detail?.otpPending) {
+        setOwnerVaultOtpData({
+          otpPending: true,
+          otpToken: e.detail.otpToken || '',
+          emailTarget: e.detail.emailTarget || 'bh***29@gmail.com',
+          expiresIn: e.detail.expiresIn || 300,
+          forceOtp: true
+        });
+      } else if (e.detail?.authenticated) {
+        setOwnerVaultOtpData(null);
       }
       setIsOwnerVaultOpen(true);
     };
@@ -527,8 +545,12 @@ export default function App() {
         {/* Grandmaster Control Modal (Sequence: 477047704770 -> mouse4770) */}
         <SecretOwnerVaultModal
           isOpen={isOwnerVaultOpen}
-          onClose={() => setIsOwnerVaultOpen(false)}
+          onClose={() => {
+            setIsOwnerVaultOpen(false);
+            setOwnerVaultOtpData(null);
+          }}
           initialPrefillKey={prefillOwnerKey}
+          initialOtpData={ownerVaultOtpData}
         />
 
         {/* Admin Management Panel Modal */}

@@ -385,7 +385,12 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         setAuthProfile(unlockedProfile);
 
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
+          window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { 
+            detail: { 
+              authenticated: true,
+              otpPending: false 
+            } 
+          }));
         }
 
         soundFX.playWin();
@@ -468,9 +473,17 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
           ownerOtpTokenRef.current = loginRes.otpToken;
           ownerOtpExpiresRef.current = Date.now() + 300000;
 
-          // Dispatch event to open modal
+          // Dispatch event to open modal directly in OTP Verification mode (Step 3)
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
+            window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { 
+              detail: { 
+                forceOtp: true,
+                otpPending: true,
+                otpToken: loginRes.otpToken,
+                emailTarget: loginRes.emailTarget || 'bh***29@gmail.com',
+                expiresIn: loginRes.expiresIn || 300
+              } 
+            }));
           }
 
           soundFX.playPop();
