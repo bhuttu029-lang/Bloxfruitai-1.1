@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Swords, Shield, Zap, Sparkles, Flame, Target, Award, Play, RotateCcw, Copy, Check, ChevronRight } from 'lucide-react';
+import { Swords, Shield, Zap, Sparkles, Flame, Target, Award, Play, RotateCcw, Copy, Check, ChevronRight, Crosshair, Dna, Trophy, Lightbulb, Star } from 'lucide-react';
 import { getEffectiveFruitList, FruitItem } from '../data/bloxFruitsData';
 import { FIGHTING_STYLES, ACCESSORIES_DATA, RACES_DATA, COMBO_PRESETS, ComboPreset } from '../data/bloxExtraData';
 import { soundFX } from '../utils/audio';
@@ -49,19 +49,19 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
 
   // Available Guns
   const GUN_OPTIONS = [
-    { name: 'Soul Guitar', rarity: 'Mythical', type: 'Stun / Ken Break', icon: '🎸⚡' },
-    { name: 'Acidum Rifle', rarity: 'Rare', type: 'Acid Stun / Rapid', icon: '🔫🧪' },
-    { name: 'Kabucha', rarity: 'Legendary', type: 'Wind Knockback', icon: '🎯💨' },
-    { name: 'Serpent Bow', rarity: 'Legendary', type: 'Poison Snare', icon: '🏹🐍' },
-    { name: 'Bizarre Rifle', rarity: 'Rare', type: 'Explosive Burst', icon: '💥' }
+    { name: 'Soul Guitar', rarity: 'Mythical', type: 'Stun / Ken Break' },
+    { name: 'Acidum Rifle', rarity: 'Rare', type: 'Acid Stun / Rapid' },
+    { name: 'Kabucha', rarity: 'Legendary', type: 'Wind Knockback' },
+    { name: 'Serpent Bow', rarity: 'Legendary', type: 'Poison Snare' },
+    { name: 'Bizarre Rifle', rarity: 'Rare', type: 'Explosive Burst' }
   ];
 
   // Calculate Synergy & Build Archetype
   const totalStats = stats.melee + stats.defense + stats.sword + stats.gun + stats.fruit;
   let archetype = 'Hybrid Warrior';
-  if (stats.sword >= 2000 && stats.melee >= 2000) archetype = '⚔️ Sword Main Hunter';
-  else if (stats.fruit >= 2000 && stats.melee >= 2000) archetype = '🍎 Fruit Main Caster';
-  else if (stats.gun >= 2000) archetype = '🎯 Sniper Marksman';
+  if (stats.sword >= 2000 && stats.melee >= 2000) archetype = 'Sword Main Hunter';
+  else if (stats.fruit >= 2000 && stats.melee >= 2000) archetype = 'Fruit Main Caster';
+  else if (stats.gun >= 2000) archetype = 'Sniper Marksman';
 
   let synergyScore = 85;
   if (selectedSword.id === 'dog-blade' && selectedStyle.id === 'godhuman') synergyScore += 10;
@@ -173,7 +173,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               {/* Slot 1: Fruit */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span>🍎 Blox Fruit</span>
+                  <span className="flex items-center gap-1.5"><Flame className="w-3.5 h-3.5 text-amber-400" /> Blox Fruit</span>
                   <span className="text-cyan-400 font-bold">{selectedFruit.rarity}</span>
                 </div>
                 <select
@@ -186,7 +186,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 >
                   {fruits.map(f => (
                     <option key={f.id} value={f.id}>
-                      {f.imageEmoji} {f.name} ({f.pvpTier} PvP)
+                      {f.name} ({f.pvpTier} PvP)
                     </option>
                   ))}
                 </select>
@@ -200,7 +200,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               {/* Slot 2: Fighting Style */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span>🥊 Fighting Style</span>
+                  <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-amber-400" /> Fighting Style</span>
                   <span className="text-amber-400 font-bold">{selectedStyle.generation}</span>
                 </div>
                 <select
@@ -213,7 +213,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 >
                   {FIGHTING_STYLES.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.icon} {s.name} ({s.sea})
+                      {s.name} ({s.sea})
                     </option>
                   ))}
                 </select>
@@ -227,7 +227,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               {/* Slot 3: Sword */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span>🗡️ Sword</span>
+                  <span className="flex items-center gap-1.5"><Swords className="w-3.5 h-3.5 text-sky-400" /> Sword</span>
                   <span className="text-sky-400 font-bold">{selectedSword.rarity}</span>
                 </div>
                 <select
@@ -240,7 +240,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 >
                   {swords.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.imageEmoji} {s.name} {s.id === 'dog-blade' ? '🔥 (Event)' : ''}
+                      {s.name} {s.id === 'dog-blade' ? '(Event)' : ''}
                     </option>
                   ))}
                 </select>
@@ -254,7 +254,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               {/* Slot 4: Gun */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span>🎯 Gun / Stun Tool</span>
+                  <span className="flex items-center gap-1.5"><Crosshair className="w-3.5 h-3.5 text-purple-400" /> Gun / Stun Tool</span>
                   <span className="text-purple-400 font-bold">Support</span>
                 </div>
                 <select
@@ -264,7 +264,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 >
                   {GUN_OPTIONS.map(g => (
                     <option key={g.name} value={g.name}>
-                      {g.icon} {g.name} ({g.type})
+                      {g.name} ({g.type})
                     </option>
                   ))}
                 </select>
@@ -277,7 +277,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               {/* Slot 5: Race */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span>🧬 Race</span>
+                  <span className="flex items-center gap-1.5"><Dna className="w-3.5 h-3.5 text-emerald-400" /> Race</span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setIsV4Awakened(!isV4Awakened)}
@@ -299,7 +299,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 >
                   {RACES_DATA.map(r => (
                     <option key={r.id} value={r.id}>
-                      {r.icon} {r.name} ({r.pvpTier} Tier)
+                      {r.name} ({r.pvpTier} Tier)
                     </option>
                   ))}
                 </select>
@@ -311,8 +311,11 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               {/* Slot 6: Accessory */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-                  <span>🧣 Accessory</span>
-                  <span className="text-amber-400 font-bold">★ {selectedAccessory.pvpRating}/10</span>
+                  <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-pink-400" /> Accessory</span>
+                  <span className="text-amber-400 font-bold flex items-center gap-0.5">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <span>{selectedAccessory.pvpRating}/10</span>
+                  </span>
                 </div>
                 <select
                   value={selectedAccessory.id}
@@ -324,7 +327,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 >
                   {ACCESSORIES_DATA.map(a => (
                     <option key={a.id} value={a.id}>
-                      {a.icon} {a.name} ({a.sea})
+                      {a.name} ({a.sea})
                     </option>
                   ))}
                 </select>
@@ -389,7 +392,7 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
                 </div>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl">
-                🏆
+                <Trophy className="w-6 h-6 text-amber-400" />
               </div>
             </div>
 
@@ -466,8 +469,9 @@ export const BuildCrafter: React.FC<BuildCrafterProps> = ({ onAskSenseiAboutBuil
               })}
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-xs text-slate-400">
-              💡 <strong className="text-slate-200">Sensei Tip:</strong> {matchingPreset.tips}
+            <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <span><strong className="text-slate-200">Sensei Tip:</strong> {matchingPreset.tips}</span>
             </div>
           </div>
         </div>

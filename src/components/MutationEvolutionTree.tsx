@@ -50,7 +50,7 @@ export const MutationEvolutionTree: React.FC<MutationEvolutionTreeProps> = ({
               <span>Awakening & Evolution Skill Trees</span>
             </div>
             <h2 className="text-2xl font-black text-white flex items-center gap-2">
-              <span>Branching Fruit Evolution & V3 Awakenings 🌳</span>
+              <span>Branching Fruit Evolution & V3 Awakenings</span>
             </h2>
             <p className="text-xs md:text-sm text-slate-300 max-w-2xl mt-1">
               Explore step-by-step awakening progressions from Base form to Tier-3 Celestial Apex. Inspect fragment costs, unlockable passives, and load any evolution stage directly into the forge.
@@ -71,7 +71,7 @@ export const MutationEvolutionTree: React.FC<MutationEvolutionTreeProps> = ({
                 : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'
             }`}
           >
-            <span className="text-lg">{tree.emoji}</span>
+            <Sparkles className="w-4 h-4 text-purple-300" />
             <span>{tree.fruitName}</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-950 text-purple-300 font-mono">
               {tree.tier}
@@ -87,7 +87,9 @@ export const MutationEvolutionTree: React.FC<MutationEvolutionTreeProps> = ({
           <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">{selectedTree.emoji}</span>
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-amber-400" />
+                </div>
                 <div>
                   <h3 className="text-lg font-black text-white">{selectedTree.fruitName} Awakening Path</h3>
                   <div className="text-xs text-indigo-300 font-semibold">{selectedTree.element}</div>
@@ -113,12 +115,12 @@ export const MutationEvolutionTree: React.FC<MutationEvolutionTreeProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-black shrink-0 ${
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black shrink-0 ${
                         isSelected
                           ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40'
                           : 'bg-slate-950 text-slate-400 border border-slate-800'
                       }`}>
-                        {node.icon}
+                        <Zap className="w-5 h-5 text-cyan-400" />
                       </div>
 
                       <div className="space-y-0.5">
@@ -157,7 +159,7 @@ export const MutationEvolutionTree: React.FC<MutationEvolutionTreeProps> = ({
               <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                 {selectedNode.stage} Blueprint
               </span>
-              <span className="text-2xl">{selectedNode.icon}</span>
+              <Crown className="w-5 h-5 text-amber-400" />
             </div>
 
             <div>

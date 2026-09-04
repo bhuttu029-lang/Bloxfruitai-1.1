@@ -23,7 +23,10 @@ import {
   Crown,
   Dices,
   GitBranch,
-  ArrowRight
+  ArrowRight,
+  Target,
+  Gamepad2,
+  Waves
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundFX } from '../utils/audio';
@@ -218,22 +221,22 @@ export const MutationLab: React.FC<MutationLabProps> = ({ onAskSensei }) => {
 
   const handleCopyCardText = () => {
     soundFX.playPop();
-    const text = `🔥 BLOX FRUITS MUTATION LAB SPECIFICATION 🔥
+    const text = `BLOX FRUITS MUTATION LAB SPECIFICATION
 Name: ${customName} [${customTitle}]
 Element: ${customElement}
 Aura Theme: ${selectedAura.name}
 Base Fruits: ${fruit1.name} + ${fruit2.name}
 
-⚔️ MOVESET:
+MOVESET:
 ${moves.map(m => `• [${m.key}] ${m.name} - ${m.damage} DMG | CD: ${m.cooldown}s | ${m.kenBreak} | ${m.hitboxType}`).join('\n')}
 
-🛡️ PASSIVE TRAITS:
+PASSIVE TRAITS:
 ${selectedPassives.map(pid => {
   const p = PASSIVE_TRAITS_LIST.find(x => x.id === pid);
-  return p ? `• ${p.icon} ${p.name}: ${p.description}` : '';
+  return p ? `• ${p.name}: ${p.description}` : '';
 }).join('\n')}
 
-📜 LORE:
+LORE:
 ${customLore}`;
 
     navigator.clipboard.writeText(text);
@@ -254,11 +257,12 @@ ${customLore}`;
         <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/20 border border-pink-400/40 text-pink-300 text-xs font-black uppercase tracking-wider">
-              <FlaskConical className="w-3.5 h-3.5 text-pink-300" />
-              <span>🎮 Mini-Game • Boss Raid Combat & Fusion RPG Arena</span>
+              <Gamepad2 className="w-3.5 h-3.5 text-pink-300" />
+              <span>Mini-Game • Boss Raid Combat & Fusion RPG Arena</span>
             </div>
             <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
-              Fruit Mutation Game • Combat Arena ⚔️
+              <span>Fruit Mutation Game • Combat Arena</span>
+              <Swords className="w-7 h-7 text-purple-400" />
             </h1>
             <p className="text-sm md:text-base text-slate-300 leading-relaxed">
               Play real-time Boss Raid Gauntlets, spin the Catalyst Gacha Wheel, simulate hybrid dual-fruit battle movesets, or level up Fruit Awakening Evolution Trees.
@@ -390,12 +394,13 @@ ${customLore}`;
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase">
-                      {preset.fusionType === 'hybrid' ? '🧬 Hybrid Fusion' : '⚡ Custom Awakening'}
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase flex items-center gap-1">
+                      {preset.fusionType === 'hybrid' ? <FlaskConical className="w-3 h-3 text-cyan-400" /> : <Sparkles className="w-3 h-3 text-amber-400" />}
+                      <span>{preset.fusionType === 'hybrid' ? 'Hybrid Fusion' : 'Custom Awakening'}</span>
                     </span>
-                    <div className="flex items-center gap-1 text-xl">
-                      <span>{preset.fruit1Emoji}</span>
-                      {preset.fruit2Emoji && <span>+ {preset.fruit2Emoji}</span>}
+                    <div className="flex items-center gap-1 text-xs font-bold text-slate-400">
+                      <span className="text-cyan-300">{preset.fruit1Name}</span>
+                      {preset.fruit2Name && <span>+ <span className="text-purple-300">{preset.fruit2Name}</span></span>}
                     </div>
                   </div>
 
@@ -695,7 +700,7 @@ ${customLore}`;
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{trait.icon}</span>
+                        <Zap className="w-4 h-4 text-emerald-400" />
                         <div className="font-bold text-xs text-white">{trait.name}</div>
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
@@ -764,7 +769,8 @@ ${customLore}`;
                   {/* Verdict & Stability Analysis */}
                   <div className="p-3.5 rounded-xl bg-slate-950/90 border border-purple-500/30 text-xs space-y-2 text-slate-300">
                     <div className="flex items-center gap-1.5 font-bold text-white">
-                      <span>🛡️ Solas AI Verdict:</span>
+                      <Shield className="w-4 h-4 text-cyan-400" />
+                      <span>Solas AI Verdict:</span>
                       <span className={calculatedFallRisk > 25 ? 'text-rose-400' : 'text-emerald-400'}>
                         {calculatedFallRisk > 25 ? 'High Volatility Warning!' : 'Stable Combat Build'}
                       </span>
@@ -797,7 +803,9 @@ ${customLore}`;
 
               {/* Dummy Health & Combo Display */}
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-center relative">
-                <div className="text-4xl my-1 animate-bounce">🤖</div>
+                <div className="flex justify-center my-2">
+                  <Target className="w-10 h-10 text-cyan-400 animate-pulse" />
+                </div>
                 <div className="text-xs font-bold text-slate-300">Level 2800 Obsidian Training Dummy (Update 27.4 Max)</div>
 
                 {/* Dummy HP Bar */}
@@ -823,7 +831,7 @@ ${customLore}`;
                       className="font-black text-sm drop-shadow-md"
                       style={{ color: h.color }}
                     >
-                      💥 -{h.damage.toLocaleString()} DMG! ({h.text})
+                      -{h.damage.toLocaleString()} DMG! ({h.text})
                     </motion.div>
                   ))}
                 </div>
@@ -891,8 +899,9 @@ ${customLore}`;
             {/* EXPORTABLE MUTATION STAT CARD & RAID LAUNCHER */}
             <div className={`p-6 rounded-2xl bg-slate-950 border-2 ${selectedAura.glowClass} shadow-2xl space-y-4 relative overflow-hidden`}>
               <div className="flex items-center justify-between">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-500/20 text-purple-300 border border-purple-500/50 uppercase">
-                  🏆 Mythical Mutation Card
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-purple-500/20 text-purple-300 border border-purple-500/50 uppercase flex items-center gap-1.5">
+                  <Crown className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Mythical Mutation Card</span>
                 </span>
                 <button
                   onClick={handleCopyCardText}
@@ -920,7 +929,7 @@ ${customLore}`;
                     const p = PASSIVE_TRAITS_LIST.find(x => x.id === pid);
                     return p ? (
                       <span key={`${pid}-${idx}`} className="px-2 py-0.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs font-bold flex items-center gap-1">
-                        <span>{p.icon}</span>
+                        <Zap className="w-3 h-3 text-emerald-400" />
                         <span>{p.name.split('(')[0]}</span>
                       </span>
                     ) : null;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FruitItem, getEffectiveFruitList, getUserValueOverrides, formatValueNumber } from '../data/bloxFruitsData';
-import { X, Search, Sparkles, Filter, Swords, Gift, Flame } from 'lucide-react';
+import { X, Search, Sparkles, Filter, Swords, Gift, Flame, Star } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 import { SafeFruitImage } from './SafeFruitImage';
 
@@ -275,7 +275,8 @@ export const ItemSelectorModal: React.FC<ItemSelectorModalProps> = ({
                       {formatValueNumber(val)}
                     </span>
                     <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">
-                      ★ {item.demand}/10
+                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                      <span>{item.demand}/10</span>
                     </span>
                   </div>
                 </button>

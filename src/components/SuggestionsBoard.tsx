@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lightbulb, Send, ThumbsUp, MessageSquare, Sparkles, CheckCircle, Shield, Trash2 } from 'lucide-react';
+import { Lightbulb, Send, ThumbsUp, MessageSquare, Sparkles, CheckCircle, Shield, Trash2, User } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 
 export interface VisitorSuggestion {
@@ -192,11 +192,11 @@ export const SuggestionsBoard: React.FC = () => {
                   onChange={e => setCategory(e.target.value as any)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-500 font-medium"
                 >
-                  <option value="Mutation Idea">🧬 Mutation Idea</option>
-                  <option value="PvP Balance">⚔️ PvP Balance</option>
-                  <option value="Feature">✨ New Feature</option>
-                  <option value="Trade Hub">💰 Trade Hub</option>
-                  <option value="General">🌐 General</option>
+                  <option value="Mutation Idea">Mutation Idea</option>
+                  <option value="PvP Balance">PvP Balance</option>
+                  <option value="Feature">New Feature</option>
+                  <option value="Trade Hub">Trade Hub</option>
+                  <option value="General">General</option>
                 </select>
               </div>
 
@@ -275,8 +275,8 @@ export const SuggestionsBoard: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-cyan-400 font-black text-sm">
-                        🏴‍☠️
+                      <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-cyan-400">
+                        <User className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="font-bold text-white text-sm">{sug.author}</div>

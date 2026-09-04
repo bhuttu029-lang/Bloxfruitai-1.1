@@ -19,7 +19,9 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  Check
+  Check,
+  Globe,
+  Circle
 } from 'lucide-react';
 import {
   BLOX_CHECKLIST_ITEMS,
@@ -190,7 +192,7 @@ export const MyChecklist: React.FC<MyChecklistProps> = ({ onAskSensei }) => {
   // Copy share summary
   const handleCopySummary = () => {
     soundFX.playPop();
-    const text = `🏆 Blox Fruits Collection Tracker\n` +
+    const text = `Blox Fruits Collection Tracker\n` +
       `Overall Completion: ${totalCompletedCount}/${totalItemsCount} (${overallProgressPercentage}%)\n\n` +
       `• Weapons: ${categoryStats.weapons?.completed}/${categoryStats.weapons?.total} (${categoryStats.weapons?.percentage}%)\n` +
       `• Fighting Styles: ${categoryStats.fighting_styles?.completed}/${categoryStats.fighting_styles?.total} (${categoryStats.fighting_styles?.percentage}%)\n` +
@@ -336,7 +338,7 @@ export const MyChecklist: React.FC<MyChecklistProps> = ({ onAskSensei }) => {
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-base">🌐</span>
+            <Globe className="w-4 h-4 text-cyan-400" />
             <span className="text-xs font-black text-cyan-300">{overallProgressPercentage}%</span>
           </div>
           <div className="font-extrabold text-xs text-white">All Categories</div>
@@ -493,8 +495,8 @@ export const MyChecklist: React.FC<MyChecklistProps> = ({ onAskSensei }) => {
       {/* Checklist Items Grid */}
       {filteredItems.length === 0 ? (
         <div className="p-12 text-center bg-slate-900/50 border border-slate-800 rounded-3xl space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-2xl mx-auto">
-            🔍
+          <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+            <Search className="w-6 h-6" />
           </div>
           <h3 className="text-lg font-bold text-white">No Items Match Your Filters</h3>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
@@ -584,7 +586,17 @@ export const MyChecklist: React.FC<MyChecklistProps> = ({ onAskSensei }) => {
                       isCompleted ? 'text-emerald-400 hover:text-emerald-300' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    {isCompleted ? '✅ Unlocked' : '⭕ Mark Complete'}
+                    {isCompleted ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Unlocked</span>
+                      </>
+                    ) : (
+                      <>
+                        <Circle className="w-3.5 h-3.5" />
+                        <span>Mark Complete</span>
+                      </>
+                    )}
                   </button>
 
                   <button

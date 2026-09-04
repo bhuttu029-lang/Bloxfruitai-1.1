@@ -22,6 +22,8 @@ import {
   RefreshCw,
   CheckCircle2,
   ShieldAlert,
+  Globe,
+  Ticket,
 } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 import { SafeFruitImage } from './SafeFruitImage';
@@ -155,7 +157,8 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>🌐 Live Web: BloxFruitsValues.com (Main) + FruityBlox (Backup)</span>
+            <Globe className="w-3.5 h-3.5" />
+            <span>Live Web: BloxFruitsValues.com (Main) + FruityBlox (Backup)</span>
           </div>
           <span className="text-slate-400 hidden sm:inline">
             Synced {lastSyncedTime} • Dog Blade (580M), Kitsune (145M), Dragon Rework (180M)
@@ -302,21 +305,28 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
                 soundFX.playPop();
                 setCategory(c);
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 category === c
                   ? 'bg-slate-700 text-white border border-slate-600'
                   : 'bg-slate-950/70 text-slate-400 hover:text-slate-200 border border-slate-800'
               }`}
             >
-              {c === 'all'
-                ? '🌐 All Items'
-                : c === 'fruit'
-                ? '🍎 Physical Fruits'
-                : c === 'permanent'
-                ? '✨ Permanent Fruits'
-                : c === 'sword'
-                ? '🗡️ Swords (Dog Blade, CDK)'
-                : '🎟️ Gamepasses (Notifier, Passes)'}
+              {c === 'all' && <Globe className="w-3.5 h-3.5" />}
+              {c === 'fruit' && <Flame className="w-3.5 h-3.5 text-amber-400" />}
+              {c === 'permanent' && <Sparkles className="w-3.5 h-3.5 text-purple-400" />}
+              {c === 'sword' && <Swords className="w-3.5 h-3.5 text-cyan-400" />}
+              {c === 'gamepass' && <Ticket className="w-3.5 h-3.5 text-pink-400" />}
+              <span>
+                {c === 'all'
+                  ? 'All Items'
+                  : c === 'fruit'
+                  ? 'Physical Fruits'
+                  : c === 'permanent'
+                  ? 'Permanent Fruits'
+                  : c === 'sword'
+                  ? 'Swords (Dog Blade, CDK)'
+                  : 'Gamepasses (Notifier, Passes)'}
+              </span>
             </button>
           ))}
         </div>

@@ -19,7 +19,8 @@ import {
   Flame,
   Layers,
   MapPin,
-  Coins
+  Coins,
+  Moon
 } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 
@@ -88,8 +89,8 @@ export const MasterKnowledgeFaq: React.FC<MasterKnowledgeFaqProps> = ({ onAskSen
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 border border-purple-400/40 flex items-center justify-center text-xl shadow-lg shadow-purple-500/20">
-                <span>🧠</span>
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 border border-purple-400/40 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+                <BookOpen className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
@@ -171,7 +172,12 @@ export const MasterKnowledgeFaq: React.FC<MasterKnowledgeFaqProps> = ({ onAskSen
                     : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
                 }`}
               >
-                <span>{race.raceId === 'cyborg' ? '⚡' : race.raceId === 'shark' ? '🦈' : race.raceId === 'angel' ? '🕊️' : race.raceId === 'human' ? '🩸' : race.raceId === 'ghoul' ? '🦇' : '⚡'}</span>
+                {race.raceId === 'cyborg' ? <Zap className="w-4 h-4 text-cyan-400" /> :
+                 race.raceId === 'shark' ? <Shield className="w-4 h-4 text-blue-400" /> :
+                 race.raceId === 'angel' ? <Sparkles className="w-4 h-4 text-amber-300" /> :
+                 race.raceId === 'human' ? <Flame className="w-4 h-4 text-rose-400" /> :
+                 race.raceId === 'ghoul' ? <Moon className="w-4 h-4 text-purple-400" /> :
+                 <Zap className="w-4 h-4 text-emerald-400" />}
                 <span>{race.raceName}</span>
               </button>
             ))}
@@ -307,9 +313,9 @@ export const MasterKnowledgeFaq: React.FC<MasterKnowledgeFaqProps> = ({ onAskSen
                   <span className="text-sm font-black text-white">{activeRaceGuide.gear5.name}</span>
                 </div>
                 <p className="text-xs text-slate-300">{activeRaceGuide.gear5.description}</p>
-                <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
-                  <span>⚔️ <strong className="text-slate-200">PvP Verdict:</strong> {activeRaceGuide.metaPvPVerdict}</span>
-                  <span>🌾 <strong className="text-slate-200">Grind:</strong> {activeRaceGuide.metaGrindVerdict}</span>
+                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+                  <span className="flex items-center gap-1.5"><Swords className="w-3.5 h-3.5 text-rose-400" /><strong className="text-slate-200">PvP Verdict:</strong> {activeRaceGuide.metaPvPVerdict}</span>
+                  <span className="flex items-center gap-1.5"><Compass className="w-3.5 h-3.5 text-emerald-400" /><strong className="text-slate-200">Grind:</strong> {activeRaceGuide.metaGrindVerdict}</span>
                 </div>
               </div>
               <span className="text-xs font-black text-amber-300 bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-800/60 whitespace-nowrap">
