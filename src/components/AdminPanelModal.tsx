@@ -15,9 +15,6 @@ import {
   Search, 
   Database,
   Layers,
-  UserCheck,
-  Lock,
-  LogOut,
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,9 +22,6 @@ import {
   FruitItem, 
   formatValueNumber, 
   getEffectiveFruitList, 
-  getAdminAuthStatus, 
-  setAdminAuthStatus, 
-  loginAdminWithServer,
   saveFullItemOverride, 
   addCustomFruitItem, 
   removeUserValueOverride,
@@ -50,13 +44,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   onClose,
   adminUsername = 'Admin'
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => getAdminAuthStatus());
   const [adminUser, setAdminUser] = useState<string>(adminUsername);
-  const [loginUsernameInput, setLoginUsernameInput] = useState<string>('');
-  const [loginPasswordInput, setLoginPasswordInput] = useState<string>('');
-  const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
-
   const [activeTab, setActiveTab] = useState<AdminTab>('edit_values');
   
   // Edit Tab State
@@ -127,50 +115,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const auth = getAdminAuthStatus();
-      setIsAuthenticated(auth);
       if (adminUsername && adminUsername !== 'Admin') {
         setAdminUser(adminUsername);
       }
-      if (auth) {
-        reloadData();
-      }
-    } else {
-      setLoginError(null);
-      setLoginPasswordInput('');
+      reloadData();
     }
   }, [isOpen, adminUsername]);
-
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const u = loginUsernameInput.trim();
-    const p = loginPasswordInput.trim();
-    if (!u || !p) {
-      setLoginError('Both admin username and password are required.');
-      soundFX.playPop();
-      return;
-    }
-    setIsLoggingIn(true);
-    setLoginError(null);
-    try {
-      const res = await loginAdminWithServer(u, p);
-      if (res.success) {
-        setAdminAuthStatus(true);
-        setIsAuthenticated(true);
-        setAdminUser(res.account?.displayName || res.account?.username || u);
-        soundFX.playWin();
-        reloadData();
-      } else {
-        soundFX.playPop();
-        setLoginError(res.error || 'Access Denied: Invalid admin username or password.');
-      }
-    } catch {
-      soundFX.playPop();
-      setLoginError('Verification failed. Check network or server status.');
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
 
   useEffect(() => {
     const handleDataUpdate = () => {
@@ -305,131 +255,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setTimeout(() => setSaveSuccessMsg(null), 4000);
   };
 
-  const handleLogout = () => {
-    soundFX.playPop();
-    setAdminAuthStatus(false);
-    setIsAuthenticated(false);
-    setLoginPasswordInput('');
-    onClose();
-  };
-
   if (!isOpen) return null;
-
-  if (!isAuthenticated) {
-    return (
-      <AnimatePresence>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-slate-900 border border-blue-500/40 rounded-3xl shadow-2xl shadow-blue-950/70 overflow-hidden my-auto text-slate-100 flex flex-col"
-          >
-            {/* Header */}
-            <div className="p-5 sm:p-6 bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border-b border-blue-500/30 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-white tracking-tight">Staff Authentication</h3>
-                  <p className="text-xs text-blue-300 font-mono">Restricted Admin Access</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  soundFX.playPop();
-                  onClose();
-                }}
-                className="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Login Form */}
-            <form onSubmit={handleAdminLogin} className="p-6 space-y-4">
-              <div className="p-3 rounded-xl bg-blue-950/40 border border-blue-500/30 text-xs text-slate-300 flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                <span>
-                  Admin & Moderator credentials required. Unauthorized access attempts are monitored and blocked.
-                </span>
-              </div>
-
-              {loginError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 font-semibold flex items-center gap-2">
-                  <X className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>{loginError}</span>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Admin Username
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={loginUsernameInput}
-                    onChange={(e) => setLoginUsernameInput(e.target.value)}
-                    placeholder="e.g. bhuttu or Moderator ID"
-                    className="w-full px-3.5 py-2.5 pl-10 rounded-xl bg-slate-950 border border-slate-700 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-500 font-medium"
-                    autoFocus
-                    required
-                  />
-                  <UserCheck className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                  Admin Password / Passkey
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={loginPasswordInput}
-                    onChange={(e) => setLoginPasswordInput(e.target.value)}
-                    placeholder="Enter admin password..."
-                    className="w-full px-3.5 py-2.5 pl-10 rounded-xl bg-slate-950 border border-slate-700 focus:border-blue-500 focus:outline-none text-sm text-white placeholder-slate-500 font-mono"
-                    required
-                  />
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center gap-2">
-                <button
-                  type="submit"
-                  disabled={isLoggingIn}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-blue-950 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isLoggingIn ? (
-                    <span>Verifying...</span>
-                  ) : (
-                    <>
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Authenticate As Staff</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundFX.playPop();
-                    onClose();
-                  }}
-                  className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      </AnimatePresence>
-    );
-  }
 
   return (
     <AnimatePresence>
@@ -460,14 +286,6 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleLogout}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
-                title="Log out of admin session"
-              >
-                <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
               <button
                 onClick={() => {
                   soundFX.playPop();
