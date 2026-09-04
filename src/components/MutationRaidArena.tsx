@@ -12,10 +12,7 @@ import {
   Heart,
   ChevronRight,
   Eye,
-  Crosshair,
-  Gift,
-  Coins,
-  Skull
+  Crosshair
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundFX } from '../utils/audio';
@@ -74,12 +71,12 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
     setBattleLogs([
       {
         id: Date.now(),
-        text: `Raid Initiated: ${boss.name} (${boss.title}) emerged from ${boss.sea}!`,
+        text: `⚔️ Raid Initiated: ${boss.name} (${boss.title}) emerged from ${boss.sea}!`,
         type: 'system'
       },
       {
         id: Date.now() + 1,
-        text: `Entering arena with active mutation: "${customMutationName}" [${customMutationElement}]`,
+        text: `⚡ Entering arena with active mutation: "${customMutationName}" [${customMutationElement}]`,
         type: 'system'
       }
     ]);
@@ -132,7 +129,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
           ...prev.slice(-15),
           {
             id: logId,
-            text: `Observation Haki Activated! Dodged ${selectedBoss.name}'s "${atk.name}" (${kenCharges - 1} Ken left)!`,
+            text: `👁️ Observation Haki Activated! Dodged ${selectedBoss.avatarEmoji} ${selectedBoss.name}'s "${atk.name}" (${kenCharges - 1} Ken left)!`,
             type: 'dodge'
           }
         ]);
@@ -155,7 +152,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
               ...l,
               {
                 id: Date.now() + 2,
-                text: `Defeated! You were overpowered by ${selectedBoss.name}. Upgrade your mutation and retry!`,
+                text: `💀 Defeated! You were overpowered by ${selectedBoss.name}. Upgrade your mutation and retry!`,
                 type: 'system'
               }
             ]);
@@ -168,7 +165,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
           ...prev.slice(-15),
           {
             id: logId,
-            text: `${selectedBoss.name} hit you with "${atk.name}" for -${rawDamage.toLocaleString()} DMG! ${atk.kenBypass ? '(Ken Bypassed!)' : ''}`,
+            text: `💥 ${selectedBoss.avatarEmoji} ${selectedBoss.name} hit you with "${atk.name}" for -${rawDamage.toLocaleString()} DMG! ${atk.kenBypass ? '(Ken Bypassed!)' : ''}`,
             type: 'boss'
           }
         ]);
@@ -208,7 +205,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
           ...l,
           {
             id: Date.now() + 5,
-            text: `ENRAGE PHASE TRIGGERED: ${selectedBoss.name} entered [${selectedBoss.phase2Name}]! +35% ATK speed & damage!`,
+            text: `⚠️ ENRAGE PHASE TRIGGERED: ${selectedBoss.name} entered [${selectedBoss.phase2Name}]! +35% ATK speed & damage!`,
             type: 'system'
           }
         ]);
@@ -223,7 +220,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
           ...l,
           {
             id: Date.now() + 10,
-            text: `RAID CLEARED! You vanquished ${selectedBoss.name}! Claimed ${selectedBoss.rewards.item} & +${selectedBoss.rewards.fragments.toLocaleString()} Fragments!`,
+            text: `🏆 RAID CLEARED! You vanquished ${selectedBoss.name}! Claimed ${selectedBoss.rewards.item} & +${selectedBoss.rewards.fragments.toLocaleString()} Fragments!`,
             type: 'system'
           }
         ]);
@@ -234,7 +231,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
     const hitId = Date.now();
     setRecentFloatingHits(prev => [
       ...prev.slice(-4),
-      { id: hitId, text: `-${dmg.toLocaleString()} DMG (${move.name})`, isCrit }
+      { id: hitId, text: `💥 -${dmg.toLocaleString()} DMG (${move.name})`, isCrit }
     ]);
     setTimeout(() => setRecentFloatingHits(prev => prev.filter(h => h.id !== hitId)), 1500);
 
@@ -242,7 +239,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
       ...prev.slice(-15),
       {
         id: hitId,
-        text: `You unleashed [${move.key}] ${move.name} dealing ${dmg.toLocaleString()} DMG! ${isCrit ? '(CRITICAL HIT!)' : ''}`,
+        text: `⚔️ You unleashed [${move.key}] ${move.name} dealing ${dmg.toLocaleString()} DMG! ${isCrit ? '🔥 CRITICAL HIT!' : ''}`,
         type: 'player'
       }
     ]);
@@ -257,7 +254,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
       ...prev,
       {
         id: Date.now(),
-        text: `Observation Haki fully focused & recharged to ${maxKenCharges} dodges!`,
+        text: `👁️ Observation Haki fully focused & recharged to ${maxKenCharges} dodges!`,
         type: 'dodge'
       }
     ]);
@@ -274,7 +271,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
               <span>Boss Raid Arena & Gauntlet Trial</span>
             </div>
             <h2 className="text-2xl font-black text-white flex items-center gap-2">
-              <span>Test Mutation in High-Stakes Boss Battles</span>
+              <span>Test Mutation in High-Stakes Boss Battles ⚔️</span>
             </h2>
             <p className="text-xs md:text-sm text-slate-300 max-w-2xl mt-1">
               Pit your forged mutation against the deadliest Blox Fruits raid bosses. Manage Observation Haki dodges, break boss shields, survive enrage phases, and secure legendary raid rewards.
@@ -371,8 +368,8 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
             <div className="py-8 px-4 rounded-xl bg-gradient-to-b from-slate-900/80 to-slate-950 border border-slate-800/80 text-center relative flex items-center justify-around">
               {/* Player Avatar */}
               <div className="space-y-1 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-cyan-500 flex items-center justify-center text-white mx-auto shadow-lg shadow-purple-500/30 ring-2 ring-white/20">
-                  <Sparkles className="w-8 h-8" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-cyan-500 flex items-center justify-center text-3xl mx-auto shadow-lg shadow-purple-500/30 ring-2 ring-white/20">
+                  🧙‍♂️
                 </div>
                 <div className="text-xs font-black text-white">{customMutationName.split(' ')[0]}</div>
                 <div className="text-[10px] text-cyan-300 font-bold">Player</div>
@@ -380,14 +377,14 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
 
               {/* VS Clash Icon */}
               <div className="flex flex-col items-center">
-                <span className="text-2xl font-black text-amber-400">VS</span>
+                <span className="text-2xl font-black text-amber-400 animate-pulse">⚡ VS ⚡</span>
                 <span className="text-[10px] text-slate-500 font-mono uppercase">Raid Battle</span>
               </div>
 
               {/* Boss Avatar */}
               <div className="space-y-1 text-center">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-700 to-rose-900 flex items-center justify-center text-white mx-auto shadow-lg shadow-red-500/30 ring-2 ring-red-500/50 ${isEnraged ? 'scale-110' : ''} transition-transform`}>
-                  <Skull className="w-8 h-8 text-rose-200" />
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-700 to-rose-900 flex items-center justify-center text-3xl mx-auto shadow-lg shadow-red-500/30 ring-2 ring-red-500/50 ${isEnraged ? 'scale-110' : ''} transition-transform`}>
+                  {selectedBoss.avatarEmoji}
                 </div>
                 <div className="text-xs font-black text-white">{selectedBoss.name.split(' ')[0]}</div>
                 <div className="text-[10px] text-rose-400 font-bold">Raid Boss</div>
@@ -453,15 +450,15 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
             {/* Victory / Defeat Modal Overlay */}
             {isVictory && (
               <div className="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-center space-y-3">
-                <Trophy className="w-10 h-10 text-amber-400 mx-auto" />
+                <div className="text-3xl">🏆👑</div>
                 <h4 className="text-base font-black text-emerald-300">RAID BOSS SLAIN!</h4>
                 <p className="text-xs text-slate-200">
                   Congratulations! Your mutation successfully shattered {selectedBoss.name}.
                 </p>
-                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs flex flex-wrap items-center justify-around font-mono gap-2">
-                  <span className="text-amber-400 font-bold flex items-center gap-1"><Gift className="w-3.5 h-3.5" /> {selectedBoss.rewards.item}</span>
-                  <span className="text-purple-300 flex items-center gap-1"><Sparkles className="w-3.5 h-3.5" /> +{selectedBoss.rewards.fragments.toLocaleString()} Frags</span>
-                  <span className="text-emerald-300 flex items-center gap-1"><Coins className="w-3.5 h-3.5" /> +${selectedBoss.rewards.beli.toLocaleString()}</span>
+                <div className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs flex items-center justify-around font-mono">
+                  <span className="text-amber-400 font-bold">🎁 {selectedBoss.rewards.item}</span>
+                  <span className="text-purple-300">💎 +{selectedBoss.rewards.fragments.toLocaleString()} Frags</span>
+                  <span className="text-emerald-300">💰 +${selectedBoss.rewards.beli.toLocaleString()}</span>
                 </div>
                 <button
                   onClick={() => handleStartBattle()}
@@ -474,7 +471,7 @@ export const MutationRaidArena: React.FC<MutationRaidArenaProps> = ({
 
             {isDefeat && (
               <div className="p-4 rounded-xl bg-rose-950/80 border border-rose-500/50 text-center space-y-3">
-                <Skull className="w-10 h-10 text-rose-400 mx-auto" />
+                <div className="text-3xl">💀☠️</div>
                 <h4 className="text-base font-black text-rose-300">YOU WERE DEFEATED!</h4>
                 <p className="text-xs text-slate-300">
                   The boss dealt critical damage before you could finish them off. Re-adjust your mutation passives and try again!

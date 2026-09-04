@@ -22,12 +22,7 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Plus,
-  Coffee,
-  Shield,
-  MessageSquare,
-  Scale,
-  Lightbulb
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundFX } from '../utils/audio';
@@ -200,7 +195,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
 
       dynamicSteps.push({
         stepNumber: dynamicSteps.length + 1,
-        title: `Final Milestone ➔ Acquire ${targetFruit.name}!`,
+        title: `Final Milestone ➔ Acquire ${targetFruit.name}! ${targetFruit.imageEmoji}`,
         giveItems: targetVal > 80000000 ? ['leopard', 'dough', 't-rex', 'buddha'] : ['spirit', 'buddha', 'portal'],
         receiveItems: [targetFruit.id],
         profitEstimate: '+$35M Value Goal Met',
@@ -213,32 +208,9 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
     }
 
     return dynamicSteps;
-  }, [customStartFruits, customTargetFruitId, effectiveFruits]);
+  }, [customStartFruits, customTargetFruitId]);
 
   const progressPercent = Math.round((currentJourneyCompletedSteps.length / selectedJourney.steps.length) * 100);
-
-  const renderJourneyIcon = (journey: PresetLadderJourney) => {
-    const targetItem = getFruit(journey.targetFruitId);
-    if (targetItem?.iconUrl) {
-      return <SafeFruitImage src={targetItem.iconUrl} alt={journey.title} className="w-6 h-6 object-contain" />;
-    }
-    switch (journey.iconName) {
-      case 'Zap': return <Zap className="w-5 h-5 text-amber-400" />;
-      case 'Flame': return <Flame className="w-5 h-5 text-rose-400" />;
-      case 'Compass': return <Compass className="w-5 h-5 text-cyan-400" />;
-      default: return <Sparkles className="w-5 h-5 text-indigo-400" />;
-    }
-  };
-
-  const renderHotspotIcon = (iconType: string) => {
-    switch (iconType) {
-      case 'Coffee': return <Coffee className="w-6 h-6 text-amber-400" />;
-      case 'Shield': return <Shield className="w-6 h-6 text-emerald-400" />;
-      case 'MessageSquare': return <MessageSquare className="w-6 h-6 text-blue-400" />;
-      case 'Scale': return <Scale className="w-6 h-6 text-purple-400" />;
-      default: return <MapPin className="w-6 h-6 text-indigo-400" />;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -254,7 +226,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
               <span>Trade Ladder & Profit Path Navigator</span>
             </div>
             <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
-              Zero to Kitsune Roadmap
+              Zero to Kitsune Roadmap 🪜
             </h1>
             <p className="text-sm md:text-base text-slate-300 leading-relaxed">
               Step-by-step algorithmic trade flipping paths. Learn how to transform starter drops into Mythicals like <span className="text-amber-300 font-bold">Kitsune, Dragon, and Perm Portal</span> without spending Robux.
@@ -339,9 +311,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 uppercase">
                         {journey.badge}
                       </span>
-                      <div className="w-7 h-7 rounded-xl bg-slate-800/80 flex items-center justify-center">
-                        {renderJourneyIcon(journey)}
-                      </div>
+                      <span className="text-2xl">{journey.targetEmoji}</span>
                     </div>
 
                     <h3 className="font-extrabold text-white text-base leading-snug line-clamp-2">
@@ -379,10 +349,8 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
           <div className="p-6 rounded-2xl bg-slate-900/80 border border-indigo-500/30 backdrop-blur-xl shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
-                    {renderJourneyIcon(selectedJourney)}
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{selectedJourney.targetEmoji}</span>
                   <h2 className="text-xl md:text-2xl font-black text-white">
                     {selectedJourney.title}
                   </h2>
@@ -395,7 +363,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
               <div className="flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => handleResetProgress(selectedJourney.id)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5"
                   title="Reset completed checkmarks for this journey"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
@@ -408,7 +376,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                       soundFX.playPop();
                       onAskSensei(`Help me with trading strategy for the "${selectedJourney.title}" path in Blox Fruits.`);
                     }}
-                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Ask AI Advice</span>
@@ -502,9 +470,8 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                           {step.title}
                         </h3>
 
-                        <p className="text-xs md:text-sm text-slate-300 leading-relaxed pt-1 flex items-start gap-1.5">
-                          <Lightbulb className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                          <span><strong className="text-amber-300">Haggling Tip:</strong> {step.strategyTip}</span>
+                        <p className="text-xs md:text-sm text-slate-300 leading-relaxed pt-1">
+                          💡 <strong className="text-amber-300">Haggling Tip:</strong> {step.strategyTip}
                         </p>
                       </div>
                     </div>
@@ -526,6 +493,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                                 alt={item?.name || fid}
                                 category={item?.category}
                                 rarity={item?.rarity}
+                                fallbackEmoji={item?.imageEmoji || '🍎'}
                                 className="w-4 h-4 object-contain"
                               />
                               <span>{item?.name || fid}</span>
@@ -551,6 +519,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                                 alt={item?.name || fid}
                                 category={item?.category}
                                 rarity={item?.rarity}
+                                fallbackEmoji={item?.imageEmoji || '✨'}
                                 className="w-4 h-4 object-contain"
                               />
                               <span>{item?.name || fid}</span>
@@ -623,19 +592,14 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                         key={`${fid}-${idx}`}
                         className="px-2.5 py-1 rounded-lg bg-indigo-950 border border-indigo-500/50 text-xs font-bold text-indigo-200 flex items-center gap-1.5"
                       >
-                        <SafeFruitImage
-                          src={f?.iconUrl}
-                          alt={f?.name || fid}
-                          category={f?.category}
-                          className="w-4 h-4 object-contain"
-                        />
+                        <span>{f?.imageEmoji || '🍎'}</span>
                         <span>{f?.name || fid}</span>
                         <button
                           onClick={() => {
                             soundFX.playPop();
                             setCustomStartFruits(prev => prev.filter(x => x !== fid));
                           }}
-                          className="hover:text-red-400 ml-1 text-slate-400 font-black cursor-pointer"
+                          className="hover:text-red-400 ml-1 text-slate-400 font-black"
                         >
                           ×
                         </button>
@@ -660,18 +624,13 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                             setCustomStartFruits(prev => [...prev, fruit.id]);
                           }
                         }}
-                        className={`px-2 py-1 rounded-lg text-xs font-medium border transition-all flex items-center gap-1 cursor-pointer ${
+                        className={`px-2 py-1 rounded-lg text-xs font-medium border transition-all flex items-center gap-1 ${
                           customStartFruits.includes(fruit.id)
                             ? 'bg-indigo-600 text-white border-indigo-400'
                             : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
                         }`}
                       >
-                        <SafeFruitImage
-                          src={fruit.iconUrl}
-                          alt={fruit.name}
-                          category={fruit.category}
-                          className="w-3.5 h-3.5 object-contain"
-                        />
+                        <span>{fruit.imageEmoji}</span>
                         <span>{fruit.name}</span>
                       </button>
                     ))}
@@ -690,14 +649,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                     const target = getFruit(customTargetFruitId) || effectiveFruits[0];
                     return (
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
-                          <SafeFruitImage
-                            src={target.iconUrl}
-                            alt={target.name}
-                            category={target.category}
-                            className="w-8 h-8 object-contain"
-                          />
-                        </div>
+                        <span className="text-3xl">{target.imageEmoji}</span>
                         <div>
                           <div className="font-black text-white text-base">{target.name}</div>
                           <div className="text-xs text-emerald-400 font-mono font-bold">
@@ -719,18 +671,13 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                           soundFX.playPop();
                           setCustomTargetFruitId(fruit.id);
                         }}
-                        className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all text-left truncate flex items-center gap-1.5 cursor-pointer ${
+                        className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all text-left truncate flex items-center gap-1.5 ${
                           customTargetFruitId === fruit.id
                             ? 'bg-emerald-600 text-white border-emerald-400 shadow-md'
                             : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
                         }`}
                       >
-                        <SafeFruitImage
-                          src={fruit.iconUrl}
-                          alt={fruit.name}
-                          category={fruit.category}
-                          className="w-3.5 h-3.5 object-contain shrink-0"
-                        />
+                        <span>{fruit.imageEmoji}</span>
                         <span className="truncate">{fruit.name}</span>
                       </button>
                     ))}
@@ -763,15 +710,11 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                       <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                         {step.profitEstimate}
                       </span>
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-500" />
-                        {step.timeEstimate}
-                      </span>
+                      <span className="text-xs text-slate-400">⏱️ {step.timeEstimate}</span>
                     </div>
                     <h4 className="text-base font-extrabold text-white">{step.title}</h4>
-                    <p className="text-xs text-slate-300 leading-relaxed flex items-start gap-1.5">
-                      <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                      <span><strong>Strategy:</strong> {step.strategyTip}</span>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      💡 <strong>Strategy:</strong> {step.strategyTip}
                     </p>
                   </div>
 
@@ -781,9 +724,8 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                       {step.giveItems.map((fid, i) => {
                         const it = getFruit(fid);
                         return (
-                          <span key={i} className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-white flex items-center gap-1">
-                            <SafeFruitImage src={it?.iconUrl} alt={it?.name || fid} className="w-3 h-3 object-contain" />
-                            <span>{it?.name || fid}</span>
+                          <span key={i} className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-white">
+                            {it?.imageEmoji || '🍎'} {it?.name || fid}
                           </span>
                         );
                       })}
@@ -796,9 +738,8 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
                       {step.receiveItems.map((fid, i) => {
                         const it = getFruit(fid);
                         return (
-                          <span key={i} className="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-200 font-bold flex items-center gap-1">
-                            <SafeFruitImage src={it?.iconUrl} alt={it?.name || fid} className="w-3 h-3 object-contain" />
-                            <span>{it?.name || fid}</span>
+                          <span key={i} className="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-200 font-bold">
+                            {it?.imageEmoji || '✨'} {it?.name || fid}
                           </span>
                         );
                       })}
@@ -833,9 +774,7 @@ export const TradeLadderNavigator: React.FC<TradeLadderNavigatorProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
-                    {renderHotspotIcon(tip.iconType)}
-                  </div>
+                  <span className="text-3xl">{tip.icon}</span>
                   <div>
                     <h3 className="font-extrabold text-white text-base">{tip.location}</h3>
                     <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">

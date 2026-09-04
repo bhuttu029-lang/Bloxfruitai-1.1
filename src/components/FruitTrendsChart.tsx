@@ -33,9 +33,7 @@ import {
   Zap,
   ArrowUpRight,
   Shield,
-  Layers,
-  Crown,
-  Swords
+  Layers
 } from 'lucide-react';
 
 export const FruitTrendsChart: React.FC = () => {
@@ -255,26 +253,23 @@ export const FruitTrendsChart: React.FC = () => {
             <button
               id="preset-grails-btn"
               onClick={() => applyPreset('holy-grails')}
-              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition-colors flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition-colors flex items-center gap-1"
             >
-              <Crown className="w-3.5 h-3.5 text-amber-400" />
-              <span>Top Holy Grails (6B Notifier / 3.5B Dragon / Dog Blade)</span>
+              👑 Top Holy Grails (6B Notifier / 3.5B Dragon / Dog Blade)
             </button>
             <button
               id="preset-dogblade-btn"
               onClick={() => applyPreset('dogblade-ecosystem')}
-              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition-colors flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition-colors flex items-center gap-1"
             >
-              <Swords className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Dog Blade & Swords Meta</span>
+              🐶 Dog Blade & Swords Meta
             </button>
             <button
               id="preset-mythicals-btn"
               onClick={() => applyPreset('mythicals')}
-              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 transition-colors flex items-center gap-1.5"
+              className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 transition-colors"
             >
-              <Flame className="w-3.5 h-3.5 text-purple-400" />
-              <span>Mythical Fruits</span>
+              🔥 Mythical Fruits
             </button>
           </div>
 
@@ -390,7 +385,7 @@ export const FruitTrendsChart: React.FC = () => {
                   stroke="#38bdf8"
                   strokeDasharray="4 4"
                   label={{
-                    value: 'Dog Blade Launch',
+                    value: '🐶 Dog Blade Launch',
                     position: 'top',
                     fill: '#38bdf8',
                     fontSize: 10,
@@ -436,7 +431,7 @@ export const FruitTrendsChart: React.FC = () => {
                   stroke="#38bdf8"
                   strokeDasharray="4 4"
                   label={{
-                    value: 'Dog Blade Launch',
+                    value: '🐶 Dog Blade Launch',
                     position: 'top',
                     fill: '#38bdf8',
                     fontSize: 10,
@@ -520,8 +515,7 @@ export const FruitTrendsChart: React.FC = () => {
       {/* Key Milestones & Dog Blade Update Timeline Card */}
       <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-4">
         <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-cyan-400" />
-          <span>Dog Blade Update Timeline & Market Milestones</span>
+          <span>🐕 Dog Blade Update Timeline & Market Milestones</span>
           <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
             Key Economic Shifts
           </span>

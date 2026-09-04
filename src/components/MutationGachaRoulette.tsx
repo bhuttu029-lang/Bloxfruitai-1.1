@@ -52,37 +52,37 @@ const MODIFIER_TRAITS = [
   {
     name: 'Abyssal Vacuum Singularity',
     description: 'Every hit creates micro black holes pulling in all enemies within 25 meters.',
-    icon: '',
+    icon: '🕳️',
     type: 'Blessing' as const
   },
   {
     name: 'Solar Plasma Overload',
     description: 'Deals +45% extra burn damage over 6 seconds, bypassing standard logia defense.',
-    icon: '',
+    icon: '☀️',
     type: 'Blessing' as const
   },
   {
     name: 'Glitch Temporal Stun',
     description: '15% chance on any hit to freeze the opponent in a time-dilation frame for 1.5s.',
-    icon: '',
+    icon: '⚡',
     type: 'Blessing' as const
   },
   {
     name: 'Leviathan Scale Armor',
     description: 'Water damage is completely negated; incoming sword & fruit damage reduced by 25%.',
-    icon: '',
+    icon: '🛡️',
     type: 'Blessing' as const
   },
   {
     name: 'Bloodthirsty Berserker',
     description: 'Damage increases by up to +60% as player health drops below 50%.',
-    icon: '',
+    icon: '🩸',
     type: 'Curse' as const
   },
   {
     name: 'Celestial God Aura',
     description: 'Breaks Observation Haki Ken dodges automatically on all basic and skill attacks.',
-    icon: '',
+    icon: '👑',
     type: 'Blessing' as const
   }
 ];
@@ -168,7 +168,7 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
         kenBreak: 'True Break',
         hitboxType: 'Giant AoE',
         masteryReq: 100,
-        iconEmoji: ''
+        iconEmoji: '🌀'
       },
       {
         key: 'V',
@@ -179,7 +179,7 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
         kenBreak: 'True Break',
         hitboxType: 'Domain Arena',
         masteryReq: 200,
-        iconEmoji: ''
+        iconEmoji: '👑'
       },
       {
         key: 'F',
@@ -190,7 +190,7 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
         kenBreak: 'None',
         hitboxType: 'Cone Wave',
         masteryReq: 1,
-        iconEmoji: ''
+        iconEmoji: '⚡'
       }
     ];
 
@@ -253,7 +253,7 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
               <span>Mutation Catalyst Gacha & Lucky Roulette</span>
             </div>
             <h2 className="text-2xl font-black text-white flex items-center gap-2">
-              <span>Spin for Rare & Celestial Mutants</span>
+              <span>Spin for Rare & Celestial Mutants 🎰</span>
             </h2>
             <p className="text-xs md:text-sm text-slate-300 max-w-2xl mt-1">
               Harness the quantum catalyst to generate randomized dual fruit chimeras with unique blessings, curses, aura palettes, and one-click export into the Fusion Lab.
@@ -294,9 +294,10 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
                   <span>{currentResult.rarity} Mutation</span>
                 </span>
 
-                <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Dual Synergy</span>
+                <div className="flex items-center gap-2 text-2xl">
+                  <span>{currentResult.fruit1.imageEmoji}</span>
+                  <span className="text-xs text-slate-400 font-bold">+</span>
+                  <span>{currentResult.fruit2.imageEmoji}</span>
                 </div>
               </div>
 
@@ -313,8 +314,8 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
 
               {/* Modifier Perk Banner */}
               <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-                <div className="text-[10px] font-black text-amber-400 uppercase flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <div className="text-[10px] font-black text-amber-400 uppercase flex items-center gap-1">
+                  <span>{currentResult.modifierTrait.icon}</span>
                   <span>Special Modifier ({currentResult.modifierTrait.type}): {currentResult.modifierTrait.name}</span>
                 </div>
                 <p className="text-xs text-slate-300">
@@ -356,7 +357,7 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
             </motion.div>
           ) : (
             <div className="p-12 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-4">
-              <Dices className="w-12 h-12 text-amber-400 mx-auto animate-pulse" />
+              <div className="text-5xl animate-pulse">🎰</div>
               <h3 className="text-lg font-black text-white">Quantum Catalyst Idle</h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
                 Press <strong>"Spin Mutation Catalyst"</strong> above to fuse random fruits with special modifiers and discover rare or divine Tier-3 chimeras!
@@ -395,7 +396,7 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
                     className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-xs transition-all"
                   >
                     <div className="flex items-center gap-2.5">
-                      <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span className="text-lg">{item.fruit1.imageEmoji}</span>
                       <div>
                         <div className="font-black text-white">{item.name}</div>
                         <div className="text-[10px] text-slate-400">{item.rarity} • {item.modifierTrait.name}</div>
@@ -422,16 +423,16 @@ export const MutationGachaRoulette: React.FC<MutationGachaRouletteProps> = ({
             <div className="font-bold text-slate-300">Catalyst Probability Rates:</div>
             <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
               <div className="p-2 rounded bg-slate-900 border border-slate-800 text-emerald-400">
-                Rare: 45%
+                🟢 Rare: 45%
               </div>
               <div className="p-2 rounded bg-slate-900 border border-slate-800 text-purple-400">
-                Legendary: 35%
+                🟣 Legendary: 35%
               </div>
               <div className="p-2 rounded bg-slate-900 border border-slate-800 text-rose-400">
-                Mythical: 15%
+                🔴 Mythical: 15%
               </div>
               <div className="p-2 rounded bg-slate-900 border border-slate-800 text-amber-300">
-                Celestial God: 5%
+                ✨ Celestial God: 5%
               </div>
             </div>
           </div>

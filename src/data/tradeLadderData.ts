@@ -22,8 +22,7 @@ export interface PresetLadderJourney {
   startingBudget: string;
   targetFruit: string;
   targetFruitId: string;
-  targetEmoji?: string;
-  iconName: string;
+  targetEmoji: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Expert' | 'High Roller';
   estimatedHours: string;
   badge: string;
@@ -40,7 +39,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
     startingBudget: '1x Rocket / Spin + Common Drops',
     targetFruit: 'Kitsune',
     targetFruitId: 'kitsune',
-    iconName: 'Sparkles',
+    targetEmoji: '🦊',
     difficulty: 'Intermediate',
     estimatedHours: '4 - 8 Days',
     badge: 'MOST POPULAR',
@@ -133,7 +132,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
       },
       {
         stepNumber: 8,
-        title: '2x Leopard (or Leopard + Dough + T-Rex) ➔ KITSUNE!',
+        title: '2x Leopard (or Leopard + Dough + T-Rex) ➔ KITSUNE! 🦊',
         giveItems: ['leopard', 'dough', 't-rex', 'spirit'],
         receiveItems: ['kitsune'],
         profitEstimate: '+$40M Value',
@@ -152,7 +151,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
     startingBudget: 'Ghost / Barrier / Rubber / Love',
     targetFruit: 'Buddha',
     targetFruitId: 'buddha',
-    iconName: 'Zap',
+    targetEmoji: '🧘‍♂️',
     difficulty: 'Beginner',
     estimatedHours: '1 - 2 Days',
     badge: 'ESSENTIAL FOR SEA 2',
@@ -185,7 +184,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
       },
       {
         stepNumber: 3,
-        title: 'Blizzard / Sound + Small Add ➔ BUDDHA',
+        title: 'Blizzard / Sound + Small Add ➔ BUDDHA 🧘‍♂️',
         giveItems: ['blizzard', 'magma'],
         receiveItems: ['buddha'],
         profitEstimate: '+$4M Value',
@@ -204,7 +203,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
     startingBudget: '1x Dough or 2x Mid-Mythicals (Spirit + Venom)',
     targetFruit: 'Dragon (East)',
     targetFruitId: 'dragon',
-    iconName: 'Flame',
+    targetEmoji: '🐉',
     difficulty: 'Expert',
     estimatedHours: '3 - 5 Days',
     badge: 'SPECULATION META',
@@ -249,7 +248,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
       },
       {
         stepNumber: 4,
-        title: 'Leopard + Dough + T-Rex + Buddha ➔ DRAGON!',
+        title: 'Leopard + Dough + T-Rex + Buddha ➔ DRAGON! 🐉',
         giveItems: ['leopard', 'dough', 't-rex', 'buddha'],
         receiveItems: ['dragon'],
         profitEstimate: '+$35M Value',
@@ -268,7 +267,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
     startingBudget: 'Dough + Leopard + Spirit Base',
     targetFruit: 'Permanent Portal',
     targetFruitId: 'perm-portal',
-    iconName: 'Compass',
+    targetEmoji: '🌌',
     difficulty: 'High Roller',
     estimatedHours: '1 - 2 Weeks',
     badge: 'GAMEPASS GOAL',
@@ -337,7 +336,7 @@ export const PRESET_LADDERS: PresetLadderJourney[] = [
       },
       {
         stepNumber: 6,
-        title: 'Kitsune + Dragon + Leopard + Dough ➔ PERM PORTAL!',
+        title: 'Kitsune + Dragon + Leopard + Dough ➔ PERM PORTAL! 🌌',
         giveItems: ['kitsune', 'dragon', 'leopard', 'dough'],
         receiveItems: ['perm-portal'],
         receivePerm: true,
@@ -356,28 +355,28 @@ export const TRADING_HOTSPOTS_TIPS = [
   {
     location: 'Second Sea Café (Kingdom of Rose)',
     tag: 'Best for Beginners & PvE Flips',
-    iconType: 'Coffee',
+    icon: '☕',
     description: 'The most active trading area for players level 700–1500. Ideal for trading Magma, Light, Buddha, Sound, and Portal.',
     hagglingTip: 'Look for players who just arrived from Sea 1 and rolled a mythical they cannot awaken yet.'
   },
   {
     location: 'Third Sea Turtle Mansion',
     tag: 'Best for High-Tier Mythicals',
-    iconType: 'Shield',
+    icon: '🐢',
     description: 'The luxury trade hub for max-level players. Best place to find physical Dough, Leopard, Kitsune, and Dark Blade offers.',
     hagglingTip: 'Server hop between servers with 10+ players near the Mansion tables during peak evening hours.'
   },
   {
     location: 'Official Blox Fruits Discord & Subreddit',
     tag: 'Best for Speed & Fair Values',
-    iconType: 'MessageSquare',
+    icon: '💬',
     description: 'Post your trade in format: [H] <Your Fruits> [W] <Target Fruit>. Avoid in-game waiting by arranging deals in advance.',
     hagglingTip: 'Never click external verification links or join suspicious private servers. Real trades happen in standard public servers.'
   },
   {
     location: 'The 40% Beli Balance Rule',
     tag: 'Game Mechanic Knowledge',
-    iconType: 'Scale',
+    icon: '⚖️',
     description: 'In-game trading requires both sides to have in-game Beli prices within 40% of each other. Keep "Trash Adds" like Spider, Love, or Quake ready to balance the price difference.',
     hagglingTip: 'Always carry 2-3 mid-tier Legendaries specifically to fill trade boxes and meet the 40% requirement.'
   }

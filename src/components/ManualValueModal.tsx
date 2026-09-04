@@ -240,8 +240,8 @@ export const ManualValueModal: React.FC<ManualValueModalProps> = ({
               <label className="text-xs font-bold text-slate-200">
                 Custom Demand Rating: <span className="text-amber-400 font-extrabold">{demand}/10</span>
               </label>
-              <span className="text-[11px] text-slate-400 font-semibold">
-                {demand >= 9 ? 'Extreme' : demand >= 7 ? 'High' : demand >= 5 ? 'Moderate' : 'Low'}
+              <span className="text-[11px] text-slate-400">
+                {demand >= 9 ? '🔥 Extreme' : demand >= 7 ? '⚡ High' : demand >= 5 ? '⚖️ Moderate' : '🧊 Low'}
               </span>
             </div>
             <input

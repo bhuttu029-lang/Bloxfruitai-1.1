@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Brand Logo */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => onTabChange('crafter')}>
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 via-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 shadow-lg shadow-cyan-500/20 font-black text-xl border border-cyan-400/40">
-              <Compass className="w-5 h-5 text-slate-950" />
+              <span>🏴‍☠️</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -198,9 +198,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="appearance-none bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 text-xs font-bold py-2 pl-8 pr-7 rounded-xl cursor-pointer focus:outline-none transition-all"
                 title="Select Color Theme"
               >
-                <option value="dark_void">Dark Void</option>
-                <option value="ocean_blue">Ocean Blue</option>
-                <option value="magma_red">Magma Red</option>
+                <option value="dark_void">🌌 Dark Void</option>
+                <option value="ocean_blue">🌊 Ocean Blue</option>
+                <option value="magma_red">🌋 Magma Red</option>
               </select>
               <Palette className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>

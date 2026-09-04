@@ -1,41 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { ALL_OBTAINMENT_DATA, ItemObtainmentGuide } from '../data/bloxObtainmentData';
-import { Search, Filter, Sparkles, MapPin, Gift, Swords, Moon, Shield, Crosshair, ChevronRight, Zap, Info, Flame, BookOpen, Crown, Globe } from 'lucide-react';
+import { Search, Filter, Sparkles, MapPin, Gift, Swords, Moon, Shield, Crosshair, ChevronRight, Zap, Info, Flame } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 
 interface ObtainmentExplorerProps {
   onAskSensei?: (query: string) => void;
 }
-
-const renderObtainmentIcon = (category: string, isEvent?: boolean, size: 'sm' | 'lg' = 'sm') => {
-  const iconClass = size === 'lg' ? 'w-7 h-7' : 'w-5 h-5';
-  if (isEvent) return <Gift className={`${iconClass} text-pink-400`} />;
-  switch (category) {
-    case 'Sword':
-      return <Swords className={`${iconClass} text-amber-400`} />;
-    case 'Gun':
-      return <Crosshair className={`${iconClass} text-rose-400`} />;
-    case 'Accessory':
-      return <Shield className={`${iconClass} text-cyan-400`} />;
-    case 'Fighting Style':
-      return <Flame className={`${iconClass} text-orange-400`} />;
-    case 'Race V4':
-    case 'Race Awakening':
-    case 'Race V1-V3':
-      return <Moon className={`${iconClass} text-purple-400`} />;
-    case 'Gamepass':
-      return <Crown className={`${iconClass} text-yellow-400`} />;
-    case 'Fruit':
-      return <Sparkles className={`${iconClass} text-emerald-400`} />;
-    case 'Event Item':
-      return <Gift className={`${iconClass} text-pink-400`} />;
-    case 'Material / Key':
-    case 'Material':
-      return <BookOpen className={`${iconClass} text-blue-400`} />;
-    default:
-      return <Sparkles className={`${iconClass} text-cyan-400`} />;
-  }
-};
 
 export const ObtainmentExplorer: React.FC<ObtainmentExplorerProps> = ({ onAskSensei }) => {
   const [search, setSearch] = useState('');
@@ -45,16 +15,16 @@ export const ObtainmentExplorer: React.FC<ObtainmentExplorerProps> = ({ onAskSen
 
   const categories = useMemo(() => {
     return [
-      { id: 'all', label: 'All Items' },
-      { id: 'Limited Event', label: 'Limited Event Items' },
-      { id: 'Accessory', label: 'Rare Drops & Accessories' },
-      { id: 'Race Awakening', label: 'Race V4 Awakening' },
-      { id: 'Sword', label: 'Swords (CDK, TTK, Yoru)' },
-      { id: 'Gun', label: 'Guns (Soul Guitar)' },
-      { id: 'Fighting Style', label: 'Fighting Styles (Godhuman)' },
-      { id: 'Fruit', label: 'Blox Fruits' },
-      { id: 'Gamepass', label: 'Gamepasses (Notifier 6B)' },
-      { id: 'Material', label: 'Quest Items & Keys' }
+      { id: 'all', label: '🌐 All Items' },
+      { id: 'Limited Event', label: '🏹 Limited Event Items' },
+      { id: 'Accessory', label: '🧥 Rare Drops & Accessories' },
+      { id: 'Race Awakening', label: '🌕 Race V4 Awakening' },
+      { id: 'Sword', label: '🗡️ Swords (CDK, TTK, Yoru)' },
+      { id: 'Gun', label: '🎯 Guns (Soul Guitar)' },
+      { id: 'Fighting Style', label: '🥊 Fighting Styles (Godhuman)' },
+      { id: 'Fruit', label: '🍎 Blox Fruits' },
+      { id: 'Gamepass', label: '👑 Gamepasses (Notifier 6B)' },
+      { id: 'Material', label: '🔮 Quest Items & Keys' }
     ];
   }, []);
 
@@ -88,8 +58,8 @@ export const ObtainmentExplorer: React.FC<ObtainmentExplorerProps> = ({ onAskSen
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                <BookOpen className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-xl">
+                <span>📜</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide">
                 Blox Fruits Master Obtainment Codex
@@ -130,7 +100,7 @@ export const ObtainmentExplorer: React.FC<ObtainmentExplorerProps> = ({ onAskSen
               }}
               className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
             >
-              <option value="all">All Seas / All Locations</option>
+              <option value="all">🌊 All Seas / All Locations</option>
               <option value="First Sea">First Sea (Old World)</option>
               <option value="Second Sea">Second Sea (Kingdom of Rose / Darkbeard)</option>
               <option value="Third Sea">Third Sea (Mirage Island / Haunted Castle)</option>
@@ -185,8 +155,8 @@ export const ObtainmentExplorer: React.FC<ObtainmentExplorerProps> = ({ onAskSen
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
-                      {renderObtainmentIcon(item.category, item.isLimitedEvent, 'sm')}
+                    <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-xl shrink-0">
+                      {item.icon}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -219,8 +189,8 @@ export const ObtainmentExplorer: React.FC<ObtainmentExplorerProps> = ({ onAskSen
               {/* Header */}
               <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-cyan-500/40 flex items-center justify-center shadow-inner">
-                    {renderObtainmentIcon(activeItem.category, activeItem.isLimitedEvent, 'lg')}
+                  <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-cyan-500/40 flex items-center justify-center text-3xl shadow-inner">
+                    {activeItem.icon}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">

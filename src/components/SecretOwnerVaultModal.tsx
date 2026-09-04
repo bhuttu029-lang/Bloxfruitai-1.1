@@ -35,8 +35,7 @@ import {
   Mail,
   RefreshCw,
   ArrowLeft,
-  Clock,
-  Send
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -147,7 +146,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   const [editTrend, setEditTrend] = useState<'rising' | 'stable' | 'dropping' | 'hyped'>('hyped');
   const [editPvpTier, setEditPvpTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
   const [editGrindTier, setEditGrindTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
-  const [editEmoji, setEditEmoji] = useState<string>('');
+  const [editEmoji, setEditEmoji] = useState<string>('🍎');
   const [editAccentColor, setEditAccentColor] = useState<string>('#38bdf8');
   const [editWidgetTag, setEditWidgetTag] = useState<string>('');
   const [editUpdateNote, setEditUpdateNote] = useState<string>('');
@@ -166,7 +165,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   const [newTrend, setNewTrend] = useState<'rising' | 'stable' | 'dropping' | 'hyped'>('hyped');
   const [newPvpTier, setNewPvpTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
   const [newGrindTier, setNewGrindTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
-  const [newEmoji, setNewEmoji] = useState<string>('');
+  const [newEmoji, setNewEmoji] = useState<string>('⚡👑');
   const [newAccentColor, setNewAccentColor] = useState<string>('#a855f7');
   const [newWidgetTag, setNewWidgetTag] = useState<string>('2026 OWNER LEAK');
   const [newDescription, setNewDescription] = useState<string>('Exclusive Grandmaster item added via secure control center.');
@@ -189,7 +188,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   // Discord Webhooks State
   const [selectedChannelId, setSelectedChannelId] = useState<string>('channel_1');
   const [customWebhookUrl, setCustomWebhookUrl] = useState<string>('');
-  const [webhookMessage, setWebhookMessage] = useState<string>('[Grandmaster Market Alert]: Blox Fruits values have been updated live in the Master Hub!');
+  const [webhookMessage, setWebhookMessage] = useState<string>('👑 **Grandmaster Market Alert**: Blox Fruits values have been updated live in the Master Hub!');
   const [isBroadcasting, setIsBroadcasting] = useState<boolean>(false);
 
   // Owner Custom Responses State
@@ -205,10 +204,10 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     soundFX.playWin();
     if (editingCustomResponseId) {
       updateCustomResponse(editingCustomResponseId, newTriggerInput, newResponseInput);
-      setSaveSuccessMsg(`Updated custom response for "${newTriggerInput.trim()}"!`);
+      setSaveSuccessMsg(`✅ Updated custom response for "${newTriggerInput.trim()}"!`);
     } else {
       addCustomResponse(newTriggerInput, newResponseInput);
-      setSaveSuccessMsg(`Added new custom response for "${newTriggerInput.trim()}"!`);
+      setSaveSuccessMsg(`✅ Added new custom response for "${newTriggerInput.trim()}"!`);
     }
     setCustomResponsesList(getStoredCustomResponses());
     setNewTriggerInput('');
@@ -227,7 +226,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     soundFX.playPop();
     deleteCustomResponse(id);
     setCustomResponsesList(getStoredCustomResponses());
-    setSaveSuccessMsg(`Deleted custom response for "${trigger}"`);
+    setSaveSuccessMsg(`🗑️ Deleted custom response for "${trigger}"`);
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
@@ -260,7 +259,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setNewAdminPassword('');
     setNewAdminDisplayName('');
     setEditingAdminId(null);
-    setSaveSuccessMsg(editingAdminId ? 'Admin account credentials updated!' : 'New Admin account successfully created!');
+    setSaveSuccessMsg(editingAdminId ? '✅ Admin account credentials updated!' : '✅ New Admin account successfully created!');
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
@@ -268,7 +267,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     soundFX.playPop();
     deleteAdminAccount(id);
     setAdminAccountsList(getStoredAdminAccounts());
-    setSaveSuccessMsg('Admin account revoked and deleted.');
+    setSaveSuccessMsg('🗑️ Admin account revoked and deleted.');
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
@@ -376,7 +375,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       setAuthError(null);
       soundFX.playPop();
     } else {
-      setAuthError(res.error || 'Access Denied. Valid Pre-authorization code and Master Key required to dispatch mandatory OTP.');
+      setAuthError(res.error || '⛔ Access Denied. Valid Pre-authorization code and Master Key required to dispatch mandatory OTP.');
       soundFX.playPop();
     }
   };
@@ -456,7 +455,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setEditTrend(item.trend);
     setEditPvpTier(item.pvpTier);
     setEditGrindTier(item.grindTier);
-    setEditEmoji(item.imageEmoji || '');
+    setEditEmoji(item.imageEmoji || '🍎');
     setEditAccentColor(item.accentColor || '#38bdf8');
     setEditWidgetTag(item.widgetTag || '');
     setEditUpdateNote(item.updateNote || '');
@@ -499,7 +498,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       description: editDescription.trim()
     });
 
-    setSaveSuccessMsg(`Saved "${editName}" with value ${formatValueNumber(physVal)}! All systems updated.`);
+    setSaveSuccessMsg(`✓ Saved "${editName}" with value ${formatValueNumber(physVal)}! All systems updated.`);
     setTimeout(() => setSaveSuccessMsg(null), 3000);
     reloadData();
     const updatedList = getEffectiveFruitList();
@@ -517,7 +516,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     const list = getEffectiveFruitList();
     const target = list.find(i => i.id === selectedItemId);
     if (target) loadItemForEdit(target);
-    setSaveSuccessMsg(`Reset "${editName}" back to original base values.`);
+    setSaveSuccessMsg(`🔄 Reset "${editName}" back to original base values.`);
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
@@ -546,7 +545,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       trend: newTrend,
       pvpTier: newPvpTier,
       grindTier: newGrindTier,
-      imageEmoji: newEmoji.trim() || undefined,
+      imageEmoji: newEmoji.trim() || '👑',
       accentColor: newAccentColor,
       widgetTag: newWidgetTag.trim() || undefined,
       description: newDescription.trim(),
@@ -797,7 +796,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                 </form>
 
                 <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 text-left space-y-1">
-                  <p className="flex items-start gap-1.5"><Lock className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" /><span><strong>Strict 3-Factor Enforcement:</strong> Verification email dispatched to <code className="text-cyan-300 font-mono">{maskedEmail}</code>. You must enter the exact 6-digit OTP code received in your inbox. OTP verification is strictly required — without a valid OTP, login is impossible.</span></p>
+                  <p>🔒 <strong>Strict 3-Factor Enforcement:</strong> Verification email dispatched to <code className="text-cyan-300 font-mono">{maskedEmail}</code>. You must enter the exact 6-digit OTP code received in your inbox. OTP verification is strictly required — without a valid OTP, login is impossible.</p>
                 </div>
               </div>
             ) : (
@@ -883,7 +882,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                 </form>
 
                 <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 text-left space-y-1">
-                  <p className="flex items-start gap-1.5"><Lock className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" /><span><strong>Mandatory 3-Factor Enforcement:</strong> Valid credentials trigger an encrypted single-use 6-digit OTP dispatched to your Gmail. You must enter the exact OTP code in Step 3 to authenticate. Without OTP verification, Grandmaster login is strictly denied.</span></p>
+                  <p>🔒 <strong>Mandatory 3-Factor Enforcement:</strong> Valid credentials trigger an encrypted single-use 6-digit OTP dispatched to your Gmail. You must enter the exact OTP code in Step 3 to authenticate. Without OTP verification, Grandmaster login is strictly denied.</p>
                 </div>
               </div>
             )
@@ -1008,8 +1007,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                       : 'bg-slate-950/60 text-slate-400 hover:text-white border border-slate-800'
                   }`}
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Discord Webhooks</span>
+                  <span>📢 Discord Webhooks</span>
                 </button>
               </div>
 
@@ -1049,7 +1047,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                                 : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
                             }`}
                           >
-                            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                            <span className="text-lg shrink-0">{item.imageEmoji || '🍎'}</span>
                             <div className="min-w-0">
                               <p className="text-xs font-bold truncate">{item.name}</p>
                               <p className="text-[10px] text-slate-400">{formatValueNumber(item.physicalValue)}</p>
@@ -1063,7 +1061,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                   <form onSubmit={handleSaveEdit} className="p-4 sm:p-5 bg-slate-950/90 border border-slate-800 rounded-2xl space-y-4">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-cyan-400" />
+                        <span className="text-2xl">{editEmoji}</span>
                         <div>
                           <h4 className="text-sm font-black text-white">{editName}</h4>
                           <span className="text-[10px] text-cyan-400 font-mono">ID: {selectedItemId}</span>
@@ -1180,10 +1178,10 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                           onChange={(e) => setEditTrend(e.target.value as any)}
                           className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-500"
                         >
-                          <option value="hyped">Hyped</option>
-                          <option value="rising">Rising</option>
-                          <option value="stable">Stable</option>
-                          <option value="dropping">Dropping</option>
+                          <option value="hyped">🔥 Hyped</option>
+                          <option value="rising">📈 Rising</option>
+                          <option value="stable">⚖️ Stable</option>
+                          <option value="dropping">📉 Dropping</option>
                         </select>
                       </div>
 
@@ -1320,12 +1318,12 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
                     {/* Emoji */}
                     <div>
-                      <label className="text-slate-400 font-bold block mb-1">Custom Icon Tag</label>
+                      <label className="text-slate-400 font-bold block mb-1">Icon / Emoji</label>
                       <input
                         type="text"
                         value={newEmoji}
                         onChange={(e) => setNewEmoji(e.target.value)}
-                        placeholder="e.g. Mythical, Beast, Dragon"
+                        placeholder="e.g. 🐉✨, 👑, ⚡"
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white font-bold focus:outline-none"
                       />
                     </div>
@@ -1606,7 +1604,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                           className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 text-xs"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <Sparkles className="w-5 h-5 text-cyan-400 shrink-0" />
+                            <span className="text-xl shrink-0">{item.imageEmoji || '🍎'}</span>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <h5 className="font-bold text-white truncate">{item.name}</h5>
@@ -1774,7 +1772,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                   {/* Create / Edit Admin Form */}
                   <form onSubmit={handleSaveAdminAccount} className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
                     <h5 className="text-xs font-bold text-blue-300">
-                      {editingAdminId ? 'Edit Admin Account' : 'Create New Admin Credentials'}
+                      {editingAdminId ? '✏️ Edit Admin Account' : '➕ Create New Admin Credentials'}
                     </h5>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -1906,8 +1904,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                 <div className="space-y-6">
                   <div className="p-4 rounded-2xl bg-slate-950 border border-indigo-500/30 space-y-3">
                     <h4 className="text-sm font-black text-white flex items-center gap-2">
-                      <Send className="w-4 h-4 text-indigo-400" />
-                      <span>Discord Community Webhooks Broadcast Center</span>
+                      <span>📢 Discord Community Webhooks Broadcast Center</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">3 Channels Configured</span>
                     </h4>
                     <p className="text-xs text-slate-400">
@@ -1969,10 +1966,10 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                       
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
-                          { label: 'Market Value Update', text: '[Grandmaster Market Alert]: Blox Fruits values have been updated live in the Master Hub! Check out the latest rising demands and trade tier shifts.' },
-                          { label: 'New Item Injected', text: '[Vault Leak]: A new exclusive item/fruit has been injected into the live database by 1_solas!' },
-                          { label: 'Grandmaster Notice', text: '[Owner Announcement]: All traders please note the latest trade value adjustments. Owner decisions are final!' },
-                          { label: 'Test Ping', text: '[Solas AI Hub]: Test broadcast ping successful! System operational.' }
+                          { label: '🔥 Market Value Update', text: '👑 **Grandmaster Market Alert**: Blox Fruits values have been updated live in the Master Hub! Check out the latest rising demands and trade tier shifts.' },
+                          { label: '⚡ New Item Injected', text: '⚡ **Vault Leak**: A new exclusive item/fruit has been injected into the live database by 1_solas!' },
+                          { label: '🏆 Grandmaster Notice', text: '🏆 **Owner Announcement**: All traders please note the latest trade value adjustments. Owner decisions are final!' },
+                          { label: '🧪 Test Ping', text: '🔔 **Solas AI Hub**: Test broadcast ping successful! System operational.' }
                         ].map((preset, idx) => (
                           <button
                             key={idx}
@@ -2002,7 +1999,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                           type="button"
                           onClick={async () => {
                             if (!webhookMessage.trim()) {
-                              setSaveSuccessMsg('Please type a message to broadcast.');
+                              setSaveSuccessMsg('⚠️ Please type a message to broadcast.');
                               return;
                             }
                             setIsBroadcasting(true);
@@ -2020,14 +2017,14 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                               const data = await res.json();
                               if (data.success) {
                                 soundFX.playWin();
-                                setSaveSuccessMsg('Successfully broadcasted message to Discord server via secure backend!');
+                                setSaveSuccessMsg('✅ Successfully broadcasted message to Discord server via secure backend!');
                               } else {
                                 soundFX.playPop();
-                                setSaveSuccessMsg(`Broadcast error: ${data.error || 'Failed to dispatch'}`);
+                                setSaveSuccessMsg(`❌ Broadcast error: ${data.error || 'Failed to dispatch'}`);
                               }
                             } catch (err: any) {
                               soundFX.playPop();
-                              setSaveSuccessMsg('Network error dispatching broadcast.');
+                              setSaveSuccessMsg('❌ Network error dispatching broadcast.');
                             } finally {
                               setIsBroadcasting(false);
                               setTimeout(() => setSaveSuccessMsg(null), 4000);
@@ -2036,15 +2033,14 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                           disabled={isBroadcasting}
                           className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                         >
-                          <Send className="w-3.5 h-3.5" />
-                          <span>{isBroadcasting ? 'Broadcasting...' : 'Send to Selected Server'}</span>
+                          {isBroadcasting ? 'Broadcasting...' : '🚀 Send to Selected Server'}
                         </button>
 
                         <button
                           type="button"
                           onClick={async () => {
                             if (!webhookMessage.trim()) {
-                              setSaveSuccessMsg('Please type a message to broadcast.');
+                              setSaveSuccessMsg('⚠️ Please type a message to broadcast.');
                               return;
                             }
                             setIsBroadcasting(true);
@@ -2061,14 +2057,14 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                               const data = await res.json();
                               if (data.success) {
                                 soundFX.playWin();
-                                setSaveSuccessMsg('Successfully broadcasted to ALL 3 Discord Servers simultaneously!');
+                                setSaveSuccessMsg('✅ Successfully broadcasted to ALL 3 Discord Servers simultaneously!');
                               } else {
                                 soundFX.playPop();
-                                setSaveSuccessMsg(`Broadcast error: ${data.error || 'Failed to dispatch'}`);
+                                setSaveSuccessMsg(`❌ Broadcast error: ${data.error || 'Failed to dispatch'}`);
                               }
                             } catch (err) {
                               soundFX.playPop();
-                              setSaveSuccessMsg('Network error dispatching broadcast.');
+                              setSaveSuccessMsg('❌ Network error dispatching broadcast.');
                             } finally {
                               setIsBroadcasting(false);
                               setTimeout(() => setSaveSuccessMsg(null), 4000);
@@ -2077,8 +2073,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                           disabled={isBroadcasting}
                           className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                         >
-                          <Zap className="w-3.5 h-3.5" />
-                          <span>{isBroadcasting ? 'Broadcasting All...' : 'Broadcast to ALL 3 Servers'}</span>
+                          {isBroadcasting ? 'Broadcasting All...' : '⚡ Broadcast to ALL 3 Servers'}
                         </button>
                       </div>
                     </div>

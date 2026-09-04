@@ -15,10 +15,7 @@ import {
   Key,
   Shield,
   Palette,
-  Share2,
-  CheckSquare,
-  Brain,
-  Bot
+  Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NavTabType } from './Sidebar';
@@ -49,7 +46,7 @@ export const TopHud: React.FC<TopHudProps> = ({
   const [copiedCredit, setCopiedCredit] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [serverTime, setServerTime] = useState<string>('');
-  const [fullMoonPhase, setFullMoonPhase] = useState<string>('Full Moon in 14m');
+  const [fullMoonPhase, setFullMoonPhase] = useState<string>('🌕 Full Moon in 14m');
   const [authProfile, setAuthProfile] = useState<UserAuthProfile>(() => getInitialAuthProfile());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -80,9 +77,9 @@ export const TopHud: React.FC<TopHudProps> = ({
       const minutes = now.getMinutes();
       const moonMin = (minutes * 3) % 80;
       if (moonMin < 15) {
-        setFullMoonPhase('FULL MOON ACTIVE NOW!');
+        setFullMoonPhase('🌕 FULL MOON ACTIVE NOW!');
       } else {
-        setFullMoonPhase(`Next Full Moon: ${80 - moonMin}m`);
+        setFullMoonPhase(`🌘 Next Full Moon: ${80 - moonMin}m`);
       }
     };
 
@@ -109,7 +106,7 @@ export const TopHud: React.FC<TopHudProps> = ({
         };
       case 'mutationlab':
         return {
-          title: 'Fruit Mutation Game & Raid Arena',
+          title: '🎮 Fruit Mutation Game & Raid Arena',
           subtitle: 'Real-time boss battle simulations, Gacha spins, hybrid fruit combat engine & awakening progressions',
           tag: 'Mini-Game / RPG',
           color: 'from-purple-400 via-pink-400 to-indigo-500'
@@ -283,11 +280,11 @@ export const TopHud: React.FC<TopHudProps> = ({
                   if (onThemeChange) onThemeChange(newTheme);
                 }}
                 className="appearance-none bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 text-xs font-bold py-1.5 pl-7 pr-6 rounded-xl cursor-pointer focus:outline-none transition-all shadow-sm"
-                title="Select Color Theme"
+                title="Select Color Theme ('Dark Void', 'Ocean Blue', 'Magma Red')"
               >
-                <option value="dark_void">Dark Void</option>
-                <option value="ocean_blue">Ocean Blue</option>
-                <option value="magma_red">Magma Red</option>
+                <option value="dark_void">🌌 Dark Void</option>
+                <option value="ocean_blue">🌊 Ocean Blue</option>
+                <option value="magma_red">🌋 Magma Red</option>
               </select>
               <Palette className="w-3.5 h-3.5 text-cyan-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -341,42 +338,39 @@ export const TopHud: React.FC<TopHudProps> = ({
                 soundFX.playPop();
                 onTabChange('checklist');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                 activeTab === 'checklist'
                   ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-md'
                   : 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800'
               }`}
             >
-              <CheckSquare className="w-3 h-3" />
-              <span>Checklist</span>
+              ✓ Checklist
             </button>
             <button
               onClick={() => {
                 soundFX.playPop();
                 onTabChange('faq');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                 activeTab === 'faq'
                   ? 'bg-purple-600 text-white border-purple-500 font-extrabold shadow-md'
                   : 'bg-slate-950/60 text-slate-400 hover:text-white border-slate-800'
               }`}
             >
-              <Brain className="w-3 h-3 text-purple-300" />
-              <span>33 FAQs</span>
+              🧠 33 FAQs
             </button>
             <button
               onClick={() => {
                 soundFX.playPop();
                 onTabChange('sensei');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                 activeTab === 'sensei'
                   ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-md'
                   : 'bg-slate-950/60 text-amber-300 hover:text-amber-200 border-amber-500/30'
               }`}
             >
-              <Bot className="w-3 h-3 text-amber-400" />
-              <span>Solas AI</span>
+              ☀️ Solas AI
             </button>
           </div>
         </div>

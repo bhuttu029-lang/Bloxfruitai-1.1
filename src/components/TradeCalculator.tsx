@@ -42,8 +42,7 @@ import {
   Layers,
   ArrowUpRight,
   CheckSquare,
-  Square,
-  Star
+  Square
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../utils/audio';
@@ -302,7 +301,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           bg: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300',
           meterColor: 'bg-emerald-500',
           meterWidth: '95%',
-          label: 'BIG WIN (W)',
+          label: '🔥 BIG WIN (W)',
           desc: 'Supreme overpay! You gain tremendous market value.'
         };
       case 'Small Win':
@@ -310,7 +309,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           bg: 'bg-teal-500/20 border-teal-500/50 text-teal-300',
           meterColor: 'bg-teal-400',
           meterWidth: '70%',
-          label: 'WIN (W)',
+          label: '✅ WIN (W)',
           desc: 'Positive trade surplus in your favor.'
         };
       case 'Fair Trade':
@@ -318,7 +317,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           bg: 'bg-blue-500/20 border-blue-500/50 text-blue-300',
           meterColor: 'bg-blue-400',
           meterWidth: '50%',
-          label: 'FAIR TRADE (F)',
+          label: '⚖️ FAIR TRADE (F)',
           desc: 'Balanced equal market exchange.'
         };
       case 'Small Loss':
@@ -326,7 +325,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           bg: 'bg-amber-500/20 border-amber-500/50 text-amber-300',
           meterColor: 'bg-amber-400',
           meterWidth: '30%',
-          label: 'SMALL LOSS (L)',
+          label: '⚠️ SMALL LOSS (L)',
           desc: 'Slight value deficit. Proceed only if securing a holy grail.'
         };
       case 'Big Loss':
@@ -334,7 +333,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           bg: 'bg-rose-500/20 border-rose-500/50 text-rose-300',
           meterColor: 'bg-rose-500',
           meterWidth: '10%',
-          label: 'BIG LOSS (L)',
+          label: '⛔ BIG LOSS (L)',
           desc: 'Heavy loss! You are severely under-compensated.'
         };
     }
@@ -507,9 +506,8 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                       <span className="font-extrabold text-cyan-400">
                         {formatValueNumber(itemVal)}
                       </span>
-                      <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">
-                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                        <span>{item.demand}/10</span>
+                      <span className="text-[10px] text-amber-400 font-semibold">
+                        ★ {item.demand}/10
                       </span>
                     </div>
                   </div>
@@ -635,9 +633,8 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                       <span className="font-extrabold text-purple-400">
                         {formatValueNumber(itemVal)}
                       </span>
-                      <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">
-                        <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                        <span>{item.demand}/10</span>
+                      <span className="text-[10px] text-amber-400 font-semibold">
+                        ★ {item.demand}/10
                       </span>
                     </div>
                   </div>
@@ -937,7 +934,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                   stroke="#38bdf8"
                   strokeDasharray="4 4"
                   label={{
-                    value: 'Dog Blade Launch',
+                    value: '🐶 Dog Blade Launch',
                     position: 'top',
                     fill: '#38bdf8',
                     fontSize: 10,
@@ -983,7 +980,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                   stroke="#38bdf8"
                   strokeDasharray="4 4"
                   label={{
-                    value: 'Dog Blade Launch',
+                    value: '🐶 Dog Blade Launch',
                     position: 'top',
                     fill: '#38bdf8',
                     fontSize: 10,

@@ -79,7 +79,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [editTrend, setEditTrend] = useState<'rising' | 'stable' | 'dropping' | 'hyped'>('hyped');
   const [editPvpTier, setEditPvpTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
   const [editGrindTier, setEditGrindTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
-  const [editEmoji, setEditEmoji] = useState<string>('');
+  const [editEmoji, setEditEmoji] = useState<string>('🍎');
   const [editIconUrl, setEditIconUrl] = useState<string>('');
   const [editAccentColor, setEditAccentColor] = useState<string>('#38bdf8');
   const [editWidgetTag, setEditWidgetTag] = useState<string>('');
@@ -99,7 +99,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   const [newTrend, setNewTrend] = useState<'rising' | 'stable' | 'dropping' | 'hyped'>('hyped');
   const [newPvpTier, setNewPvpTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
   const [newGrindTier, setNewGrindTier] = useState<'S+' | 'S' | 'A' | 'B' | 'C'>('S+');
-  const [newEmoji, setNewEmoji] = useState<string>('');
+  const [newEmoji, setNewEmoji] = useState<string>('🔥');
   const [newIconUrl, setNewIconUrl] = useState<string>('');
   const [newAccentColor, setNewAccentColor] = useState<string>('#f97316');
   const [newWidgetTag, setNewWidgetTag] = useState<string>('ADMIN INJECTED');
@@ -194,7 +194,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     setEditTrend(item.trend);
     setEditPvpTier(item.pvpTier || 'A');
     setEditGrindTier(item.grindTier || 'A');
-    setEditEmoji(item.imageEmoji || '');
+    setEditEmoji(item.imageEmoji || '🍎');
     setEditIconUrl(item.iconUrl || '');
     setEditAccentColor(item.accentColor || '#38bdf8');
     setEditWidgetTag(item.widgetTag || '');
@@ -240,7 +240,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       description: editDescription.trim() || undefined,
     });
 
-    setSaveSuccessMsg(`"${editName}" updated successfully! Changes are live across all tools & AI.`);
+    setSaveSuccessMsg(`✅ "${editName}" updated successfully! Changes are live across all tools & AI.`);
     setTimeout(() => setSaveSuccessMsg(null), 4000);
     reloadData();
     const updatedList = getEffectiveFruitList();
@@ -256,7 +256,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     const list = getEffectiveFruitList();
     const target = list.find(i => i.id === selectedItemId);
     if (target) loadItemForEdit(target);
-    setSaveSuccessMsg(`Reset "${editName}" to original base values.`);
+    setSaveSuccessMsg(`🔄 Reset "${editName}" to original base values.`);
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
 
@@ -285,7 +285,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
       trend: newTrend,
       pvpTier: newPvpTier,
       grindTier: newGrindTier,
-      imageEmoji: newEmoji.trim() || undefined,
+      imageEmoji: newEmoji.trim() || '🔥',
       iconUrl: newIconUrl.trim() || undefined,
       accentColor: newAccentColor,
       widgetTag: newWidgetTag.trim() || undefined,
@@ -296,7 +296,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
     };
 
     addCustomFruitItem(newItem);
-    setSaveSuccessMsg(`"${newName}" successfully created and injected into all trade calculators & AI!`);
+    setSaveSuccessMsg(`🎉 "${newName}" successfully created and injected into all trade calculators & AI!`);
     setNewName('');
     setActiveTab('edit_values');
     reloadData();
@@ -493,7 +493,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
               onClick={() => {
                 soundFX.playPop();
                 reloadData();
-                setSaveSuccessMsg('Successfully synchronized current fruit values from the browser synchronization layer!');
+                setSaveSuccessMsg('🔄 Successfully synchronized current fruit values from the browser synchronization layer!');
                 setTimeout(() => setSaveSuccessMsg(null), 4000);
               }}
               className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
@@ -588,13 +588,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
                           }`}
                         >
-                          <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
-                            {item.iconUrl ? (
-                              <SafeFruitImage src={item.iconUrl} alt={item.name} className="w-5 h-5 object-contain" />
-                            ) : (
-                              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                            )}
-                          </div>
+                          <span className="text-lg shrink-0">{item.imageEmoji || '🍎'}</span>
                           <div className="min-w-0">
                             <p className="text-xs font-bold truncate">{item.name}</p>
                             <p className="text-[10px] text-slate-400">{formatValueNumber(item.physicalValue)}</p>
@@ -608,13 +602,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                 <form onSubmit={handleSaveEdit} className="p-4 sm:p-5 bg-slate-950/90 border border-slate-800 rounded-2xl space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center">
-                        {editIconUrl ? (
-                          <SafeFruitImage src={editIconUrl} alt={editName} className="w-6 h-6 object-contain" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 text-blue-400" />
-                        )}
-                      </div>
+                      <span className="text-2xl">{editEmoji}</span>
                       <div>
                         <h4 className="text-sm font-black text-white">{editName}</h4>
                         <span className="text-[10px] text-blue-400 font-mono">Target: {selectedItemId}</span>
@@ -690,21 +678,20 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                         onChange={(e) => setEditTrend(e.target.value as any)}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-bold focus:outline-none focus:border-blue-500"
                       >
-                        <option value="hyped">Hyped / Skyrocketing</option>
-                        <option value="rising">Rising</option>
-                        <option value="stable">Stable</option>
-                        <option value="dropping">Dropping</option>
+                        <option value="hyped">🔥 Hyped / Skyrocketing</option>
+                        <option value="rising">📈 Rising</option>
+                        <option value="stable">⚖️ Stable</option>
+                        <option value="dropping">📉 Dropping</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="text-slate-400 font-bold block mb-1">Accent Color</label>
+                      <label className="text-slate-400 font-bold block mb-1">Icon Emoji</label>
                       <input
                         type="text"
-                        value={editAccentColor}
-                        onChange={(e) => setEditAccentColor(e.target.value)}
-                        placeholder="#38bdf8"
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 text-center font-bold focus:outline-none focus:border-blue-500 font-mono"
+                        value={editEmoji}
+                        onChange={(e) => setEditEmoji(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 text-center font-bold focus:outline-none focus:border-blue-500"
                       />
                     </div>
 
@@ -736,7 +723,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                               className="w-8 h-8 object-contain"
                             />
                           ) : (
-                            <Sparkles className="w-4 h-4 text-blue-400" />
+                            <span className="text-sm">{editEmoji}</span>
                           )}
                         </div>
                       </div>
@@ -808,11 +795,11 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       onChange={(e) => setNewRarity(e.target.value as any)}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-bold focus:outline-none focus:border-blue-500"
                     >
-                      <option value="Mythical">Mythical</option>
-                      <option value="Legendary">Legendary</option>
-                      <option value="Rare">Rare</option>
-                      <option value="Uncommon">Uncommon</option>
-                      <option value="Common">Common</option>
+                      <option value="Mythical">👑 Mythical</option>
+                      <option value="Legendary">💎 Legendary</option>
+                      <option value="Rare">✨ Rare</option>
+                      <option value="Uncommon">🟢 Uncommon</option>
+                      <option value="Common">⚪ Common</option>
                     </select>
                   </div>
 
@@ -850,13 +837,12 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-slate-400 font-bold block mb-1">Accent Color</label>
+                    <label className="text-slate-400 font-bold block mb-1">Fruit Emoji</label>
                     <input
                       type="text"
-                      value={newAccentColor}
-                      onChange={(e) => setNewAccentColor(e.target.value)}
-                      placeholder="#f97316"
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 text-center font-bold focus:outline-none focus:border-blue-500 font-mono"
+                      value={newEmoji}
+                      onChange={(e) => setNewEmoji(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 text-center font-bold focus:outline-none focus:border-blue-500"
                     />
                   </div>
 
@@ -888,7 +874,7 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                             className="w-8 h-8 object-contain"
                           />
                         ) : (
-                          <Sparkles className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm">{newEmoji || '🔥'}</span>
                         )}
                       </div>
                     </div>
@@ -901,10 +887,10 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
                       onChange={(e) => setNewTrend(e.target.value as any)}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-bold focus:outline-none focus:border-blue-500"
                     >
-                      <option value="hyped">Hyped</option>
-                      <option value="rising">Rising</option>
-                      <option value="stable">Stable</option>
-                      <option value="dropping">Dropping</option>
+                      <option value="hyped">🔥 Hyped</option>
+                      <option value="rising">📈 Rising</option>
+                      <option value="stable">⚖️ Stable</option>
+                      <option value="dropping">📉 Dropping</option>
                     </select>
                   </div>
 

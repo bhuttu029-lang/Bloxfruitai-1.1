@@ -31,13 +31,7 @@ import {
   Key,
   Clock,
   CheckCircle2,
-  Lock,
-  Sun,
-  Waves,
-  Crown,
-  Target,
-  MessageSquare,
-  AlertTriangle
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundFX } from '../utils/audio';
@@ -87,41 +81,41 @@ interface QuickDeckPrompt {
   title: string;
   desc: string;
   prompt: string;
-  iconName: string;
+  icon: string;
   color: string;
   badge: string;
 }
 
 const FEATURED_HERO_PROMPTS: QuickDeckPrompt[] = [
   {
-    title: 'Anti-Cheat & Bot Counters',
+    title: '🛡️ Anti-Cheat & Bot Counters',
     desc: 'Turn a deaf ear to auto-bounty scripts & fly-hackers',
     prompt: 'How to "Turn a Deaf Ear" to Cheaters (Beat Auto-Bounty Bots & Scripting)',
-    iconName: 'Shield',
+    icon: '🛡️',
     color: 'from-cyan-500/20 via-blue-500/10 to-indigo-500/20 text-cyan-300 border-cyan-500/40',
     badge: 'PvP Defense'
   },
   {
-    title: 'Click-to-Move Sky Glitch',
+    title: '💨 Click-to-Move Sky Glitch',
     desc: 'Master the high-jump height tech & flash step reset',
     prompt: 'What is the "Click to Move" High Jump / Sky Glitch and Shift-Lock Reset?',
-    iconName: 'Zap',
+    icon: '⚡',
     color: 'from-amber-500/20 via-orange-500/10 to-red-500/20 text-amber-300 border-amber-500/40',
     badge: 'Movement Tech'
   },
   {
-    title: 'Sea Danger 6 & Leviathan',
+    title: '🌊 Sea Danger 6 & Leviathan',
     desc: 'Frozen Dimension, Beast Hunter harpoon & heart drop',
     prompt: 'What happens at Sea Danger Level 6 and how do I spawn the Leviathan & harvest its Heart?',
-    iconName: 'Waves',
+    icon: '🐉',
     color: 'from-purple-500/20 via-indigo-500/10 to-blue-500/20 text-purple-300 border-purple-500/40',
     badge: 'Sea Events'
   },
   {
-    title: 'Race V4 All 6 Trials',
+    title: '🌕 Race V4 All 6 Trials',
     desc: 'Blue Gear, Mirage Island, Lever & Tier 1-3 Gears',
     prompt: 'How to get Blue Gear on Mirage Island and unlock all Race V4 trials (Cyborg, Shark, Angel, Human, Mink, Ghoul)?',
-    iconName: 'Moon',
+    icon: '🌕',
     color: 'from-emerald-500/20 via-teal-500/10 to-cyan-500/20 text-emerald-300 border-emerald-500/40',
     badge: 'Race V4'
   }
@@ -129,8 +123,8 @@ const FEATURED_HERO_PROMPTS: QuickDeckPrompt[] = [
 
 const CATEGORY_PROMPTS = [
   {
-    category: 'Anti-Cheat & Bot Counters',
-    iconName: 'Shield',
+    category: '🛡️ Anti-Cheat & Bot Counters',
+    icon: '🛡️',
     prompts: [
       'How to "Turn a Deaf Ear" to Cheaters (Beat Auto-Bounty Bots & Scripting)',
       'How to counter auto-aim scripts and fly-hackers in PvP?',
@@ -139,8 +133,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'Movement Glitches & Tech',
-    iconName: 'Zap',
+    category: '💨 Movement Glitches & Tech',
+    icon: '💨',
     prompts: [
       'What is the "Click to Move" High Jump / Sky Glitch?',
       'How does the Shift-Lock / Flash Step Direction Reset work?',
@@ -149,8 +143,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'Danger Levels & Leviathan',
-    iconName: 'Waves',
+    category: '🌊 Danger Levels & Leviathan',
+    icon: '🌊',
     prompts: [
       'What happens at Sea Danger Level 6 and how do I survive without my boat destroying?',
       'How do I spawn the Leviathan and the Frozen Dimension?',
@@ -159,8 +153,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'Terrorshark & Kitsune Shrine',
-    iconName: 'Flame',
+    category: '🦈 Terrorshark & Kitsune Shrine',
+    icon: '🦈',
     prompts: [
       'How do I craft the Monster Magnet and get the 100% Shark Anchor drop?',
       'How do I spawn Kitsune Island during a Full Moon and what are the rewards?',
@@ -169,8 +163,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'World Bosses & Secret Rooms',
-    iconName: 'Crown',
+    category: '👑 World Bosses & Secret Rooms',
+    icon: '👑',
     prompts: [
       'How do I spawn the Saber Expert, Darkbeard, rip_indra, and Dough King?',
       'How do I open the Colosseum Secret Door, Ice Castle Library, and Hydra Waterfall room?',
@@ -179,8 +173,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'Race V4 & Gears (All 6 Races)',
-    iconName: 'Moon',
+    category: '🌕 Race V4 & Gears (All 6 Races)',
+    icon: '🌕',
     prompts: [
       'How to get Blue Gear on Mirage Island during Full Moon?',
       'How to unlock Cyborg V4 (Trial of Machines)?',
@@ -189,8 +183,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'Limited Events & Rare Items',
-    iconName: 'Gift',
+    category: '🏹 Limited Events & Rare Items',
+    icon: '🏹',
     prompts: [
       'How was Cupid Helmet and Cupid Coat obtained in Valentine Event?',
       'How to get Dark Coat from Darkbeard in Second Sea?',
@@ -199,8 +193,8 @@ const CATEGORY_PROMPTS = [
     ]
   },
   {
-    category: 'Swords, Styles & Trading',
-    iconName: 'Swords',
+    category: '⚔️ Swords, Styles & Trading',
+    icon: '⚔️',
     prompts: [
       'How do I unlock Cursed Dual Katana (CDK) and True Triple Katana (TTK)?',
       'How to get Godhuman and Sanguine Art?',
@@ -234,20 +228,6 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
   const ownerOtpTokenRef = useRef<string | null>(null);
   const ownerOtpExpiresRef = useRef<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const renderDeckIcon = (iconName: string, className = "w-5 h-5") => {
-    switch (iconName) {
-      case 'Shield': return <Shield className={className} />;
-      case 'Zap': return <Zap className={className} />;
-      case 'Waves': return <Waves className={className} />;
-      case 'Moon': return <Moon className={className} />;
-      case 'Flame': return <Flame className={className} />;
-      case 'Crown': return <Crown className={className} />;
-      case 'Gift': return <Gift className={className} />;
-      case 'Swords': return <Swords className={className} />;
-      default: return <Sparkles className={className} />;
-    }
-  };
 
   const handleInsertNewline = () => {
     const textarea = textareaRef.current;
@@ -445,7 +425,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     // 0a. Direct /owner or /vault command to open Grandmaster Vault modal
     if (lower === '/owner' || lower === '/vault' || lower === '/grandmaster' || lower === 'owner' || lower === 'vault') {
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: { forceVerification: true } }));
+        window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
       }
       soundFX.playPop();
       setMessages((prev) => [
@@ -453,7 +433,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         {
           id: (Date.now() + 1).toString(),
           sender: 'ai',
-          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault verification panel. Please enter your Pre-Auth Clearance Code and Master Key, then complete Gmail OTP verification to access administrative controls.`,
+          text: `👑 **Grandmaster Control Center Terminal**\n\nOpening the Owner Vault modal. Please enter your Pre-Auth Clearance Code and Master Key, then complete Gmail OTP verification to access administrative controls.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -513,7 +493,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
             {
               id: (Date.now() + 1).toString(),
               sender: 'ai',
-              text: `🔐 **GRANDMASTER OWNER PROTOCOL — STEP 3 (GMAIL OTP REQUIRED)**\n\n• **Step 1 (Pre-Auth):** ✅ Clearance Code Verified\n• **Step 2 (Master Key):** ✅ Master Key Verified\n• **Step 3 (MANDATORY):** A secure 6-digit OTP code has been dispatched to **bhuttu029@gmail.com**.\n\n⚡ *The Verification Panel is now open on your host. Please enter your 6-digit OTP code into the panel or reply in this chat to complete verification.*`,
+              text: `🔐 **GRANDMASTER OWNER PROTOCOL — STEP 3 (GMAIL OTP REQUIRED)**\n\n• **Step 1 (Pre-Auth):** ✅ Clearance Code Verified\n• **Step 2 (Master Key):** ✅ Master Key Verified\n• **Step 3 (MANDATORY):** A secure 6-digit OTP code has been dispatched to **bhuttu029@gmail.com**.\n\n⚡ *Please reply with your 6-digit OTP code into this chat or enter it directly in the Owner Vault modal to unlock access.*`,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }
           ]);
@@ -701,7 +681,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
           <div className="w-56 h-56 rounded-full border border-cyan-400/30 border-dashed animate-spin-slow flex items-center justify-center">
             <div className="w-44 h-44 rounded-full border border-purple-400/40 animate-spin-reverse flex items-center justify-center">
               <div className="w-32 h-32 rounded-full border border-amber-400/30 flex items-center justify-center">
-                <Sun className="w-8 h-8 text-amber-400 animate-pulse" />
+                <span className="text-2xl animate-float">☀️</span>
               </div>
             </div>
           </div>
@@ -718,7 +698,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
               >
                 <div className="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/30 to-purple-500/30 animate-pulse" />
-                  <Sun className="w-7 h-7 sm:w-9 sm:h-9 text-amber-300 relative z-10 animate-pulse" />
+                  <span className="text-2xl sm:text-3xl font-black relative z-10 animate-float">☀️</span>
                 </div>
               </motion.div>
               {/* Online Pulse Beacon */}
@@ -804,12 +784,12 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                 )}
                 <span>
                   {authProfile.tier === 'owner'
-                    ? 'Owner: Unlimited (∞)'
+                    ? '👑 Owner: Unlimited (∞)'
                     : authProfile.tier === 'vip'
-                    ? 'VIP: Unlimited Searches (∞)'
+                    ? '⚡ VIP: Unlimited Searches (∞)'
                     : authProfile.tier === 'discord'
-                    ? `Discord Member (${Math.max(0, authProfile.maxSearches - authProfile.searchesUsed)}/12 left)`
-                    : `Guest Free (${Math.max(0, authProfile.maxSearches - authProfile.searchesUsed)}/6 left)`}
+                    ? `💬 Discord Member (${Math.max(0, authProfile.maxSearches - authProfile.searchesUsed)}/12 left)`
+                    : `🛡️ Guest Free (${Math.max(0, authProfile.maxSearches - authProfile.searchesUsed)}/6 left)`}
                 </span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-lg bg-black/40 text-white font-mono border border-white/10">
@@ -824,7 +804,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
               title="Click to copy Discord handle"
             >
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-indigo-300" />
+                <span className="text-sm">💬</span>
                 <span>Credits: <strong className="text-white">1_solas</strong></span>
               </div>
               <span className="text-[10px] bg-indigo-500/30 px-2 py-0.5 rounded-lg text-indigo-100 font-mono border border-indigo-500/40 group-hover:bg-indigo-500/50 transition-colors">
@@ -844,7 +824,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                   }
                 ]);
               }}
-              className="px-3 py-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5 text-xs font-bold cursor-pointer"
+              className="px-3 py-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-1.5 text-xs font-bold"
               title="Reset Chat Session"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -871,12 +851,10 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
               whileHover={{ y: -3, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleSend(item.prompt)}
-              className={`p-4 rounded-2xl bg-gradient-to-b ${item.color} border text-left flex flex-col justify-between gap-3 shadow-lg transition-all relative overflow-hidden group cursor-pointer`}
+              className={`p-4 rounded-2xl bg-gradient-to-b ${item.color} border text-left flex flex-col justify-between gap-3 shadow-lg transition-all relative overflow-hidden group`}
             >
               <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-xl bg-slate-950/80 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {renderDeckIcon(item.iconName)}
-                </div>
+                <span className="text-2xl group-hover:scale-110 transition-transform">{item.icon}</span>
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-950/80 border border-current text-white">
                   {item.badge}
                 </span>
@@ -909,13 +887,13 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                 soundFX.playPop();
                 setSelectedCategory(idx);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                 selectedCategory === idx
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md shadow-cyan-500/20 scale-105'
                   : 'bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
               }`}
             >
-              {renderDeckIcon(cat.iconName, "w-4 h-4")}
+              <span>{cat.icon}</span>
               <span>{cat.category}</span>
             </button>
           ))}
@@ -930,7 +908,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
             <button
               key={idx}
               onClick={() => handleSend(p)}
-              className="px-3 py-1 rounded-xl bg-slate-900/90 hover:bg-cyan-950/60 border border-slate-800 hover:border-cyan-500/40 text-xs text-slate-300 hover:text-cyan-300 transition-all whitespace-nowrap active:scale-95 shadow-sm cursor-pointer"
+              className="px-3 py-1 rounded-xl bg-slate-900/90 hover:bg-cyan-950/60 border border-slate-800 hover:border-cyan-500/40 text-xs text-slate-300 hover:text-cyan-300 transition-all whitespace-nowrap active:scale-95 shadow-sm"
             >
               {p}
             </button>
@@ -955,7 +933,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                     : 'bg-gradient-to-tr from-amber-400 via-cyan-400 to-indigo-600 text-slate-950 border border-cyan-300/40 shadow-cyan-500/20'
                 }`}
               >
-                {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Sun className="w-5 h-5 text-slate-950" />}
+                {msg.sender === 'user' ? <User className="w-4 h-4" /> : '☀️'}
               </div>
 
               {/* Message Box */}
@@ -981,7 +959,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                   {msg.sender === 'ai' && (
                     <button
                       onClick={() => copyMessageText(msg.id, msg.text)}
-                      className="flex items-center gap-1 text-slate-400 hover:text-cyan-300 font-bold transition-colors px-2 py-0.5 rounded bg-slate-900 border border-slate-800 hover:border-cyan-500/30 cursor-pointer"
+                      className="flex items-center gap-1 text-slate-400 hover:text-cyan-300 font-bold transition-colors px-2 py-0.5 rounded bg-slate-900 border border-slate-800 hover:border-cyan-500/30"
                       title="Copy guide text"
                     >
                       {copiedMsgId === msg.id ? (
@@ -1010,7 +988,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
               className="flex items-start gap-3.5"
             >
               <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-amber-400 via-cyan-400 to-indigo-600 text-slate-950 flex items-center justify-center text-sm font-black shrink-0 animate-pulse">
-                <Sun className="w-5 h-5 text-slate-950" />
+                ☀️
               </div>
               <div className="p-4 rounded-3xl rounded-tl-none bg-slate-950/90 border border-cyan-500/40 text-cyan-300 text-xs sm:text-sm flex items-center gap-3 shadow-lg shadow-cyan-950/30">
                 <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
@@ -1069,7 +1047,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
               whileTap={{ scale: 0.96 }}
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="px-5 py-3.5 bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 hover:from-cyan-300 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 rounded-2xl font-black shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+              className="px-5 py-3.5 bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 hover:from-cyan-300 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 rounded-2xl font-black shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 shrink-0"
             >
               <span>Transmit</span>
               <Send className="w-4 h-4" />
@@ -1079,8 +1057,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
           {/* 12-Hour Quota & AI Disclaimer Footnote */}
           <div className="mt-2.5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-1.5 px-1">
             <div className="flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              <span><strong>Notice:</strong> AI can make mistakes. Verify important trades with recent market logs.</span>
+              <span>⚠️ <strong>Notice:</strong> AI can make mistakes. Verify important trades with recent market logs.</span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px]">
               <span className="text-slate-500">Free Guests: 6 searches/12h • Discord: 12 searches/12h</span>

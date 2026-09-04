@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Compass, Map, Shield, Flame, Swords, Moon, Sparkles, Trophy, ChevronRight, CheckCircle, HelpCircle, Zap, Crown, Lightbulb, AlertTriangle, Heart } from 'lucide-react';
+import { Compass, Map, Shield, Flame, Swords, Moon, Sparkles, Trophy, ChevronRight, CheckCircle, HelpCircle, Zap } from 'lucide-react';
 import { SEA_PROGRESSION, RAIDS_DATA, RACES_DATA, SeaLocation, RaidInfo } from '../data/bloxExtraData';
 import { soundFX } from '../utils/audio';
 
@@ -35,11 +35,11 @@ export const SeaProgressionGuide: React.FC = () => {
           {/* Section Selector */}
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: 'islands', label: 'Island Leveling', icon: Map },
-              { id: 'v4', label: 'Race V4 & Mirage', icon: Moon },
-              { id: 'leviathan', label: 'Leviathan & Sanguine', icon: Flame },
-              { id: 'raids', label: 'Raids & Frags', icon: Sparkles },
-              { id: 'swords', label: 'CDK & TTK Quests', icon: Swords },
+              { id: 'islands', label: '🗺️ Island Leveling', icon: Map },
+              { id: 'v4', label: '🌕 Race V4 & Mirage', icon: Moon },
+              { id: 'leviathan', label: '🐉 Leviathan & Sanguine', icon: Flame },
+              { id: 'raids', label: '🔮 Raids & Frags', icon: Sparkles },
+              { id: 'swords', label: '⚔️ CDK & TTK Quests', icon: Swords },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -103,8 +103,7 @@ export const SeaProgressionGuide: React.FC = () => {
                   </span>
                   {loc.boss && (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1">
-                      <Crown className="w-3 h-3 text-amber-400" />
-                      <span>{loc.boss.split('(')[0]}</span>
+                      👑 {loc.boss.split('(')[0]}
                     </span>
                   )}
                 </div>
@@ -116,9 +115,8 @@ export const SeaProgressionGuide: React.FC = () => {
                   <div><strong>Key Unlocks:</strong> <span className="text-amber-300">{loc.keyUnlocks.join(' • ')}</span></div>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span><strong className="text-cyan-400">Pro Tip:</strong> {loc.tip}</span>
+                <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300">
+                  💡 <strong className="text-cyan-400">Pro Tip:</strong> {loc.tip}
                 </div>
               </div>
             ))}
@@ -220,9 +218,8 @@ export const SeaProgressionGuide: React.FC = () => {
               <p className="text-xs text-slate-400 leading-relaxed">
                 Craft the <strong>Beast Hunter</strong> at Tiki Outpost using 20 Leviathan Scales, 6 Electric Wings, and 2 Mutant Teeth. Speak with the Spy NPC until he states <em>"The Leviathan is out there"</em>. Sail to Danger Level 6 (??? Sea) with at least 5 players.
               </p>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-amber-300 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>Make sure your boat driver has high health and defensive race (Shark V3/V4 recommended).</span>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-amber-300">
+                ⚠️ Make sure your boat driver has high health and defensive race (Shark V3/V4 recommended).
               </div>
             </div>
 
@@ -231,9 +228,8 @@ export const SeaProgressionGuide: React.FC = () => {
               <p className="text-xs text-slate-400 leading-relaxed">
                 Defeat Leviathan segments. When the heart drops, fire the Beast Hunter harpoon gun to latch on. Drive the boat back to Tiki Outpost. Talk to <strong>Shafi</strong> in the crypt with $5,000,000 Beli, 5,000 Frags, 20 Demonic Wisps, 20 Vampire Fangs, and 2 Dark Fragments.
               </p>
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-cyan-300 flex items-center gap-2">
-                <Heart className="w-4 h-4 text-rose-400 shrink-0" />
-                <span><strong>Sanguine Art:</strong> Possesses passive lifesteal, massive stun, and SS-tier raid survivability.</span>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-cyan-300">
+                🩸 <strong>Sanguine Art:</strong> Possesses passive lifesteal, massive stun, and SS-tier raid survivability.
               </div>
             </div>
           </div>
@@ -299,10 +295,8 @@ export const SeaProgressionGuide: React.FC = () => {
       {activeSection === 'swords' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300">
-                <Swords className="w-5 h-5" />
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🗡️⚡</span>
               <div>
                 <h3 className="text-lg font-black text-white">Cursed Dual Katana (CDK)</h3>
                 <span className="text-xs text-purple-400 font-bold">Yama & Tushita (350+ Mastery Each)</span>
@@ -314,10 +308,8 @@ export const SeaProgressionGuide: React.FC = () => {
           </div>
 
           <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300">
-                <Swords className="w-5 h-5" />
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">⚔️✨</span>
               <div>
                 <h3 className="text-lg font-black text-white">True Triple Katana (TTK)</h3>
                 <span className="text-xs text-cyan-400 font-bold">Shisui, Wando, Saddi ($2M Each)</span>
