@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 import nodemailer from 'nodemailer';
@@ -10,9 +9,6 @@ import { GoogleGenAI } from '@google/genai';
 import { BLOX_FRUITS_DATA } from './src/data/bloxFruitsData.ts';
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.set('trust proxy', 1);

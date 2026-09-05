@@ -205,4 +205,130 @@
   transform: translateY(-2px);
 }
 
+/* --- AAA GAME VFX UTILITIES --- */
+
+/* Holographic Trading Card Light Sheen */
+.foil-card-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.foil-card-shine::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(56, 189, 248, 0.15) 48%,
+    rgba(168, 85, 247, 0.18) 52%,
+    rgba(245, 158, 11, 0.12) 56%,
+    transparent 70%
+  );
+  transform: rotate(-25deg) translateY(-100%);
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+}
+
+.foil-card-shine:hover::before {
+  transform: rotate(-25deg) translateY(100%);
+  opacity: 1;
+}
+
+/* Conqueror's Haki Aura Pulse */
+@keyframes conquerorPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.25), inset 0 0 10px rgba(168, 85, 247, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(168, 85, 247, 0.55), 0 0 50px rgba(6, 182, 212, 0.3), inset 0 0 16px rgba(168, 85, 247, 0.2);
+  }
+}
+
+.animate-haki-pulse {
+  animation: conquerorPulse 3.5s ease-in-out infinite;
+}
+
+/* Dragon Fire / Magma Embers Glow */
+@keyframes dragonEmbers {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(245, 158, 11, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.6), 0 0 45px rgba(249, 115, 22, 0.35), inset 0 0 16px rgba(245, 158, 11, 0.25);
+  }
+}
+
+.animate-dragon-embers {
+  animation: dragonEmbers 3s ease-in-out infinite;
+}
+
+/* Continuous Shifting Border Gradient */
+@keyframes borderFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.border-flow-glow {
+  position: relative;
+}
+
+.border-flow-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, #06b6d4, #8b5cf6, #f59e0b, #ec4899, #06b6d4);
+  background-size: 300% 300%;
+  animation: borderFlow 6s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* High-craft interactive card lift */
+.card-vfx-interactive {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.card-vfx-interactive:hover {
+  transform: translateY(-3px) scale(1.008);
+  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Breathing indicator ping subtle */
+@keyframes pingSubtle {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+.animate-ping-subtle {
+  animation: pingSubtle 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 

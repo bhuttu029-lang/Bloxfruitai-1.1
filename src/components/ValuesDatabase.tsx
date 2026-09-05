@@ -333,16 +333,21 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
             <div
               key={item.id}
               id={`database-card-${item.id}`}
-              className="group relative rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 p-4 transition-all hover:shadow-xl hover:shadow-cyan-950/30 flex flex-col justify-between"
+              className="group relative rounded-2xl bg-slate-900/85 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 p-4 card-vfx-interactive foil-card-shine flex flex-col justify-between"
             >
               {/* Item Top Row */}
               <div>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-950 border border-slate-800 group-hover:scale-105 transition-transform overflow-hidden shrink-0"
+                      className="relative w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-950 border border-slate-800 group-hover:scale-105 transition-transform overflow-hidden shrink-0"
                       style={{ borderColor: item.accentColor + '60' }}
                     >
+                      {/* Ambient rarity aura backdrop */}
+                      <div
+                        className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity blur-sm pointer-events-none"
+                        style={{ backgroundColor: item.accentColor }}
+                      />
                       <SafeFruitImage
                         src={item.iconUrl}
                         alt={item.name}

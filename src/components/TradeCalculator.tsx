@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -100,6 +100,18 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
   const [showToast, setShowToast] = useState<string | null>(null);
+
+  // Smooth swap animation states
+  const [swapKey, setSwapKey] = useState(0);
+  const [swapRotation, setSwapRotation] = useState(0);
+
+  const handleSwapSides = () => {
+    soundFX.playPop();
+    setSwapRotation((prev) => prev + 180);
+    setSwapKey((prev) => prev + 1);
+    onSwapSides();
+    setAiAnalysis(null);
+  };
 
   // --- 30-DAY HISTORICAL VALUE TREND CHART STATE ---
   const savedCalcSettings = useMemo(() => {
@@ -373,37 +385,65 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
       </div>
 
       {/* Trade Calculator Dual Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+      <div
+        id="trade-calculator-dual-tables"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative"
+        style={{ perspective: 1200 }}
+      >
         {/* Center Action Toolbar */}
         <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:top-1/2 lg:-translate-y-1/2 z-20 flex lg:flex-col items-center justify-center gap-2 py-2">
-          <button
+          <motion.button
             id="swap-trade-sides-btn"
-            onClick={() => {
-              soundFX.playPop();
-              onSwapSides();
-            }}
-            className="p-3 rounded-2xl bg-slate-900 hover:bg-cyan-950 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 shadow-xl transition-all hover:rotate-180 duration-300"
+            onClick={handleSwapSides}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-3 rounded-2xl bg-slate-900 hover:bg-cyan-950/70 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 shadow-xl transition-colors cursor-pointer active:shadow-[0_0_20px_rgba(6,182,212,0.5)]"
             title="Swap Your Offer & Their Offer"
           >
-            <ArrowRightLeft className="w-5 h-5" />
-          </button>
+            <motion.div
+              animate={{ rotate: swapRotation }}
+              transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+            >
+              <ArrowRightLeft className="w-5 h-5" />
+            </motion.div>
+          </motion.button>
 
-          <button
+          <motion.button
             id="clear-trade-btn"
             onClick={() => {
               soundFX.playPop();
               onClearTrade();
               setAiAnalysis(null);
             }}
-            className="p-3 rounded-2xl bg-slate-900 hover:bg-rose-950 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-300 shadow-xl transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="p-3 rounded-2xl bg-slate-900 hover:bg-rose-950/70 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-rose-300 shadow-xl transition-colors cursor-pointer"
             title="Clear all trade items"
           >
             <RotateCcw className="w-5 h-5" />
-          </button>
+          </motion.button>
         </div>
 
         {/* --- LEFT WINDOW: YOU GIVE --- */}
-        <div className="rounded-3xl bg-slate-900/90 border border-cyan-500/30 p-5 sm:p-6 shadow-2xl flex flex-col justify-between">
+        <motion.div
+          id="trade-side-you"
+          animate={
+            swapKey > 0
+              ? {
+                  rotateY: swapKey % 2 === 1 ? [0, -12, 0] : [0, 12, 0],
+                  scale: [1, 0.985, 1],
+                  x: swapKey % 2 === 1 ? [0, 6, 0] : [0, -6, 0],
+                }
+              : {
+                  rotateY: 0,
+                  scale: 1,
+                  x: 0,
+                }
+          }
+          transition={{ duration: 0.28, ease: [0.2, 1, 0.3, 1] }}
+          style={{ transformStyle: 'preserve-3d' }}
+          className="rounded-3xl bg-slate-900/90 border border-cyan-500/30 p-5 sm:p-6 shadow-2xl flex flex-col justify-between"
+        >
           <div>
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -527,10 +567,28 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           >
             <Plus className="w-4 h-4" /> Add to Your Offer
           </button>
-        </div>
+        </motion.div>
 
         {/* --- RIGHT WINDOW: THEY GIVE --- */}
-        <div className="rounded-3xl bg-slate-900/90 border border-purple-500/30 p-5 sm:p-6 shadow-2xl flex flex-col justify-between">
+        <motion.div
+          id="trade-side-them"
+          animate={
+            swapKey > 0
+              ? {
+                  rotateY: swapKey % 2 === 1 ? [0, 12, 0] : [0, -12, 0],
+                  scale: [1, 0.985, 1],
+                  x: swapKey % 2 === 1 ? [0, -6, 0] : [0, 6, 0],
+                }
+              : {
+                  rotateY: 0,
+                  scale: 1,
+                  x: 0,
+                }
+          }
+          transition={{ duration: 0.28, ease: [0.2, 1, 0.3, 1] }}
+          style={{ transformStyle: 'preserve-3d' }}
+          className="rounded-3xl bg-slate-900/90 border border-purple-500/30 p-5 sm:p-6 shadow-2xl flex flex-col justify-between"
+        >
           <div>
             {/* Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -654,7 +712,7 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           >
             <Plus className="w-4 h-4" /> Add to Their Offer
           </button>
-        </div>
+        </motion.div>
       </div>
 
       {/* --- LIVE VALUATION METER & VERDICT CARD --- */}

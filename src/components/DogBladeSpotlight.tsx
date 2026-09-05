@@ -33,10 +33,10 @@ export const DogBladeSpotlight: React.FC<DogBladeSpotlightProps> = ({
   return (
     <div id="dog-blade-spotlight-container" className="space-y-6 animate-fade-in">
       {/* Hero Showcase Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-cyan-950/60 border border-cyan-500/40 p-6 sm:p-8 shadow-2xl shadow-cyan-950/60">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-cyan-950/60 border border-cyan-500/40 p-6 sm:p-8 shadow-2xl shadow-cyan-950/60 border-flow-glow foil-card-shine">
         {/* Glow Effects */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Column: Visual Card & Badge */}

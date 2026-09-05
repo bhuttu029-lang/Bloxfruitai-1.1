@@ -182,9 +182,9 @@ export const TopHud: React.FC<TopHudProps> = ({
   return (
     <div className="relative mb-6">
       {/* Top ambient banner */}
-      <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-950/90 border border-slate-800/80 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      <div className="rounded-3xl p-5 sm:p-6 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-slate-950/95 border border-slate-800/80 shadow-2xl backdrop-blur-xl relative overflow-hidden border-flow-glow">
         {/* Glow ambient accent */}
-        <div className={`absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl ${info.color} opacity-10 blur-3xl pointer-events-none`} />
+        <div className={`absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl ${info.color} opacity-15 blur-3xl pointer-events-none`} />
         
         {/* Top Status Ticker Row */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-800/80 text-xs">

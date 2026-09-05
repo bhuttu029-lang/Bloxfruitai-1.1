@@ -439,21 +439,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </button>
 
-            {/* Secret Owner Vault Trigger Button */}
-            <button
-              id="sidebar-owner-vault-btn"
-              onClick={() => {
-                soundFX.playPop();
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { detail: {} }));
-                }
-              }}
-              title="Grandmaster Owner Control Center"
-              className="p-2 rounded-xl bg-slate-900 hover:bg-amber-950/50 border border-slate-800 hover:border-amber-500/50 text-slate-500 hover:text-amber-400 transition-all shrink-0 cursor-pointer"
-            >
-              <Key className="w-4 h-4" />
-            </button>
-
             {/* Collapse / Expand Toggle button (Desktop only) */}
             {!isMobileView && (
               <button
