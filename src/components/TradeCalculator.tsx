@@ -46,6 +46,8 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundFX } from '../utils/audio';
+import { AnimatedTradeScales } from './AnimatedTradeScales';
+import { Interactive3DCard } from './Interactive3DCard';
 
 interface TradeCalculatorProps {
   yourItems: TradeSideItem[];
@@ -494,63 +496,66 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                 const itemVal = isPerm && item.permanentValue ? item.permanentValue : item.physicalValue;
 
                 return (
-                  <div
+                  <Interactive3DCard
                     key={itemEntry.uid}
                     id={`you-slot-filled-${slotIdx}`}
-                    className="relative h-28 rounded-2xl bg-slate-950 border border-slate-800 p-3 flex flex-col justify-between group hover:border-cyan-500 transition-all shadow-md overflow-hidden"
+                    glowColor="rgba(56, 189, 248, 0.35)"
+                    className="rounded-2xl"
                   >
-                    {/* Delete button */}
-                    <button
-                      id={`delete-you-item-${slotIdx}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        soundFX.playPop();
-                        onRemoveItem('you', itemEntry.uid);
-                      }}
-                      className="absolute top-2 right-2 p-1 rounded-md bg-slate-900 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors"
-                      title="Remove item"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="relative h-28 rounded-2xl bg-slate-950 border border-slate-800 p-3 flex flex-col justify-between group hover:border-cyan-500 transition-all shadow-md overflow-hidden">
+                      {/* Delete button */}
+                      <button
+                        id={`delete-you-item-${slotIdx}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playPop();
+                          onRemoveItem('you', itemEntry.uid);
+                        }}
+                        className="absolute top-2 right-2 p-1 rounded-md bg-slate-900 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors z-20"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
 
-                    <div
-                      className="cursor-pointer"
-                      onClick={() => {
-                        soundFX.playPop();
-                        onInspectItem(item);
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden">
-                          <SafeFruitImage
-                            src={item.iconUrl}
-                            alt={item.name}
-                            category={item.category}
-                            rarity={item.rarity}
-                            fallbackEmoji={item.imageEmoji}
-                            className="w-7 h-7 object-contain"
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1 pr-4">
-                          <div className="text-xs font-bold text-white truncate">
-                            {isPerm ? `Perm ${item.name}` : item.name}
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => {
+                          soundFX.playPop();
+                          onInspectItem(item);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden">
+                            <SafeFruitImage
+                              src={item.iconUrl}
+                              alt={item.name}
+                              category={item.category}
+                              rarity={item.rarity}
+                              fallbackEmoji={item.imageEmoji}
+                              className="w-7 h-7 object-contain"
+                            />
                           </div>
-                          <div className="text-[10px] text-cyan-400 font-medium truncate">
-                            {item.rarity}
+                          <div className="min-w-0 flex-1 pr-4">
+                            <div className="text-xs font-bold text-white truncate">
+                              {isPerm ? `Perm ${item.name}` : item.name}
+                            </div>
+                            <div className="text-[10px] text-cyan-400 font-medium truncate">
+                              {item.rarity}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
-                      <span className="font-extrabold text-cyan-400">
-                        {formatValueNumber(itemVal)}
-                      </span>
-                      <span className="text-[10px] text-amber-400 font-semibold">
-                        ★ {item.demand}/10
-                      </span>
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+                        <span className="font-extrabold text-cyan-400">
+                          {formatValueNumber(itemVal)}
+                        </span>
+                        <span className="text-[10px] text-amber-400 font-semibold">
+                          ★ {item.demand}/10
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </Interactive3DCard>
                 );
               })}
             </div>
@@ -639,63 +644,66 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                 const itemVal = isPerm && item.permanentValue ? item.permanentValue : item.physicalValue;
 
                 return (
-                  <div
+                  <Interactive3DCard
                     key={itemEntry.uid}
                     id={`them-slot-filled-${slotIdx}`}
-                    className="relative h-28 rounded-2xl bg-slate-950 border border-slate-800 p-3 flex flex-col justify-between group hover:border-purple-500 transition-all shadow-md overflow-hidden"
+                    glowColor="rgba(168, 85, 247, 0.35)"
+                    className="rounded-2xl"
                   >
-                    {/* Delete button */}
-                    <button
-                      id={`delete-them-item-${slotIdx}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        soundFX.playPop();
-                        onRemoveItem('them', itemEntry.uid);
-                      }}
-                      className="absolute top-2 right-2 p-1 rounded-md bg-slate-900 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors"
-                      title="Remove item"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="relative h-28 rounded-2xl bg-slate-950 border border-slate-800 p-3 flex flex-col justify-between group hover:border-purple-500 transition-all shadow-md overflow-hidden">
+                      {/* Delete button */}
+                      <button
+                        id={`delete-them-item-${slotIdx}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playPop();
+                          onRemoveItem('them', itemEntry.uid);
+                        }}
+                        className="absolute top-2 right-2 p-1 rounded-md bg-slate-900 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors z-20"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
 
-                    <div
-                      className="cursor-pointer"
-                      onClick={() => {
-                        soundFX.playPop();
-                        onInspectItem(item);
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden">
-                          <SafeFruitImage
-                            src={item.iconUrl}
-                            alt={item.name}
-                            category={item.category}
-                            rarity={item.rarity}
-                            fallbackEmoji={item.imageEmoji}
-                            className="w-7 h-7 object-contain"
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1 pr-4">
-                          <div className="text-xs font-bold text-white truncate">
-                            {isPerm ? `Perm ${item.name}` : item.name}
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => {
+                          soundFX.playPop();
+                          onInspectItem(item);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden">
+                            <SafeFruitImage
+                              src={item.iconUrl}
+                              alt={item.name}
+                              category={item.category}
+                              rarity={item.rarity}
+                              fallbackEmoji={item.imageEmoji}
+                              className="w-7 h-7 object-contain"
+                            />
                           </div>
-                          <div className="text-[10px] text-purple-400 font-medium truncate">
-                            {item.rarity}
+                          <div className="min-w-0 flex-1 pr-4">
+                            <div className="text-xs font-bold text-white truncate">
+                              {isPerm ? `Perm ${item.name}` : item.name}
+                            </div>
+                            <div className="text-[10px] text-purple-400 font-medium truncate">
+                              {item.rarity}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
-                      <span className="font-extrabold text-purple-400">
-                        {formatValueNumber(itemVal)}
-                      </span>
-                      <span className="text-[10px] text-amber-400 font-semibold">
-                        ★ {item.demand}/10
-                      </span>
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+                        <span className="font-extrabold text-purple-400">
+                          {formatValueNumber(itemVal)}
+                        </span>
+                        <span className="text-[10px] text-amber-400 font-semibold">
+                          ★ {item.demand}/10
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </Interactive3DCard>
                 );
               })}
             </div>
@@ -714,6 +722,14 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           </button>
         </motion.div>
       </div>
+
+      {/* --- ANIMATED GOLDEN BALANCE SCALES --- */}
+      <AnimatedTradeScales
+        yourTotalValue={result.yourTotalValue}
+        theirTotalValue={result.theirTotalValue}
+        verdict={result.verdict}
+        difference={result.difference}
+      />
 
       {/* --- LIVE VALUATION METER & VERDICT CARD --- */}
       <motion.div
@@ -745,11 +761,18 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
               Trade Verdict Calculation
             </div>
             <div className="flex items-center gap-3 mt-1">
-              <span
-                className={`px-4 py-1.5 rounded-2xl text-base sm:text-lg font-black border tracking-wide ${verdictStyle.bg}`}
-              >
-                {verdictStyle.label}
-              </span>
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={verdictStyle.label}
+                  initial={{ scale: 2.3, rotate: -12, opacity: 0, filter: 'blur(8px)' }}
+                  animate={{ scale: 1, rotate: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ scale: 0.85, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 450, damping: 22 }}
+                  className={`px-4 py-1.5 rounded-2xl text-base sm:text-lg font-black border tracking-wide shadow-2xl ${verdictStyle.bg}`}
+                >
+                  {verdictStyle.label}
+                </motion.span>
+              </AnimatePresence>
               <span className="text-xs text-slate-300 font-medium">
                 {result.verdictDescription}
               </span>

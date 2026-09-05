@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 import { SafeFruitImage } from './SafeFruitImage';
+import { Interactive3DCard } from './Interactive3DCard';
 
 interface ValuesDatabaseProps {
   onSelectItem: (item: FruitItem) => void;
@@ -330,146 +331,151 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
           const hasCustom = !!overrides[item.id];
 
           return (
-            <div
+            <Interactive3DCard
               key={item.id}
-              id={`database-card-${item.id}`}
-              className="group relative rounded-2xl bg-slate-900/85 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 p-4 card-vfx-interactive foil-card-shine flex flex-col justify-between"
+              glowColor={item.accentColor ? `${item.accentColor}40` : 'rgba(56, 189, 248, 0.3)'}
+              className="rounded-2xl h-full"
             >
-              {/* Item Top Row */}
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="relative w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-950 border border-slate-800 group-hover:scale-105 transition-transform overflow-hidden shrink-0"
-                      style={{ borderColor: item.accentColor + '60' }}
-                    >
-                      {/* Ambient rarity aura backdrop */}
+              <div
+                id={`database-card-${item.id}`}
+                className="group relative rounded-2xl bg-slate-900/85 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 p-4 card-vfx-interactive foil-card-shine flex flex-col justify-between h-full"
+              >
+                {/* Item Top Row */}
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-3">
                       <div
-                        className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity blur-sm pointer-events-none"
-                        style={{ backgroundColor: item.accentColor }}
-                      />
-                      <SafeFruitImage
-                        src={item.iconUrl}
-                        alt={item.name}
-                        category={item.category}
-                        rarity={item.rarity}
-                        fallbackEmoji={item.imageEmoji}
-                        className="w-10 h-10 object-contain"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                        {isPerm ? `Perm ${item.name}` : item.name}
-                      </h4>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className="text-[10px] font-semibold"
-                          style={{ color: item.accentColor }}
-                        >
-                          {item.rarity}
-                        </span>
-                        {item.type && (
-                          <span className="text-[10px] text-slate-500">
-                            • {item.type}
+                        className="relative w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-950 border border-slate-800 group-hover:scale-105 transition-transform overflow-hidden shrink-0"
+                        style={{ borderColor: item.accentColor + '60' }}
+                      >
+                        {/* Ambient rarity aura backdrop */}
+                        <div
+                          className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity blur-sm pointer-events-none"
+                          style={{ backgroundColor: item.accentColor }}
+                        />
+                        <SafeFruitImage
+                          src={item.iconUrl}
+                          alt={item.name}
+                          category={item.category}
+                          rarity={item.rarity}
+                          fallbackEmoji={item.imageEmoji}
+                          className="w-10 h-10 object-contain"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
+                          {isPerm ? `Perm ${item.name}` : item.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span
+                            className="text-[10px] font-semibold"
+                            style={{ color: item.accentColor }}
+                          >
+                            {item.rarity}
                           </span>
-                        )}
+                          {item.type && (
+                            <span className="text-[10px] text-slate-500">
+                              • {item.type}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex flex-col items-end gap-1">
-                    {item.widgetTag && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        {item.widgetTag}
-                      </span>
-                    )}
-                    {item.isCustomAdded && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
-                        Custom Added
-                      </span>
-                    )}
-                    {hasCustom && !item.isCustomAdded && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                        Custom
-                      </span>
-                    )}
-                    {item.isNewOrReworked && !item.widgetTag && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500 text-slate-950 uppercase">
-                        NEW
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Primary Stats Grid */}
-                <div className="grid grid-cols-2 gap-2 my-3 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
-                  <div>
-                    <div className="text-[10px] text-slate-400">Trade Value</div>
-                    <div className="text-sm font-extrabold text-cyan-400">
-                      {formatValueNumber(displayVal)}
+                    <div className="flex flex-col items-end gap-1">
+                      {item.widgetTag && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          {item.widgetTag}
+                        </span>
+                      )}
+                      {item.isCustomAdded && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                          Custom Added
+                        </span>
+                      )}
+                      {hasCustom && !item.isCustomAdded && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          Custom
+                        </span>
+                      )}
+                      {item.isNewOrReworked && !item.widgetTag && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500 text-slate-950 uppercase">
+                          NEW
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div>
-                    <div className="text-[10px] text-slate-400">Demand Rating</div>
-                    <div className="text-xs font-bold text-amber-400 flex items-center gap-1 mt-0.5">
-                      <span>{item.demand}/10</span>
-                      {item.demand >= 9 && <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />}
+                  {/* Primary Stats Grid */}
+                  <div className="grid grid-cols-2 gap-2 my-3 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
+                    <div>
+                      <div className="text-[10px] text-slate-400">Trade Value</div>
+                      <div className="text-sm font-extrabold text-cyan-400">
+                        {formatValueNumber(displayVal)}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] text-slate-400">Demand Rating</div>
+                      <div className="text-xs font-bold text-amber-400 flex items-center gap-1 mt-0.5">
+                        <span>{item.demand}/10</span>
+                        {item.demand >= 9 && <Flame className="w-3 h-3 text-orange-500 fill-orange-500" />}
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400">Combat Utility:</span>
+                      <span className="text-emerald-400 font-semibold">
+                        PvP: {item.pvpTier} | Grind: {item.grindTier}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="col-span-2 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Combat Utility:</span>
-                    <span className="text-emerald-400 font-semibold">
-                      PvP: {item.pvpTier} | Grind: {item.grindTier}
-                    </span>
+                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
+                    {item.description}
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+                  <button
+                    id={`details-btn-${item.id}`}
+                    onClick={() => {
+                      soundFX.playPop();
+                      onSelectItem(item);
+                    }}
+                    className="w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1"
+                  >
+                    <ExternalLink className="w-3 h-3" /> View Intel
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      id={`add-you-db-${item.id}`}
+                      onClick={() => {
+                        soundFX.playPop();
+                        onAddToYou(item, isPerm);
+                      }}
+                      className="flex-1 py-1.5 px-2 rounded-lg bg-cyan-600/30 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 text-xs font-bold transition-colors text-center"
+                      title="Add to You Give"
+                    >
+                      + You Give
+                    </button>
+                    <button
+                      id={`add-them-db-${item.id}`}
+                      onClick={() => {
+                        soundFX.playPop();
+                        onAddToThem(item, isPerm);
+                      }}
+                      className="flex-1 py-1.5 px-2 rounded-lg bg-purple-600/30 hover:bg-purple-500 text-purple-300 hover:text-white text-xs font-bold transition-colors text-center"
+                      title="Add to They Give"
+                    >
+                      + They Give
+                    </button>
                   </div>
                 </div>
-
-                <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
-                  {item.description}
-                </p>
               </div>
-
-              {/* Action Buttons */}
-              <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
-                <button
-                  id={`details-btn-${item.id}`}
-                  onClick={() => {
-                    soundFX.playPop();
-                    onSelectItem(item);
-                  }}
-                  className="w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1"
-                >
-                  <ExternalLink className="w-3 h-3" /> View Intel
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    id={`add-you-db-${item.id}`}
-                    onClick={() => {
-                      soundFX.playPop();
-                      onAddToYou(item, isPerm);
-                    }}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-cyan-600/30 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 text-xs font-bold transition-colors text-center"
-                    title="Add to You Give"
-                  >
-                    + You Give
-                  </button>
-                  <button
-                    id={`add-them-db-${item.id}`}
-                    onClick={() => {
-                      soundFX.playPop();
-                      onAddToThem(item, isPerm);
-                    }}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-purple-600/30 hover:bg-purple-500 text-purple-300 hover:text-white text-xs font-bold transition-colors text-center"
-                    title="Add to They Give"
-                  >
-                    + They Give
-                  </button>
-                </div>
-              </div>
-            </div>
+            </Interactive3DCard>
           );
         })}
       </div>

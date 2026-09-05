@@ -4,6 +4,7 @@ import { FruitItem, TradeSideItem, BLOX_FRUITS_DATA, getEffectiveFruitList, sync
 import { initRealtimeFirebaseSync } from './lib/firebaseSync';
 import { Sidebar, NavTabType } from './components/Sidebar';
 import { TopHud } from './components/TopHud';
+import { TopProgressBar } from './components/TopProgressBar';
 import { VfxBackground } from './components/VfxBackground';
 import { BuildCrafter } from './components/BuildCrafter';
 import { SeaProgressionGuide } from './components/SeaProgressionGuide';
@@ -34,6 +35,9 @@ export default function App() {
   });
 
   const setActiveTab = (tab: NavTabType, replace = false) => {
+    if (tab !== activeTab) {
+      soundFX.playWhoosh();
+    }
     setActiveTabState(tab);
     navigateToRoute(tab, replace);
   };
@@ -334,6 +338,9 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${applyThemeClass(currentTheme).bgClass} flex flex-col selection:bg-cyan-500 selection:text-slate-950 relative overflow-x-hidden transition-colors duration-500`}>
+      {/* High-Fidelity Slim Progress Bar for Perceived Performance */}
+      <TopProgressBar activeTab={activeTab} />
+
       {/* Ambient Particle & Haki Aura Background */}
       <VfxBackground />
 

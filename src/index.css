@@ -331,4 +331,55 @@
   animation: pingSubtle 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Celestial Starlight Aurora Wave */
+@keyframes celestialAurora {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(25deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+}
+
+.animate-celestial-aurora {
+  background-size: 300% 300%;
+  animation: celestialAurora 10s ease infinite;
+}
+
+/* Radiant progress beam sweep */
+@keyframes shimmerBeam {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer-beam {
+  animation: shimmerBeam 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Floating Ultra Smooth (GPU accelerated) */
+@keyframes floatSmooth {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float-smooth {
+  animation: floatSmooth 3.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+
 
