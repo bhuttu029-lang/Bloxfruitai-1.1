@@ -34,6 +34,17 @@ interface LandingPageProps {
   onNavigate: (tab: NavTabType) => void;
 }
 
+// Guaranteed fallback high-res SVGs/placeholders for any network/host constraint
+const FALLBACK_PICS: Record<string, string> = {
+  portal: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23050c1e' stroke='%2300f0ff' stroke-width='4'/><circle cx='50' cy='50' r='28' fill='%2300f0ff' fill-opacity='0.25'/><circle cx='50' cy='50' r='12' fill='%23a855f7'/></svg>",
+  dragon: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%231a0808' stroke='%23ef4444' stroke-width='4'/><polygon points='50,18 78,76 22,76' fill='%23ef4444' fill-opacity='0.3'/><circle cx='50' cy='50' r='14' fill='%23f59e0b'/></svg>",
+  dough: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%231f1608' stroke='%23f59e0b' stroke-width='4'/><circle cx='50' cy='50' r='25' fill='%23f59e0b' fill-opacity='0.3'/><circle cx='50' cy='50' r='12' fill='%23ffffff'/></svg>",
+  leopard: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23140d04' stroke='%23d97706' stroke-width='4'/><circle cx='50' cy='50' r='26' fill='%23d97706' fill-opacity='0.3'/><polygon points='50,25 70,68 30,68' fill='%23fbbf24'/></svg>",
+  kitsune: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%2312061f' stroke='%23c084fc' stroke-width='4'/><circle cx='50' cy='50' r='26' fill='%23a855f7' fill-opacity='0.3'/><circle cx='50' cy='50' r='14' fill='%2338bdf8'/></svg>",
+  logo: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23050c1e' stroke='%2300f0ff' stroke-width='4'/><polygon points='50,20 80,75 20,75' fill='%2300f0ff' fill-opacity='0.4'/><circle cx='50' cy='55' r='12' fill='%2300f0ff'/></svg>",
+  naval: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'><rect width='400' height='250' fill='%23071228'/><path d='M0,180 Q100,160 200,180 T400,180 L400,250 L0,250 Z' fill='%230c254d'/><circle cx='200' cy='80' r='40' fill='%2300f0ff' fill-opacity='0.15' stroke='%2300f0ff'/><polygon points='200,55 225,95 175,95' fill='%2300f0ff'/></svg>"
+};
+
 const ASSETS = {
   logo: "https://lh3.googleusercontent.com/aida-public/AB6AXuDmv39CtKh7A6goTZ6vG0CcvfaHhhrFguImD3dVFqi0LU3G2vPumLSnjsTXblgaxp5rfeACOLkVOZ1r78NIqJJETBxTxcmS_mE_lUT9_7dg_vaY8KRU4I3lmFy-nIQ9ZNbp90vVtwM9--LwVUGISD5neYfnMWAIK0iMuDieQVIFEo8bF7--KhpDTKsPL7DEIgAdpiif1SPvrf_8Bx1upYYk16XqZQvXggpofZrbGGhsQGoQ-c2E42RY1rXryJpxsQJh3go",
   portal: "https://lh3.googleusercontent.com/aida/AEtjO1Xp6DRjNvI2WxB5ZHoF2sL8GzvFPkvk3kLqyD981bqu4IBsJP6dwd7uGLXs6oj3gRJ2NpCNVZ9BHespTMiuJSx3BkRqluwg-8nKgXz2kgOibtACqsGvpEsINNIvVhH8CIeSFGTdpF_NbsnqmzsdrmdJ8bOGd1V0B3WfeYE3psxPZZzJBALbfK6ieO8cpfDWWQrUKFIZLMKRH_dbhlJGLRmKhufxDCBCR7-X-cB-cbK1oqxWLOQT_JiThX-n",
@@ -45,11 +56,37 @@ const ASSETS = {
   footerCrest: "https://lh3.googleusercontent.com/aida-public/AB6AXuCveXK537RLD342CfvmWutfOa79BI0PDtGo0FcAZXByt6QFhOtU30Mew4o6bZ9--P0t1kdaN4hk4ZtxFDY-DOcQc69paAEDtZMoxKoi4YXvX5OGLGk12I8fmPOg-8rn1eCYmGThsoUucT3VKPbnCzsmS0ZrqIvtshyoAM8mla5ahqjceaBlijR0Ztzb5VYVwF1YyFTzT25JXSv4UrTVBPK0wOwmvMvcWyKtreXq2h-ZZFY1Mm8d4UXb0N6ZCSaA8G4JaOE"
 };
 
+// Safe Image Component that handles errors instantly on any host domain
+const ResilientImage: React.FC<{
+  src: string;
+  fallbackKey: keyof typeof FALLBACK_PICS;
+  alt: string;
+  className?: string;
+  loading?: 'lazy' | 'eager';
+}> = ({ src, fallbackKey, alt, className = '', loading = 'lazy' }) => {
+  const [imgSrc, setImgSrc] = useState(src);
+
+  return (
+    <img
+      src={imgSrc}
+      alt={alt}
+      className={className}
+      loading={loading}
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (imgSrc !== FALLBACK_PICS[fallbackKey]) {
+          setImgSrc(FALLBACK_PICS[fallbackKey]);
+        }
+      }}
+    />
+  );
+};
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   const threeContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedMythicIndex, setSelectedMythicIndex] = useState<number>(0);
 
-  // Three.js interactive 3D Mythical Blox Fruit Engine
+  // Optimized Three.js interactive 3D Mythical Blox Fruit Engine (Pauses when off-screen)
   useEffect(() => {
     const container = threeContainerRef.current;
     if (!container) return;
@@ -63,42 +100,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     const height = container.clientHeight || 300;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 0, 7.5);
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     container.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0x0a1026, 2.2);
+    // Lighting (Optimized counts)
+    const ambientLight = new THREE.AmbientLight(0x0a1026, 2.5);
     scene.add(ambientLight);
 
-    const pointLightCyan = new THREE.PointLight(0x00f0ff, 5.0, 30);
+    const pointLightCyan = new THREE.PointLight(0x00f0ff, 4.0, 20);
     pointLightCyan.position.set(4, 4, 4);
     scene.add(pointLightCyan);
 
-    const pointLightPurple = new THREE.PointLight(0xa855f7, 4.5, 30);
+    const pointLightPurple = new THREE.PointLight(0xa855f7, 3.5, 20);
     pointLightPurple.position.set(-4, -3, 3);
     scene.add(pointLightPurple);
-
-    const pointLightGold = new THREE.PointLight(0xffb703, 3.5, 20);
-    pointLightGold.position.set(0, 5, 2);
-    scene.add(pointLightGold);
 
     // Mythic Fruit Artifact Group
     const fruitGroup = new THREE.Group();
     scene.add(fruitGroup);
 
-    // Fruit Core - Mythic Icosahedron Geosphere
-    const coreGeo = new THREE.IcosahedronGeometry(1.5, 2);
+    // Fruit Core - Mythic Icosahedron Geosphere (polycount optimized)
+    const coreGeo = new THREE.IcosahedronGeometry(1.5, 1);
     const coreMat = new THREE.MeshPhongMaterial({
       color: 0x050b1a,
       emissive: 0x003b5c,
       specular: 0x00f0ff,
-      shininess: 90,
-      wireframe: false,
+      shininess: 70,
       flatShading: true
     });
     const fruitCore = new THREE.Mesh(coreGeo, coreMat);
@@ -110,26 +142,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       color: 0x00f0ff,
       wireframe: true,
       transparent: true,
-      opacity: 0.4
+      opacity: 0.35
     });
     const wireShield = new THREE.Mesh(wireGeo, wireMat);
     fruitGroup.add(wireShield);
 
-    // Swirling Rings
-    const ringGeo1 = new THREE.TorusGeometry(2.2, 0.03, 16, 100);
-    const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.8 });
+    // Swirling Rings (32 segments instead of 100 for 60fps)
+    const ringGeo1 = new THREE.TorusGeometry(2.2, 0.03, 8, 36);
+    const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.75 });
     const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
     ring1.rotation.x = Math.PI / 3;
     fruitGroup.add(ring1);
 
-    const ringGeo2 = new THREE.TorusGeometry(2.5, 0.025, 16, 100);
-    const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.75 });
+    const ringGeo2 = new THREE.TorusGeometry(2.5, 0.025, 8, 36);
+    const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.7 });
     const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
     ring2.rotation.y = Math.PI / 4;
     fruitGroup.add(ring2);
 
     // Swirling Mythic Horns
-    const hornGeo = new THREE.ConeGeometry(0.28, 1.1, 5);
+    const hornGeo = new THREE.ConeGeometry(0.28, 1.1, 4);
     const hornMat = new THREE.MeshPhongMaterial({ color: 0x00f0ff, emissive: 0x002233, flatShading: true });
     for (let i = 0; i < 4; i++) {
       const horn = new THREE.Mesh(hornGeo, hornMat);
@@ -140,14 +172,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       fruitGroup.add(horn);
     }
 
-    // Floating Particles
-    const particleCount = 100;
+    // Floating Particles (40 particles)
+    const particleCount = 40;
     const particleGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos((Math.random() * 2) - 1);
-      const dist = 2.2 + Math.random() * 2.0;
+      const dist = 2.2 + Math.random() * 1.8;
       positions[i * 3] = dist * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = dist * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = dist * Math.cos(phi);
@@ -155,9 +187,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
       color: 0x00f0ff,
-      size: 0.07,
+      size: 0.06,
       transparent: true,
-      opacity: 0.7
+      opacity: 0.6
     });
     const particleSystem = new THREE.Points(particleGeo, particleMat);
     fruitGroup.add(particleSystem);
@@ -167,6 +199,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     let targetX = 0, targetY = 0;
     let isDragging = false;
     let prevMouseX = 0, prevMouseY = 0;
+    let isVisible = true;
 
     const handleMouseDown = (e: MouseEvent) => {
       isDragging = true;
@@ -201,7 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
     container.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: true });
 
     let animationFrameId: number;
@@ -209,25 +242,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
+      if (!isVisible || document.hidden) return;
+
       const elapsedTime = clock.getElapsedTime();
 
       if (!isDragging) {
         targetX += (mouseX - targetX) * 0.05;
         targetY += (mouseY - targetY) * 0.05;
-        fruitGroup.rotation.y += 0.008;
-        fruitGroup.rotation.x = Math.sin(elapsedTime * 0.5) * 0.12 - targetY * 0.4;
-        fruitGroup.position.y = Math.sin(elapsedTime * 1.5) * 0.15;
+        fruitGroup.rotation.y += 0.007;
+        fruitGroup.rotation.x = Math.sin(elapsedTime * 0.5) * 0.1 - targetY * 0.3;
+        fruitGroup.position.y = Math.sin(elapsedTime * 1.4) * 0.12;
       }
 
-      wireShield.rotation.y = -elapsedTime * 0.2;
-      ring1.rotation.z = elapsedTime * 0.45;
-      ring2.rotation.x = elapsedTime * 0.35;
-      particleSystem.rotation.y = elapsedTime * 0.12;
+      wireShield.rotation.y = -elapsedTime * 0.18;
+      ring1.rotation.z = elapsedTime * 0.4;
+      ring2.rotation.x = elapsedTime * 0.3;
+      particleSystem.rotation.y = elapsedTime * 0.1;
 
       renderer.render(scene, camera);
     };
 
     animate();
+
+    // IntersectionObserver to pause rendering when scrolled past hero
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        isVisible = entry.isIntersecting;
+      });
+    }, { threshold: 0.1 });
+    observer.observe(container);
 
     const onResize = () => {
       const w = container.clientWidth;
@@ -241,12 +284,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     window.addEventListener('resize', onResize);
 
     return () => {
+      observer.disconnect();
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
       container.removeEventListener('mousedown', handleMouseDown);
       container.removeEventListener('touchmove', handleTouchMove);
+
+      // Clean up Three.js resources
+      coreGeo.dispose();
+      coreMat.dispose();
+      wireGeo.dispose();
+      wireMat.dispose();
+      ringGeo1.dispose();
+      ringMat1.dispose();
+      ringGeo2.dispose();
+      ringMat2.dispose();
+      hornGeo.dispose();
+      hornMat.dispose();
+      particleGeo.dispose();
+      particleMat.dispose();
       renderer.dispose();
     };
   }, []);
@@ -378,11 +436,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="flex items-center gap-3.5 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="relative flex items-center justify-center">
               <div className="absolute -inset-1 rounded-xl bg-cyan-500/30 blur-md group-hover:bg-cyan-400/50 transition-all"></div>
-              <img 
+              <ResilientImage 
                 alt="Solas AI Platform Branding" 
                 className="h-11 w-14 object-cover object-center relative z-10 rounded-xl border border-cyan-400/60 shadow-[0_0_20px_rgba(0,240,255,0.4)]" 
                 src={ASSETS.logo}
-                referrerPolicy="no-referrer"
+                fallbackKey="logo"
+                loading="eager"
               />
             </div>
             <div className="flex flex-col">
@@ -609,11 +668,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                   {/* Glowing Mythical Kitsune Artwork Card */}
                   <div className="md:col-span-5 relative rounded-xl overflow-hidden border border-purple-500/50 group bg-slate-900/60 p-2.5 flex flex-col justify-between">
                     <div className="relative h-48 sm:h-52 rounded-lg overflow-hidden border border-cyan-500/30">
-                      <img 
+                      <ResilientImage 
                         alt="Portal Fruit 3D Asset" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                         src={ASSETS.portal}
-                        referrerPolicy="no-referrer"
+                        fallbackKey="portal"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#05070d] via-transparent to-transparent opacity-80"></div>
                       <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-rose-950/90 text-rose-400 font-mono text-[10px] font-bold border border-rose-500/40 animate-pulse">
@@ -689,21 +748,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           {/* Infinite Marquee Track with Real Glowing Fruit Icons & Badges */}
           <div className="relative w-full overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
             <div className="animate-marquee flex items-center gap-6 py-4">
-              {[...marqueeFruits, ...marqueeFruits, ...marqueeFruits].map((fruit, idx) => (
+              {[...marqueeFruits, ...marqueeFruits].map((fruit, idx) => (
                 <div 
                   key={idx}
                   onClick={() => {
                     soundFX.playPop();
                     onNavigate('database');
                   }}
-                  className={`${fruit.floatClass} group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-900/90 border ${fruit.border} ${fruit.shadow} hover:scale-105 transition-all cursor-pointer backdrop-blur-xl`}
+                  className={`${fruit.floatClass} group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-slate-900/90 border ${fruit.border} ${fruit.shadow} hover:scale-105 transition-all cursor-pointer backdrop-blur-md`}
                 >
-                  <div className="w-12 h-12 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(0,240,255,0.8)]">
-                    <img 
+                  <div className="w-12 h-12 flex-shrink-0 relative flex items-center justify-center">
+                    <ResilientImage 
                       alt={fruit.name} 
-                      className="w-12 h-12 object-contain rounded-full" 
+                      className="w-12 h-12 object-contain rounded-full drop-shadow-[0_0_8px_rgba(0,240,255,0.6)]" 
                       src={fruit.img}
-                      referrerPolicy="no-referrer"
+                      fallbackKey={fruit.name.toLowerCase().includes('dragon') ? 'dragon' : fruit.name.toLowerCase().includes('dough') ? 'dough' : fruit.name.toLowerCase().includes('leopard') ? 'leopard' : fruit.name.toLowerCase().includes('portal') ? 'portal' : 'kitsune'}
                     />
                   </div>
                   <div className="flex flex-col">
@@ -914,11 +973,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
               
               <div className="lg:col-span-7 relative h-80 sm:h-96 overflow-hidden">
-                <img 
+                <ResilientImage 
                   alt="Epic Naval Combat in Blox Fruits Sea 3" 
                   className="w-full h-full object-cover" 
                   src={ASSETS.navalCombat}
-                  referrerPolicy="no-referrer"
+                  fallbackKey="naval"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#05070d]/30 to-[#05070d] hidden lg:block"></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#05070d] via-transparent to-transparent lg:hidden"></div>
@@ -984,7 +1043,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           {/* Polished Glassmorphic Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {showcaseFruits.map((fruit, idx) => (
+            {showcaseFruits.map((fruit) => (
               <div 
                 key={fruit.id}
                 onClick={() => {
@@ -995,11 +1054,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 style={{ boxShadow: `${fruit.glow} 0px 10px 40px -10px` }}
               >
                 <div className="relative h-48 rounded-xl overflow-hidden mb-4 border border-slate-800 bg-black">
-                  <img 
+                  <ResilientImage 
                     alt={`${fruit.name} 3D`} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                     src={fruit.img}
-                    referrerPolicy="no-referrer"
+                    fallbackKey={fruit.id as keyof typeof FALLBACK_PICS}
                   />
                   <div className={`absolute top-2 right-2 px-2 py-0.5 rounded font-mono text-[10px] font-bold border ${fruit.badgeBg}`}>
                     {fruit.tierBadge}
@@ -1204,11 +1263,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             
             {/* Brand & Description */}
             <div className="flex items-center gap-3">
-              <img 
+              <ResilientImage 
                 alt="Solas AI Crest" 
                 className="h-9 w-12 object-cover rounded-lg border border-cyan-500/40" 
                 src={ASSETS.footerCrest}
-                referrerPolicy="no-referrer"
+                fallbackKey="crest"
               />
               <div className="flex flex-col">
                 <span className="text-base text-cyan-300 font-bold tracking-wider font-mono">SOLAS AI PROTOCOL</span>
