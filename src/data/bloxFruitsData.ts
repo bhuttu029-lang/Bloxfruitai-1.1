@@ -756,6 +756,8 @@ export interface TradeCalculationResult {
   verdict: 'Big Win' | 'Small Win' | 'Fair Trade' | 'Small Loss' | 'Big Loss';
   verdictDescription: string;
   isWithin40PercentRule: boolean;
+  yourTotalBeli?: number;
+  theirTotalBeli?: number;
   yourAverageDemand: number;
   theirAverageDemand: number;
   demandAdvantage: 'You' | 'Them' | 'Even';
@@ -1750,6 +1752,8 @@ export function evaluateTrade(
     verdict,
     verdictDescription,
     isWithin40PercentRule,
+    yourTotalBeli: yourBeliTotal,
+    theirTotalBeli: theirBeliTotal,
     yourAverageDemand: Number(yourAvgDemand.toFixed(1)),
     theirAverageDemand: Number(theirAvgDemand.toFixed(1)),
     demandAdvantage,

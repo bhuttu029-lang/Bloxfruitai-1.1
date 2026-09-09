@@ -37,6 +37,7 @@ import { AuthModal } from './AuthModal';
 import { getRouteForTab } from '../utils/routes';
 
 export type NavTabType = 
+  | 'landing'
   | 'checklist' 
   | 'crafter' 
   | 'tradeladder'
@@ -61,6 +62,16 @@ interface NavItemConfig {
 }
 
 const NAV_ITEMS: NavItemConfig[] = [
+  {
+    id: 'landing',
+    label: '🌟 Solas AI Landing',
+    shortLabel: 'Landing',
+    icon: Sparkles,
+    badge: 'NEW HUB',
+    badgeColor: 'bg-gradient-to-r from-cyan-500/30 to-purple-500/30 text-cyan-200 border-cyan-400/50',
+    accentColor: 'from-cyan-400 via-sky-300 to-purple-500',
+    description: '3D Mythic Core, Radar & VFX Stream'
+  },
   {
     id: 'sensei',
     label: 'Solas AI Sensei',

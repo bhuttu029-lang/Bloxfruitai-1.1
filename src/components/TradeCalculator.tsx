@@ -48,6 +48,7 @@ import confetti from 'canvas-confetti';
 import { soundFX } from '../utils/audio';
 import { AnimatedTradeScales } from './AnimatedTradeScales';
 import { Interactive3DCard } from './Interactive3DCard';
+import { D3TradeValueBalanceGraph } from './D3TradeValueBalanceGraph';
 
 interface TradeCalculatorProps {
   yourItems: TradeSideItem[];
@@ -885,6 +886,19 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
           </div>
         </div>
       </motion.div>
+
+      {/* --- D3 TRADE VALUE BALANCE GRAPH --- */}
+      <D3TradeValueBalanceGraph
+        yourItems={yourItems}
+        theirItems={theirItems}
+        yourTotalValue={result.yourTotalValue}
+        theirTotalValue={result.theirTotalValue}
+        difference={result.difference}
+        verdict={result.verdict}
+        isWithin40PercentRule={result.isWithin40PercentRule}
+        yourTotalBeli={result.yourTotalBeli}
+        theirTotalBeli={result.theirTotalBeli}
+      />
 
       {/* --- 30-DAY HISTORICAL VALUE TREND CHART (RECHARTS) --- */}
       <div id="trade-historical-trends-chart" className="rounded-3xl bg-slate-900/95 border border-cyan-500/30 p-5 sm:p-6 shadow-2xl space-y-4">

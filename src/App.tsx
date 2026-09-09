@@ -17,6 +17,7 @@ import { AiOracleChat } from './components/AiOracleChat';
 import { TradeLadderNavigator } from './components/TradeLadderNavigator';
 import { MutationLab } from './components/MutationLab';
 import { SuggestionsBoard } from './components/SuggestionsBoard';
+import { LandingPage } from './components/LandingPage';
 import { ItemDetailModal } from './components/ItemDetailModal';
 import { ItemSelectorModal } from './components/ItemSelectorModal';
 import { CopyrightSecurityModal } from './components/CopyrightSecurityModal';
@@ -365,19 +366,21 @@ export default function App() {
           isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
         }`}
       >
-        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-          {/* Top HUD Banner with Animated Status, Moon Timer & Dev Credits */}
-          <TopHud
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => {
-              const res = soundFX.toggleMute();
-              setSoundEnabled(res);
-            }}
-            currentTheme={currentTheme}
-            onThemeChange={setCurrentTheme}
-          />
+        <main className={`flex-1 w-full ${activeTab === 'landing' ? 'p-0 max-w-none' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6'}`}>
+          {/* Top HUD Banner with Animated Status, Moon Timer & Dev Credits (Hidden on Landing Page) */}
+          {activeTab !== 'landing' && (
+            <TopHud
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              soundEnabled={soundEnabled}
+              onToggleSound={() => {
+                const res = soundFX.toggleMute();
+                setSoundEnabled(res);
+              }}
+              currentTheme={currentTheme}
+              onThemeChange={setCurrentTheme}
+            />
+          )}
 
           {/* Animated Tab Content Transitions */}
           <AnimatePresence mode="wait">
@@ -389,6 +392,11 @@ export default function App() {
               transition={{ duration: 0.25, ease: 'easeOut' }}
               className="w-full"
             >
+              {/* 0. Solas AI Landing Page & 3D Mythic Core */}
+              {activeTab === 'landing' && (
+                <LandingPage onNavigate={setActiveTab} />
+              )}
+
               {/* 0. Personal Obtainment & Collection Checklist */}
               {activeTab === 'checklist' && (
                 <MyChecklist

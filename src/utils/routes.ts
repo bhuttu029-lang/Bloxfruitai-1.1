@@ -11,9 +11,17 @@ export interface RouteConfig {
 
 export const APP_ROUTES: RouteConfig[] = [
   {
+    id: 'landing',
+    path: '/',
+    aliases: ['/', '/home', '/landing', '/overview', '/radar'],
+    title: 'Solas AI • Apex Blox Fruits Companion & Trade Protocol',
+    shortTitle: 'Solas AI Landing',
+    description: 'High-octane tactical landing page for Solas AI featuring 3D mythical core, trade arbitrator, and sea reconnaissance.'
+  },
+  {
     id: 'sensei',
     path: '/sensei',
-    aliases: ['/', '/ai', '/chat', '/solas', '/sensei', '/oracle'],
+    aliases: ['/ai', '/chat', '/solas', '/sensei', '/oracle'],
     title: 'Solas AI Sensei • Blox Fruits Master Hub',
     shortTitle: 'Solas AI Sensei',
     description: 'Blox Fruits AI Grandmaster companion, trade value evaluator, PvP tactician, and combat sensei.'

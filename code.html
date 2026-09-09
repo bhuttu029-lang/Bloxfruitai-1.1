@@ -1,0 +1,910 @@
+<!DOCTYPE html><html class="dark scroll-smooth" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SOLAS AI // The Ultimate Blox Fruits Intelligence Companion</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { display: none; }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 20px rgba(0,240,255,0.4)); }
+      50% { opacity: 0.9; filter: drop-shadow(0 0 40px rgba(168,85,247,0.7)); }
+    }
+    @keyframes floatRune {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(2deg); }
+    }
+    @keyframes marqueeScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes fruitBob1 {
+      0%, 100% { transform: translateY(-6px) rotate(-2deg); }
+      50% { transform: translateY(6px) rotate(2deg); }
+    }
+    @keyframes fruitBob2 {
+      0%, 100% { transform: translateY(5px) rotate(2deg); }
+      50% { transform: translateY(-7px) rotate(-2deg); }
+    }
+    @keyframes fruitBob3 {
+      0%, 100% { transform: translateY(-4px) rotate(3deg); }
+      50% { transform: translateY(6px) rotate(-1deg); }
+    }
+    @keyframes fruitBob4 {
+      0%, 100% { transform: translateY(7px) rotate(-2deg); }
+      50% { transform: translateY(-5px) rotate(2deg); }
+    }
+
+    .animate-marquee {
+      display: flex;
+      width: max-content;
+      animation: marqueeScroll 32s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+    .fruit-float-1 { animation: fruitBob1 3.2s ease-in-out infinite; }
+    .fruit-float-2 { animation: fruitBob2 3.8s ease-in-out infinite 0.4s; }
+    .fruit-float-3 { animation: fruitBob3 3.4s ease-in-out infinite 0.8s; }
+    .fruit-float-4 { animation: fruitBob4 4.1s ease-in-out infinite 1.2s; }
+
+    .neon-card-glow {
+      box-shadow: 0 10px 40px -10px rgba(0, 240, 255, 0.12), inset 0 0 20px rgba(0, 240, 255, 0.03);
+    }
+    .neon-purple-glow {
+      box-shadow: 0 10px 40px -10px rgba(168, 85, 247, 0.18), inset 0 0 20px rgba(168, 85, 247, 0.04);
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/threejs/r125/three.min.js"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "surface": "#11131a",
+          "tertiary-fixed": "#60ff99",
+          "primary-container": "#00f0ff",
+          "surface-variant": "#32353c",
+          "on-error": "#690005",
+          "surface-container-high": "#272a31",
+          "background": "#11131a",
+          "surface-container-highest": "#32353c",
+          "surface-container": "#1d1f26",
+          "on-secondary-fixed-variant": "#5516be",
+          "on-secondary-container": "#c4abff",
+          "surface-tint": "#00dbe9",
+          "secondary-container": "#571bc1",
+          "outline": "#849495",
+          "surface-container-low": "#191b22",
+          "on-tertiary-fixed-variant": "#005228",
+          "secondary-fixed": "#e9ddff",
+          "tertiary-fixed-dim": "#00e479",
+          "on-primary-fixed": "#002022",
+          "on-surface-variant": "#b9cacb",
+          "error-container": "#93000a",
+          "tertiary": "#daffde",
+          "error": "#ffb4ab",
+          "on-surface": "#e1e2ec",
+          "outline-variant": "#3b494b",
+          "on-error-container": "#ffdad6",
+          "inverse-primary": "#006970",
+          "on-tertiary-container": "#006d37",
+          "primary": "#dbfcff",
+          "secondary-fixed-dim": "#d0bcff",
+          "tertiary-container": "#00f985",
+          "on-primary": "#00363a",
+          "on-primary-fixed-variant": "#004f54",
+          "on-primary-container": "#006970",
+          "primary-fixed-dim": "#00dbe9",
+          "inverse-surface": "#e1e2ec",
+          "on-tertiary-fixed": "#00210c",
+          "secondary": "#d0bcff",
+          "on-background": "#e1e2ec",
+          "on-secondary-fixed": "#23005c",
+          "surface-container-lowest": "#0b0e15",
+          "on-secondary": "#3c0091",
+          "inverse-on-surface": "#2e3038",
+          "surface-dim": "#11131a",
+          "primary-fixed": "#7df4ff",
+          "surface-bright": "#373941",
+          "on-tertiary": "#003919"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.375rem",
+          "lg": "0.75rem",
+          "xl": "1rem",
+          "2xl": "1.5rem",
+          "full": "9999px"
+        },
+        "fontFamily": {
+          "label-code": ["JetBrains Mono", "monospace"],
+          "headline-lg": ["Space Grotesk", "sans-serif"],
+          "headline-md": ["Space Grotesk", "sans-serif"],
+          "body-lg": ["Geist", "sans-serif"],
+          "body-md": ["Geist", "sans-serif"],
+          "body-sm": ["Geist", "sans-serif"],
+          "display-lg": ["Space Grotesk", "sans-serif"],
+          "headline-sm": ["Space Grotesk", "sans-serif"],
+          "telemetry-micro": ["JetBrains Mono", "monospace"],
+          "telemetry-xs": ["JetBrains Mono", "monospace"]
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-[#05070d] text-on-surface font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container relative">
+<!-- ============================================================ -->
+<!-- 1. HEADER / SLEEK MARKETING NAVIGATION                        -->
+<!-- ============================================================ -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-[#05070d]/85 backdrop-blur-xl border-b border-outline-variant/60 transition-all duration-300">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<!-- Brand Logo with https://lh3.googleusercontent.com/aida-public/AB6AXuB7HM6MgwQe55gJZHjNT8GG0INMpswoBnkjy5Xd8GTMBYxHdROpDpC9sRqQzeny3BgDuKU53U89uhC7GKXQLY3oqY91etPA-ufGEhQWAe8s0pmrqr91amhcTsbQAUYpZmLEkNlbgJawYRC7tiML_8KWx3lILBphYvEg2hL-KbC2nqPyyLySBw2MHZv5lkK_11cjedR8kOzq3rEXjN9AvZCUnohClQO0CYPA33s7nPrZ0R7sn7LRhExP55jbFi_AYI91H4o -->
+<a class="flex items-center gap-3 group" href="#">
+<div class="relative flex items-center justify-center">
+<div class="absolute -inset-1 rounded-xl bg-primary-container/30 blur-md group-hover:bg-primary-container/50 transition-all"></div>
+<img alt="Solas AI Platform Branding" class="h-11 w-14 object-cover object-center relative z-10 rounded-xl border border-primary-container/60 shadow-[0_0_20px_rgba(0,240,255,0.4)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmv39CtKh7A6goTZ6vG0CcvfaHhhrFguImD3dVFqi0LU3G2vPumLSnjsTXblgaxp5rfeACOLkVOZ1r78NIqJJETBxTxcmS_mE_lUT9_7dg_vaY8KRU4I3lmFy-nIQ9ZNbp90vVtwM9--LwVUGISD5neYfnMWAIK0iMuDieQVIFEo8bF7--KhpDTKsPL7DEIgAdpiif1SPvrf_8Bx1upYYk16XqZQvXggpofZrbGGhsQGoQ-c2E42RY1rXryJpxsQJh3go">
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-xl text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary to-secondary font-bold tracking-wider drop-shadow-[0_0_14px_rgba(0,240,255,0.6)]">SOLAS AI</span>
+<span class="px-2 py-0.5 text-[10px] font-label-code uppercase tracking-wider bg-tertiary-container/15 text-tertiary-fixed border border-tertiary-container/40 rounded-full font-bold">100% FREE</span>
+</div>
+<span class="text-[10px] font-label-code text-on-surface-variant/80 tracking-widest uppercase">Blox Fruits Intelligence Matrix</span>
+</div>
+</a>
+<!-- Clean Landing Page Nav Anchor Links -->
+<nav class="hidden md:flex items-center gap-8"><a class="text-on-surface-variant hover:text-primary-container transition-colors font-body-md text-sm font-medium tracking-wide" href="#features">Features</a><a class="text-on-surface-variant hover:text-primary-container transition-colors font-body-md text-sm font-medium tracking-wide" href="#vfx-stream">Fruit VFX</a><a class="text-on-surface-variant hover:text-primary-container transition-colors font-body-md text-sm font-medium tracking-wide" href="#precision-tools">Precision Tools</a><a class="text-on-surface-variant hover:text-primary-container transition-colors font-body-md text-sm font-medium tracking-wide" href="#showcase">Mythical Index</a><a class="text-on-surface-variant hover:text-primary-container transition-colors font-body-md text-sm font-medium tracking-wide" href="#naval-radar">Fleet Ops</a><div class="flex items-center gap-2 pl-3 border-l border-outline-variant/40 font-label-code text-[11px] text-tertiary-fixed"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-container animate-ping"></span><span class="">14ms Tokyo Cluster</span></div></nav>
+<!-- Free Access CTA -->
+<div class="flex items-center gap-3">
+<a class="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-container to-primary text-on-primary-container font-label-code text-xs font-bold uppercase tracking-wider shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:shadow-[0_0_35px_rgba(0,240,255,0.85)] hover:scale-105 active:scale-95 transition-all duration-300 border border-white/25" href="#get-started"><span class="material-symbols-outlined text-[18px]">radar</span><span class="">LAUNCH FREE RADAR</span></a>
+</div>
+</div>
+</header>
+<main class="relative pt-24 overflow-hidden">
+<!-- Subtle Background Gradients -->
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary-container/10 blur-[150px] pointer-events-none rounded-full"></div>
+<div class="absolute top-[600px] right-[-200px] w-[600px] h-[600px] bg-secondary-container/20 blur-[180px] pointer-events-none rounded-full"></div>
+<div class="absolute inset-0 bg-[radial-gradient(#00f0ff_1px,transparent_1px)] [background-size:40px_40px] opacity-[0.03] pointer-events-none"></div>
+<!-- ============================================================ -->
+<!-- 2. GRAND HERO SECTION                                        -->
+<!-- ============================================================ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 relative z-10">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+<!-- Left Hero Column -->
+<div class="lg:col-span-6 space-y-8 text-center lg:text-left">
+<!-- Live Badge -->
+<div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-surface-container-high/70 border border-primary-container/40 shadow-[0_0_20px_rgba(0,240,255,0.2)] backdrop-blur-md">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-container opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary-fixed shadow-[0_0_6px_#00f985]"></span>
+</span>
+<span class="font-label-code text-xs text-primary tracking-wide font-semibold">
+            NEURAL ENGINE V4.8.2 ACTIVE
+          </span>
+<span class="text-on-surface-variant/40">•</span>
+<span class="font-label-code text-xs text-secondary-fixed">BLOX FRUITS SEA 3 READY</span>
+</div>
+<!-- Hero Title -->
+<div class="space-y-4">
+<h1 class="font-display-lg text-4xl sm:text-6xl xl:text-7xl font-extrabold tracking-tight text-white leading-[1.08] drop-shadow-[0_0_35px_rgba(0,240,255,0.35)]">CRUSH TRADES.<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-container via-primary-fixed to-secondary-fixed drop-shadow-[0_0_40px_rgba(0,240,255,0.7)]">DOMINATE THE SEAS.</span></h1>
+<p class="font-body-lg text-base sm:text-lg text-on-surface-variant max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">The apex companion protocol engineered for high-elo Blox Fruits combatants. Real-time market arbitrage, frame-perfect PvP combo execution, and instant Leviathan Gate orbital sonar — completely free forever.</p>
+</div>
+<!-- High-Converting Free Action Buttons -->
+<div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+<a class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-primary-container via-primary to-primary-fixed text-on-primary-container font-label-code text-sm font-bold uppercase tracking-wider shadow-[0_0_35px_rgba(0,240,255,0.7)] hover:shadow-[0_0_50px_rgba(0,240,255,0.95)] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 border border-white/30" href="#get-started">
+<span class="material-symbols-outlined text-on-primary-container text-[20px]">bolt</span>
+<span class="">Launch Solas AI Free</span>
+</a>
+<a class="w-full sm:w-auto px-8 py-4 rounded-xl bg-surface-container-high/80 hover:bg-surface-container-highest border border-primary-container/40 hover:border-primary-container text-primary font-label-code text-sm font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(0,240,255,0.15)] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3" href="#showcase">
+<span class="material-symbols-outlined text-primary-container text-[20px]">visibility</span>
+<span class="">Explore Live Radar</span>
+</a>
+</div>
+<!-- Social Proof Key Metric Counters -->
+<div class="grid grid-cols-3 gap-4 pt-4 border-t border-outline-variant/40">
+<div>
+<div class="font-display-lg text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">142K+</div>
+<div class="font-label-code text-xs text-on-surface-variant uppercase tracking-wider mt-1">Active Hunters</div>
+</div>
+<div>
+<div class="font-display-lg text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-secondary-fixed to-secondary">$2.4B+</div>
+<div class="font-label-code text-xs text-on-surface-variant uppercase tracking-wider mt-1">Value Tracked</div>
+</div>
+<div>
+<div class="font-display-lg text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-tertiary-fixed to-tertiary">99.8%</div>
+<div class="font-label-code text-xs text-on-surface-variant uppercase tracking-wider mt-1">Win Delta Rate</div>
+</div>
+</div>
+</div>
+<!-- Right Hero Column: Cohesive Interactive 3D Artifact Showcase & Kitsune Hero Visual -->
+<div class="lg:col-span-6 relative">
+<div class="relative bg-surface/90 border border-primary-container/40 rounded-2xl p-4 sm:p-6 backdrop-blur-2xl shadow-[0_0_50px_rgba(0,240,255,0.15)] neon-card-glow">
+<!-- Reticle HUD Accents -->
+<div class="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-primary-container"></div>
+<div class="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-primary-container"></div>
+<div class="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-primary-container"></div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-primary-container"></div>
+<!-- Top Meta Bar -->
+<div class="flex items-center justify-between pb-3 mb-4 border-b border-outline-variant/40">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-label-code text-xs text-primary font-bold tracking-wider uppercase">Interactive 3D Mythic Core</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-tertiary-fixed/15 text-tertiary-fixed font-label-code text-[11px] font-bold border border-tertiary-fixed/30">
+              Live WebGL 60FPS
+            </span>
+</div>
+<!-- Dual Hero Showcase Display: 3D Canvas + Mythic Kitsune Visual (https://lh3.googleusercontent.com/aida/AEtjO1XjNtyRCzj0kPEI-rTbtPSMddHm1yJV7BqpEwRzE6k1Pl9qI5HSx9iRGHpbtKxQukFZ4muwltrU8gcbi7e0UFp2tcKO9_B2D-YVcEN8pbE0Rc-vLCry2Vzl5Clk29AJaCMIWlQKdzrLHh2s7q5vzAhPOO6NRldyCEyTF9p8r5FZVfyZzVa1tsNDXQUR_poKuiCaAwGmwPeOq_O8mypyHt5iWGbkJbT4WLaPTtAUryLj-CNt7_T-SMIADIap) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+<!-- 3D Three.js Scene Container -->
+<div class="md:col-span-7 relative h-72 sm:h-80 rounded-xl overflow-hidden bg-black/40 border border-outline-variant/50 flex flex-col justify-between"><!-- Glowing Cyber Ambient Flares -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary-container/20 via-secondary-container/20 to-transparent pointer-events-none"></div>
+<div class="absolute inset-0 bg-[radial-gradient(#00f0ff_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none"></div>
+
+<!-- ThreeJS Canvas Container (retained with proper relative overlay) -->
+<div class="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing" id="threejs-hero-container">
+  <!-- Rich Holographic 3D Orbital Core Visual -->
+  <div class="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center pointer-events-none">
+    <!-- Outer Violet Resonant Pulse Ring -->
+    <div class="absolute inset-0 rounded-full border border-secondary/40 shadow-[0_0_35px_rgba(168,85,247,0.45)] animate-pulse"></div>
+    <!-- Gyro Orbital Ring 1 (Cyan) -->
+    <div class="absolute w-full h-full rounded-full border-2 border-primary-container/60 animate-spin border-dashed" style="animation-duration: 16s;"></div>
+    <!-- Gyro Orbital Ring 2 (Purple) -->
+    <div class="absolute w-[114%] h-[114%] rounded-full border border-secondary/50 border-t-transparent animate-spin" style="animation-duration: 22s; animation-direction: reverse;"></div>
+    <!-- Gyro Orbital Ring 3 (Diagonal Glow) -->
+    <div class="absolute w-[86%] h-[86%] rounded-full border border-tertiary-fixed/50 animate-spin" style="animation-duration: 12s;"></div>
+    <!-- Celestial Core Geosphere -->
+    <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary-container/40 via-surface-container-high/90 to-[#030509] border border-primary-container shadow-[0_0_40px_rgba(0,240,255,0.7)] flex items-center justify-center backdrop-blur-md">
+      <div class="w-16 h-16 rounded-full bg-primary-container/20 border border-primary-container/60 animate-ping opacity-60 absolute"></div>
+      <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-secondary to-primary-container blur-sm opacity-80 animate-pulse"></div>
+      <span class="material-symbols-outlined text-[36px] text-primary-container drop-shadow-[0_0_14px_rgba(0,240,255,0.9)] relative z-10">hub</span>
+    </div>
+    <!-- Orbital Particle Blips -->
+    <div class="absolute top-2 left-6 w-2.5 h-2.5 rounded-full bg-primary-container shadow-[0_0_10px_#00f0ff] animate-ping"></div>
+    <div class="absolute bottom-4 right-8 w-2 h-2 rounded-full bg-tertiary-fixed shadow-[0_0_10px_#00f985]"></div>
+    <div class="absolute top-1/2 -right-2 w-2 h-2 rounded-full bg-secondary-fixed shadow-[0_0_10px_#d0bcff]"></div>
+  </div>
+</div>
+
+<!-- Top HUD Meta Header -->
+<div class="relative z-20 pointer-events-none p-3.5 flex justify-between items-start">
+  <span class="font-label-code text-[10px] text-primary-container bg-surface-container-lowest/90 px-2.5 py-1 rounded-md border border-primary-container/40 flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+    <span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-ping"></span>
+    DRAG TO ROTATE
+  </span>
+  <span class="font-label-code text-[10px] text-on-surface-variant font-mono bg-surface-container-lowest/90 px-2 py-0.5 rounded border border-outline-variant/50">T3 GEO-MESH</span>
+</div>
+
+<!-- Bottom HUD Title Bar -->
+<div class="relative z-20 pointer-events-none p-3.5 bg-gradient-to-t from-black/90 via-black/50 to-transparent border-t border-outline-variant/30 backdrop-blur-sm">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="font-headline-sm text-sm text-primary font-bold tracking-wide flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-primary-container shadow-[0_0_6px_#00f0ff]"></span>
+        Kitsune-Dragon Orbital Core
+      </div>
+      <div class="font-label-code text-[11px] text-on-surface-variant mt-0.5">Real-time reactive physics matrix</div>
+    </div>
+    <div class="hidden sm:flex items-center gap-1 px-2 py-1 rounded bg-primary-container/10 border border-primary-container/30 text-primary font-label-code text-[10px] font-bold">
+      <span class="material-symbols-outlined text-[12px] text-primary-container">view_in_ar</span>
+      <span class="">3D SYNC</span>
+    </div>
+  </div>
+</div></div>
+<!-- Glowing Mythical Kitsune Artwork Card -->
+<div class="md:col-span-5 relative rounded-xl overflow-hidden border border-secondary/50 group bg-surface-container-high/40 p-2.5 flex flex-col justify-between">
+<div class="relative h-48 sm:h-52 rounded-lg overflow-hidden border border-primary-container/30">
+<img alt="Portal Fruit 3D Asset" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AEtjO1Xp6DRjNvI2WxB5ZHoF2sL8GzvFPkvk3kLqyD981bqu4IBsJP6dwd7uGLXs6oj3gRJ2NpCNVZ9BHespTMiuJSx3BkRqluwg-8nKgXz2kgOibtACqsGvpEsINNIvVhH8CIeSFGTdpF_NbsnqmzsdrmdJ8bOGd1V0B3WfeYE3psxPZZzJBALbfK6ieO8cpfDWWQrUKFIZLMKRH_dbhlJGLRmKhufxDCBCR7-X-cB-cbK1oqxWLOQT_JiThX-n">
+<div class="absolute inset-0 bg-gradient-to-t from-[#05070d] via-transparent to-transparent opacity-80"></div>
+<div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-error-container/80 text-error font-label-code text-[10px] font-bold border border-error/40 animate-pulse">
+                  SS+ TIER
+                </div>
+<div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+<span class="font-label-code text-xs text-primary font-bold">VAL: 32,000,000</span>
+<span class="font-label-code text-[10px] text-tertiary-fixed font-bold">▲ +28.5% WIN</span>
+</div>
+</div>
+<!-- Quick Insight -->
+<div class="mt-2.5 p-2 rounded bg-[#05070d]/80 border border-outline-variant/40"><div class="flex items-center justify-between text-xs font-label-code mb-1"><span class="text-secondary-fixed font-bold">DIMENSIONAL RIFT</span><span class="text-tertiary-fixed">99.8% LIQUID</span></div><p class="font-body-sm text-[11px] text-on-surface-variant leading-tight">Instant dimensional warp solver with synchronized World Warp coordinates and escape tech.</p></div>
+</div>
+</div>
+<!-- Bottom Card Indicator -->
+<div class="mt-4 pt-3 border-t border-outline-variant/30 flex items-center justify-between text-xs font-label-code">
+<div class="flex items-center gap-3">
+<span class="text-tertiary-fixed flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] text-primary-container">verified</span>SYSTEM: OPTIMAL</span>
+<span class="text-outline-variant/60">|</span>
+<span class="text-primary-container font-semibold flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-primary-container animate-spin">sync</span>SEA 3 RADAR: LOCKED</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-secondary-container/30 text-secondary-fixed border border-secondary/40 font-bold">MIRAGE: 04:12</span>
+<span class="text-primary-container font-semibold">14ms Tokyo</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ============================================================ -->
+<!-- MOVING FRUITS VFX STREAM SECTION (INFINITE MARQUEE & FLOATING)-->
+<!-- ============================================================ -->
+<section class="w-full py-12 relative overflow-hidden bg-surface-container-lowest/90 border-y border-primary-container/30" id="vfx-stream">
+<!-- Glow backdrop flares -->
+<div class="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-28 bg-primary-container/15 blur-[60px] pointer-events-none rounded-full"></div>
+<div class="absolute top-1/2 right-1/4 -translate-y-1/2 w-80 h-28 bg-secondary/15 blur-[60px] pointer-events-none rounded-full"></div>
+<!-- Top Section Label -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<span class="h-2 w-2 rounded-full bg-primary-container animate-ping"></span>
+<span class="font-label-code text-xs uppercase tracking-widest text-primary font-bold">LIVE TELEMETRY VFX STREAM // DRIFTING BLOX FRUITS</span>
+<span class="px-2 py-0.5 rounded bg-primary-container/10 border border-primary-container/30 text-primary-container font-label-code text-[10px] font-bold">8 ACTIVE PARADIGMS</span>
+</div>
+<span class="font-label-code text-xs text-on-surface-variant font-mono">SYNC VELOCITY: 60 FPS</span>
+</div>
+<!-- Infinite Marquee Track with Real Glowing Fruit Icons & Badges -->
+<div class="relative w-full overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+<div class="animate-marquee flex items-center gap-6 py-4"><div class="fruit-float-1 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-primary-container/50 shadow-[0_0_20px_rgba(0,240,255,0.25)] hover:border-primary-container transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(0,240,255,0.8)]"><img alt="Portal Fruit" class="w-12 h-12 object-contain rounded-full" src="https://lh3.googleusercontent.com/aida/AEtjO1Xp6DRjNvI2WxB5ZHoF2sL8GzvFPkvk3kLqyD981bqu4IBsJP6dwd7uGLXs6oj3gRJ2NpCNVZ9BHespTMiuJSx3BkRqluwg-8nKgXz2kgOibtACqsGvpEsINNIvVhH8CIeSFGTdpF_NbsnqmzsdrmdJ8bOGd1V0B3WfeYE3psxPZZzJBALbfK6ieO8cpfDWWQrUKFIZLMKRH_dbhlJGLRmKhufxDCBCR7-X-cB-cbK1oqxWLOQT_JiThX-n"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-primary-container transition-colors">PORTAL FRUIT</span><span class="px-1.5 py-0.5 rounded bg-primary-container/15 text-primary text-[9px] font-label-code font-bold">MYTHIC</span></div><span class="font-label-code text-[11px] text-primary-container font-semibold">VAL: 32,000,000 • DIMENSIONAL</span></div></div><div class="fruit-float-2 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.25)] hover:border-rose-400 transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(244,63,94,0.7)]"><img alt="Dragon Fruit" class="w-12 h-12 object-contain rounded-full" src="https://lh3.googleusercontent.com/aida/AEtjO1UrDWW3eCvLt-2fvHfVgrWa2f6VoRBKJ9TbQeNeDkpphuC5-w0jZkbGZMpk6aFzzMIi_UM3NHCbZDkrVD1sGcV9eRY_GO6GKk0OjuUy3JkMzkeg-hzIBQdJ4ZsjUfmbCtUvEZPa9nDOYTIXKIjpipzimIRb5abNlXsoZO9bfa2f_tYMd09ypKQO8vaw-XOs-hor5sTiu5cD7ES0i_4XTg2uJpSyczlqFxT2xvjDfjcV3YlF9dq0aGHuZYFf"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-rose-300 transition-colors">DRAGON (REWORK)</span><span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-label-code font-bold">ANCIENT APOCALYPSE</span></div><span class="font-label-code text-[11px] text-rose-300 font-semibold">VAL: 90,000,000 • DESTRUCTION</span></div></div><div class="fruit-float-3 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.25)] hover:border-yellow-300 transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(250,204,21,0.75)]"><img alt="Dough Fruit" class="w-12 h-12 object-contain rounded-full" src="https://lh3.googleusercontent.com/aida/AEtjO1V6raZ7n9EZOND2KAMnWStTlQuUeRRZX1JVquUeDMkSj49_fpkp_IAqRK7qW3bpb6zIdAoXZVvnRf0VT_DdSFJK-ZqDCqd4GiIsXU0p29ZHewoF4pG-6ln5rkCW5cC0khfYxLt0oSSb0zQmYWxCfnd_IQ7tC9igMbMyVDVUZzKX4wbg2SzLcKLfuJ1JpuYdoTlC9OXPslSh51juY5La_GG8K3ZPGABp2JaFTbr_0ML4mLnGlZm9YWPCURA5"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-yellow-300 transition-colors">DOUGH (AWK)</span><span class="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-[9px] font-label-code font-bold">SPECIAL</span></div><span class="font-label-code text-[11px] text-yellow-300 font-semibold">VAL: 25,000,000 • TRUE STUN</span></div></div><div class="fruit-float-4 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-amber-500/50 shadow-[0_0_20px_rgba(255,153,0,0.25)] hover:border-amber-400 transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(255,100,0,0.75)]"><img alt="Leopard Fruit" class="w-12 h-12 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida/AEtjO1VHByRGAKFE9czW2BVaGhgpCggr5wntSVRTaWg6z_atypFMbjdFAHVoNxXmX615Wi59eEUJvVl5odiPXOUhFkBNkyIZ2M-aPLQMP_eYfpyXU1OJgoGfvc92CEhT1k73Y7EjxK3XMtksWK-y4OpVerkEdlonBsgzlZM_LgOo6Th-iSacoCmzDaG0OOSbfH_pRBnjoNMLA1MAtviBFTFZtA1UVSDbf3n-TazpVP7uEypdziqGx4-KjjyrBuBw"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-amber-300 transition-colors">LEOPARD</span><span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-label-code font-bold">BEAST</span></div><span class="font-label-code text-[11px] text-amber-300 font-semibold">VAL: 40,000,000 • APEX SPEED</span></div></div><div class="fruit-float-1 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-primary-container/50 shadow-[0_0_20px_rgba(0,240,255,0.25)] hover:border-primary-container transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(0,240,255,0.8)]"><img alt="Portal Fruit" class="w-12 h-12 object-contain rounded-full" src="https://lh3.googleusercontent.com/aida/AEtjO1Xp6DRjNvI2WxB5ZHoF2sL8GzvFPkvk3kLqyD981bqu4IBsJP6dwd7uGLXs6oj3gRJ2NpCNVZ9BHespTMiuJSx3BkRqluwg-8nKgXz2kgOibtACqsGvpEsINNIvVhH8CIeSFGTdpF_NbsnqmzsdrmdJ8bOGd1V0B3WfeYE3psxPZZzJBALbfK6ieO8cpfDWWQrUKFIZLMKRH_dbhlJGLRmKhufxDCBCR7-X-cB-cbK1oqxWLOQT_JiThX-n"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-primary-container transition-colors">PORTAL FRUIT</span><span class="px-1.5 py-0.5 rounded bg-primary-container/15 text-primary text-[9px] font-label-code font-bold">MYTHIC</span></div><span class="font-label-code text-[11px] text-primary-container font-semibold">VAL: 32,000,000 • DIMENSIONAL</span></div></div><div class="fruit-float-2 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.25)] hover:border-rose-400 transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(244,63,94,0.7)]"><img alt="Dragon Fruit" class="w-12 h-12 object-contain rounded-full" src="https://lh3.googleusercontent.com/aida/AEtjO1UrDWW3eCvLt-2fvHfVgrWa2f6VoRBKJ9TbQeNeDkpphuC5-w0jZkbGZMpk6aFzzMIi_UM3NHCbZDkrVD1sGcV9eRY_GO6GKk0OjuUy3JkMzkeg-hzIBQdJ4ZsjUfmbCtUvEZPa9nDOYTIXKIjpipzimIRb5abNlXsoZO9bfa2f_tYMd09ypKQO8vaw-XOs-hor5sTiu5cD7ES0i_4XTg2uJpSyczlqFxT2xvjDfjcV3YlF9dq0aGHuZYFf"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-rose-300 transition-colors">DRAGON (REWORK)</span><span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-label-code font-bold">ANCIENT APOCALYPSE</span></div><span class="font-label-code text-[11px] text-rose-300 font-semibold">VAL: 90,000,000 • DESTRUCTION</span></div></div><div class="fruit-float-3 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.25)] hover:border-yellow-300 transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(250,204,21,0.75)]"><img alt="Dough Fruit" class="w-12 h-12 object-contain rounded-full" src="https://lh3.googleusercontent.com/aida/AEtjO1V6raZ7n9EZOND2KAMnWStTlQuUeRRZX1JVquUeDMkSj49_fpkp_IAqRK7qW3bpb6zIdAoXZVvnRf0VT_DdSFJK-ZqDCqd4GiIsXU0p29ZHewoF4pG-6ln5rkCW5cC0khfYxLt0oSSb0zQmYWxCfnd_IQ7tC9igMbMyVDVUZzKX4wbg2SzLcKLfuJ1JpuYdoTlC9OXPslSh51juY5La_GG8K3ZPGABp2JaFTbr_0ML4mLnGlZm9YWPCURA5"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-yellow-300 transition-colors">DOUGH (AWK)</span><span class="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 text-[9px] font-label-code font-bold">SPECIAL</span></div><span class="font-label-code text-[11px] text-yellow-300 font-semibold">VAL: 25,000,000 • TRUE STUN</span></div></div><div class="fruit-float-4 group flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-surface/90 border border-amber-500/50 shadow-[0_0_20px_rgba(255,153,0,0.25)] hover:border-amber-400 transition-all cursor-pointer backdrop-blur-xl"><div class="w-13 h-13 flex-shrink-0 relative flex items-center justify-center drop-shadow-[0_0_14px_rgba(255,100,0,0.75)]"><img alt="Leopard Fruit" class="w-12 h-12 object-contain rounded-lg" src="https://lh3.googleusercontent.com/aida/AEtjO1VHByRGAKFE9czW2BVaGhgpCggr5wntSVRTaWg6z_atypFMbjdFAHVoNxXmX615Wi59eEUJvVl5odiPXOUhFkBNkyIZ2M-aPLQMP_eYfpyXU1OJgoGfvc92CEhT1k73Y7EjxK3XMtksWK-y4OpVerkEdlonBsgzlZM_LgOo6Th-iSacoCmzDaG0OOSbfH_pRBnjoNMLA1MAtviBFTFZtA1UVSDbf3n-TazpVP7uEypdziqGx4-KjjyrBuBw"></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-sm font-bold text-white group-hover:text-amber-300 transition-colors">LEOPARD</span><span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-label-code font-bold">BEAST</span></div><span class="font-label-code text-[11px] text-amber-300 font-semibold">VAL: 40,000,000 • APEX SPEED</span></div></div></div>
+</div>
+</section>
+<!-- ============================================================ -->
+<!-- 3. FEATURE VALUE PROPOSITIONS SECTION                        -->
+<!-- ============================================================ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10" id="precision-tools">
+<div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container/10 border border-primary-container/30 text-primary-container font-label-code text-xs uppercase font-bold tracking-wider">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+        Built for Competitive Dominance
+      </div>
+<h2 class="font-headline-lg text-3xl sm:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-secondary">
+        Precision Tools. Zero Guesswork.
+      </h2>
+<p class="font-body-lg text-on-surface-variant text-base sm:text-lg">
+        Replace outdated wiki pages and guesswork. Solas AI runs direct algorithmic analysis for every trade, combo, and sea event in real-time.
+      </p>
+</div>
+<!-- 3 High-Impact Marketing Feature Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Feature Card 1: Neural Trade Calculator -->
+<div class="bg-surface/80 border border-primary-container/30 hover:border-primary-container rounded-2xl p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 neon-card-glow backdrop-blur-xl relative">
+<div class="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-primary-container pointer-events-none"></div>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-primary-container pointer-events-none"></div>
+<div>
+<!-- Icon Badge -->
+<div class="w-14 h-14 rounded-xl bg-primary-container/15 border border-primary-container/40 flex items-center justify-center text-primary-container mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px]">calculate</span>
+</div>
+<span class="font-label-code text-xs text-primary-container font-bold uppercase tracking-wider block mb-1">Algorithmic Arbitrage</span>
+<h3 class="font-headline-sm text-2xl font-bold text-primary mb-3">Neural Trade Calculator</h3>
+<p class="font-body-md text-on-surface-variant text-sm leading-relaxed mb-6">
+            Instant W/F/L evaluations before accepting any trade. Our neural engine tracks 50,000+ hourly transactions across Sea 3 Cafe trading floors to protect you from bad offers.
+          </p>
+<!-- Interactive Micro Preview UI -->
+<div class="p-3 rounded-xl bg-[#05070d]/90 border border-outline-variant/40 space-y-2">
+<div class="flex items-center justify-between font-label-code text-xs">
+<span class="text-on-surface-variant">Your Offer: Dragon + Portal</span>
+<span class="text-outline font-semibold">48.2M</span>
+</div>
+<div class="flex items-center justify-between font-label-code text-xs">
+<span class="text-primary-container font-bold">Their Offer: Kitsune + Leopard</span>
+<span class="text-tertiary-fixed font-bold">83.0M</span>
+</div>
+<div class="p-2 rounded bg-tertiary-fixed/10 border border-tertiary-fixed/30 flex items-center justify-between mt-2">
+<span class="font-label-code text-xs font-bold text-tertiary-fixed flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">verified</span> MASSIVE WIN (W)
+              </span>
+<span class="font-label-code text-xs font-bold text-tertiary-fixed">+34.8M DELTA</span>
+</div>
+</div>
+</div>
+<div class="pt-6 mt-6 border-t border-outline-variant/30 flex items-center justify-between">
+<span class="font-label-code text-xs text-on-surface-variant">99.8% Arbitrage Accuracy</span>
+<span class="material-symbols-outlined text-primary-container group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Feature Card 2: Frame-Perfect Combo Solver -->
+<div class="bg-surface/80 border border-secondary/30 hover:border-secondary rounded-2xl p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 neon-purple-glow backdrop-blur-xl relative">
+<div class="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-secondary pointer-events-none"></div>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-secondary pointer-events-none"></div>
+<div>
+<!-- Icon Badge -->
+<div class="w-14 h-14 rounded-xl bg-secondary-container/30 border border-secondary/50 flex items-center justify-center text-secondary mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px]">sports_martial_arts</span>
+</div>
+<span class="font-label-code text-xs text-secondary-fixed font-bold uppercase tracking-wider block mb-1">True 100-0 Stun Logic</span>
+<h3 class="font-headline-sm text-2xl font-bold text-secondary-fixed mb-3">Frame Combo Solver</h3>
+<p class="font-body-md text-on-surface-variant text-sm leading-relaxed mb-6">
+            Master unescapable one-shot combo strings for Godhuman, Portal, Cursed Dual Katana, and Dough. Includes millisecond startup windows, cancel cancels, and Ken-trick counters.
+          </p>
+<!-- Interactive Micro Preview UI -->
+<div class="p-3 rounded-xl bg-[#05070d]/90 border border-outline-variant/40 space-y-2">
+<div class="font-label-code text-xs text-secondary-fixed font-bold flex justify-between">
+<span class="">CYBORG V4 META BUILD</span>
+<span class="text-tertiary-fixed">TRUE STUN: 2.4s</span>
+</div>
+<div class="flex items-center justify-between gap-1 pt-1 font-label-code text-[11px]">
+<span class="px-2 py-1 bg-surface-container-high rounded border border-primary-container/40 text-primary-container font-bold">[PORTAL X]</span>
+<span class="text-secondary font-bold">&gt;</span>
+<span class="px-2 py-1 bg-surface-container-high rounded border border-secondary/40 text-secondary font-bold">[GH C]</span>
+<span class="text-secondary font-bold">&gt;</span>
+<span class="px-2 py-1 bg-surface-container-high rounded border border-error/40 text-error font-bold">[CDK Z]</span>
+</div>
+<div class="font-label-code text-[11px] text-on-surface-variant flex items-center justify-between pt-1">
+<span class="">Startup: 18 frames</span>
+<span class="text-error font-semibold">0% Escape Tech</span>
+</div>
+</div>
+</div>
+<div class="pt-6 mt-6 border-t border-outline-variant/30 flex items-center justify-between">
+<span class="font-label-code text-xs text-on-surface-variant">Over 1,200 Solved Trees</span>
+<span class="material-symbols-outlined text-secondary group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Feature Card 3: Leviathan & Sea Event Sonar -->
+<div class="bg-surface/80 border border-tertiary-fixed/30 hover:border-tertiary-fixed rounded-2xl p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-xl relative" style="box-shadow: 0 10px 40px -10px rgba(0, 249, 133, 0.12);">
+<div class="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-tertiary-fixed pointer-events-none"></div>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-tertiary-fixed pointer-events-none"></div>
+<div>
+<!-- Icon Badge -->
+<div class="w-14 h-14 rounded-xl bg-tertiary-container/15 border border-tertiary-fixed/40 flex items-center justify-center text-tertiary-fixed mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px]">radar</span>
+</div>
+<span class="font-label-code text-xs text-tertiary-fixed font-bold uppercase tracking-wider block mb-1">Zone 6 Deep Sea Recon</span>
+<h3 class="font-headline-sm text-2xl font-bold text-primary mb-3">Leviathan &amp; Mirage Sonar</h3>
+<p class="font-body-md text-on-surface-variant text-sm leading-relaxed mb-6">
+            Never sail blind again. Live telemetry detects Leviathan Gate conditions, Frozen Dimension openings, Terror Shark swarms, and exact Mirage Island Full Moon alignment timers.
+          </p>
+<!-- Interactive Micro Preview UI -->
+<div class="p-3 rounded-xl bg-[#05070d]/90 border border-outline-variant/40 space-y-2">
+<div class="flex items-center justify-between font-label-code text-xs">
+<span class="text-error font-bold flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+                DANGER ZONE 6
+              </span>
+<span class="text-tertiary-fixed font-bold">GATE: OPEN (94%)</span>
+</div>
+<div class="flex items-center justify-between font-label-code text-xs text-on-surface-variant pt-1 border-t border-outline-variant/30">
+<span class="">Mirage Full Moon:</span>
+<span class="text-primary-container font-semibold">In 14 Mins</span>
+</div>
+<div class="flex items-center justify-between font-label-code text-xs text-on-surface-variant">
+<span class="">Terror Shark Blips:</span>
+<span class="text-secondary font-semibold">2 Detected Near Ship</span>
+</div>
+</div>
+</div>
+<div class="pt-6 mt-6 border-t border-outline-variant/30 flex items-center justify-between">
+<span class="font-label-code text-xs text-on-surface-variant">Real-Time Orbital GPS</span>
+<span class="material-symbols-outlined text-tertiary-fixed group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ============================================================ -->
+<!-- NAVAL COMBAT RADAR SPOTLIGHT (https://lh3.googleusercontent.com/aida/AEtjO1WQah3qPH69Qu8Kc2fyBmKz6t3WPT0PhwQu6GzL81C5qfy1960uURDe7GVKSCoC5QZFRvpzI0XTfrcL7Y18ev4nyGZfH-rVfctQj849k0UDmRNdRwUkrEYDvBf6ti1Ctr8Bt1iRUsecUBF9kdOjriLrVMC0WirOIoagyH8tHeMphuR80jlvxY_nRFaZeixQu0wg_rBRrFR9E7VDFK8egDp5xuzfCNRUF--yZa7l54ERP_-YFRy82Pzeq5E)        -->
+<!-- ============================================================ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10" id="naval-radar">
+<div class="relative rounded-3xl overflow-hidden border border-primary-container/40 bg-surface/90 backdrop-blur-xl shadow-[0_0_50px_rgba(0,240,255,0.15)]">
+<div class="grid grid-cols-1 lg:grid-cols-12 items-center">
+<div class="lg:col-span-7 relative h-80 sm:h-96 overflow-hidden">
+<img alt="Epic Naval Combat in Blox Fruits Sea 3" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WQah3qPH69Qu8Kc2fyBmKz6t3WPT0PhwQu6GzL81C5qfy1960uURDe7GVKSCoC5QZFRvpzI0XTfrcL7Y18ev4nyGZfH-rVfctQj849k0UDmRNdRwUkrEYDvBf6ti1Ctr8Bt1iRUsecUBF9kdOjriLrVMC0WirOIoagyH8tHeMphuR80jlvxY_nRFaZeixQu0wg_rBRrFR9E7VDFK8egDp5xuzfCNRUF--yZa7l54ERP_-YFRy82Pzeq5E">
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-[#05070d]/30 to-[#05070d] hidden lg:block"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-[#05070d] via-transparent to-transparent lg:hidden"></div>
+<div class="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#05070d]/80 border border-primary-container/50 font-label-code text-xs text-primary-container flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-ping"></span>
+<span class="">ORBITAL SECTOR: ZONE 6 DEEP OCEAN</span>
+</div>
+</div>
+<div class="lg:col-span-5 p-8 sm:p-10 space-y-5">
+<span class="px-3 py-1 rounded-full bg-secondary-container/30 border border-secondary/40 text-secondary-fixed font-label-code text-xs font-bold uppercase tracking-wider">
+Naval Fleet Intelligence
+</span>
+<h3 class="font-headline-lg text-2xl sm:text-4xl font-bold text-white leading-tight">
+Synchronized Sea Event Domination
+</h3>
+<p class="font-body-md text-on-surface-variant text-sm leading-relaxed">
+Solas AI coordinates armada raids, warning all fleet members of incoming Terror Sharks, Sea Beast ambushes, and Leviathan Heart extraction timing in millisecond accuracy.
+</p>
+<div class="grid grid-cols-2 gap-3 pt-2 font-label-code text-xs">
+<div class="p-2.5 rounded-xl bg-[#05070d]/80 border border-outline-variant/40">
+<div class="text-tertiary-fixed font-bold">100% SUCCESS</div>
+<div class="text-on-surface-variant text-[11px]">Heart Harpoon Pulls</div>
+</div>
+<div class="p-2.5 rounded-xl bg-[#05070d]/80 border border-outline-variant/40">
+<div class="text-primary-container font-bold">&lt; 14ms DELTA</div>
+<div class="text-on-surface-variant text-[11px]">Sub-orbital Sync</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ============================================================ -->
+<!-- 4. MYTHICAL FRUITS SHOWCASE GALLERY                          -->
+<!-- ============================================================ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10" id="showcase">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+<div>
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary-container/20 border border-secondary/40 text-secondary-fixed font-label-code text-xs uppercase font-bold tracking-wider mb-2">
+<span class="material-symbols-outlined text-[14px]">diamond</span>
+          Apex Market Assets
+        </div>
+<h2 class="font-headline-lg text-3xl sm:text-4xl font-bold text-primary">
+          Live Mythical Index Showcase
+        </h2>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm max-w-md">
+        Automated valuation pegs synced directly with active Sea 3 Cafe trading floors. Refreshed every 60 seconds.
+      </p>
+</div>
+<!-- Polished Glassmorphic Cards Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"><div class="bg-surface/80 border border-primary-container/40 hover:border-primary-container rounded-2xl p-4 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 neon-card-glow backdrop-blur-xl relative"><div class="relative h-48 rounded-xl overflow-hidden mb-4 border border-primary-container/30 bg-[#05070d]"><img alt="Portal Fruit 3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AEtjO1Xp6DRjNvI2WxB5ZHoF2sL8GzvFPkvk3kLqyD981bqu4IBsJP6dwd7uGLXs6oj3gRJ2NpCNVZ9BHespTMiuJSx3BkRqluwg-8nKgXz2kgOibtACqsGvpEsINNIvVhH8CIeSFGTdpF_NbsnqmzsdrmdJ8bOGd1V0B3WfeYE3psxPZZzJBALbfK6ieO8cpfDWWQrUKFIZLMKRH_dbhlJGLRmKhufxDCBCR7-X-cB-cbK1oqxWLOQT_JiThX-n"><div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-primary-container/20 text-primary font-label-code text-[10px] font-bold border border-primary-container/40">SS+ TIER</div><div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-surface/90 font-label-code text-[10px] text-primary-container border border-primary-container/30">MYTHIC</div></div><div><h3 class="font-headline-sm text-lg font-bold text-white mb-1 group-hover:text-primary-container transition-colors">Portal Fruit</h3><p class="font-label-code text-xs text-on-surface-variant mb-3">Dimensional World Warp</p><div class="space-y-2"><div class="flex items-center justify-between p-2 rounded-lg bg-[#05070d]/80 border border-outline-variant/40"><span class="font-label-code text-xs text-on-surface-variant">Value:</span><span class="font-label-code text-xs font-bold text-primary-container">32,000,000</span></div><div class="flex items-center justify-between text-[11px] font-label-code px-1"><span class="text-on-surface-variant">Demand Velocity:</span><span class="text-tertiary-fixed font-semibold">99.4% (Max)</span></div></div></div></div><div class="bg-surface/80 border border-rose-500/40 hover:border-rose-400 rounded-2xl p-4 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-xl relative" style="box-shadow: rgba(244, 63, 94, 0.15) 0px 10px 40px -10px;"><div class="relative h-48 rounded-xl overflow-hidden mb-4 border border-rose-500/30 bg-[#05070d]"><img alt="Dragon Fruit 3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AEtjO1UrDWW3eCvLt-2fvHfVgrWa2f6VoRBKJ9TbQeNeDkpphuC5-w0jZkbGZMpk6aFzzMIi_UM3NHCbZDkrVD1sGcV9eRY_GO6GKk0OjuUy3JkMzkeg-hzIBQdJ4ZsjUfmbCtUvEZPa9nDOYTIXKIjpipzimIRb5abNlXsoZO9bfa2f_tYMd09ypKQO8vaw-XOs-hor5sTiu5cD7ES0i_4XTg2uJpSyczlqFxT2xvjDfjcV3YlF9dq0aGHuZYFf"><div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-label-code text-[10px] font-bold border border-rose-500/40">ANCIENT</div><div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-surface/90 font-label-code text-[10px] text-rose-300 border border-rose-500/30">APEX REWORK</div></div><div><h3 class="font-headline-sm text-lg font-bold text-white mb-1 group-hover:text-rose-300 transition-colors">Dragon (Rework)</h3><p class="font-label-code text-xs text-on-surface-variant mb-3">Draconic Incineration</p><div class="space-y-2"><div class="flex items-center justify-between p-2 rounded-lg bg-[#05070d]/80 border border-outline-variant/40"><span class="font-label-code text-xs text-on-surface-variant">Value:</span><span class="font-label-code text-xs font-bold text-rose-300">90,000,000</span></div><div class="flex items-center justify-between text-[11px] font-label-code px-1"><span class="text-on-surface-variant">Demand Velocity:</span><span class="text-rose-300 font-semibold">100% (Apex)</span></div></div></div></div><div class="bg-surface/80 border border-yellow-400/40 hover:border-yellow-300 rounded-2xl p-4 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-xl relative" style="box-shadow: rgba(250, 204, 21, 0.15) 0px 10px 40px -10px;"><div class="relative h-48 rounded-xl overflow-hidden mb-4 border border-yellow-400/30 bg-[#05070d]"><img alt="Dough Fruit 3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AEtjO1V6raZ7n9EZOND2KAMnWStTlQuUeRRZX1JVquUeDMkSj49_fpkp_IAqRK7qW3bpb6zIdAoXZVvnRf0VT_DdSFJK-ZqDCqd4GiIsXU0p29ZHewoF4pG-6ln5rkCW5cC0khfYxLt0oSSb0zQmYWxCfnd_IQ7tC9igMbMyVDVUZzKX4wbg2SzLcKLfuJ1JpuYdoTlC9OXPslSh51juY5La_GG8K3ZPGABp2JaFTbr_0ML4mLnGlZm9YWPCURA5"><div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-label-code text-[10px] font-bold border border-yellow-400/40">S-TIER</div><div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-surface/90 font-label-code text-[10px] text-yellow-300 border border-yellow-400/30">AWAKENED</div></div><div><h3 class="font-headline-sm text-lg font-bold text-white mb-1 group-hover:text-yellow-300 transition-colors">Dough (Awakened)</h3><p class="font-label-code text-xs text-on-surface-variant mb-3">True Stun Combo King</p><div class="space-y-2"><div class="flex items-center justify-between p-2 rounded-lg bg-[#05070d]/80 border border-outline-variant/40"><span class="font-label-code text-xs text-on-surface-variant">Value:</span><span class="font-label-code text-xs font-bold text-yellow-300">25,000,000</span></div><div class="flex items-center justify-between text-[11px] font-label-code px-1"><span class="text-on-surface-variant">Demand Velocity:</span><span class="text-yellow-300 font-semibold">98.1% (High)</span></div></div></div></div><div class="bg-surface/80 border border-amber-500/40 hover:border-amber-400 rounded-2xl p-4 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-xl relative" style="box-shadow: rgba(255, 153, 0, 0.15) 0px 10px 40px -10px;"><div class="relative h-48 rounded-xl overflow-hidden mb-4 border border-amber-500/30 bg-[#05070d]"><img alt="Leopard Fruit 3D" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AEtjO1VHByRGAKFE9czW2BVaGhgpCggr5wntSVRTaWg6z_atypFMbjdFAHVoNxXmX615Wi59eEUJvVl5odiPXOUhFkBNkyIZ2M-aPLQMP_eYfpyXU1OJgoGfvc92CEhT1k73Y7EjxK3XMtksWK-y4OpVerkEdlonBsgzlZM_LgOo6Th-iSacoCmzDaG0OOSbfH_pRBnjoNMLA1MAtviBFTFZtA1UVSDbf3n-TazpVP7uEypdziqGx4-KjjyrBuBw"><div class="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-label-code text-[10px] font-bold border border-amber-500/40">S-TIER</div><div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-surface/90 font-label-code text-[10px] text-amber-300 border border-amber-500/30">BEAST TYPE</div></div><div><h3 class="font-headline-sm text-lg font-bold text-white mb-1 group-hover:text-amber-300 transition-colors">Leopard Fruit</h3><p class="font-label-code text-xs text-on-surface-variant mb-3">Speed S+ Apex Predator</p><div class="space-y-2"><div class="flex items-center justify-between p-2 rounded-lg bg-[#05070d]/80 border border-outline-variant/40"><span class="font-label-code text-xs text-on-surface-variant">Value:</span><span class="font-label-code text-xs font-bold text-amber-300">40,000,000</span></div><div class="flex items-center justify-between text-[11px] font-label-code px-1"><span class="text-on-surface-variant">Demand Velocity:</span><span class="text-amber-300 font-semibold">97.5% (High)</span></div></div></div></div></div>
+</section>
+<!-- ============================================================ -->
+<!-- 5. SOCIAL PROOF / TESTIMONIALS & STATS                       -->
+<!-- ============================================================ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10" id="community">
+<div class="text-center max-w-2xl mx-auto mb-14 space-y-2">
+<span class="font-label-code text-xs uppercase tracking-widest text-primary-container font-bold">Bounty Hunters &amp; Grandmasters</span>
+<h2 class="font-headline-lg text-3xl sm:text-4xl font-bold text-white">Trusted Across Every Sea</h2>
+<p class="font-body-md text-on-surface-variant text-sm">See how high-elo players are scaling leaderboards and stockpiling mythics without paying a cent.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Review 1 -->
+<div class="bg-surface/70 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md flex flex-col justify-between hover:border-primary-container/50 transition-all">
+<div class="space-y-3">
+<div class="flex items-center text-primary-container gap-1">
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+</div>
+<p class="font-body-md text-sm text-on-surface leading-relaxed">
+            "Gained 10M bounty in 1 week. The Godhuman + Portal combo sequence is frame-perfect. You literally press the sequence and opponents can't even Ken-trick out of it."
+          </p>
+</div>
+<div class="flex items-center gap-3 pt-6 mt-6 border-t border-outline-variant/30">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 border border-primary-container/40 flex items-center justify-center font-label-code text-primary font-bold">
+            KX
+          </div>
+<div>
+<div class="font-headline-sm text-sm font-bold text-white">KageX // 30M Bounty</div>
+<div class="font-label-code text-[11px] text-tertiary-fixed">Third Sea Marine Leader</div>
+</div>
+</div>
+</div>
+<!-- Review 2 -->
+<div class="bg-surface/70 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md flex flex-col justify-between hover:border-secondary/50 transition-all">
+<div class="space-y-3">
+<div class="flex items-center text-secondary gap-1">
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+</div>
+<p class="font-body-md text-sm text-on-surface leading-relaxed">
+            "Best trade scanner ever created. Saved me from trading my Kitsune for worthless hype items twice. Turned a 30M inventory into over 280M pure value in a month."
+          </p>
+</div>
+<div class="flex items-center gap-3 pt-6 mt-6 border-t border-outline-variant/30">
+<div class="w-10 h-10 rounded-full bg-secondary-container/40 border border-secondary/50 flex items-center justify-center font-label-code text-secondary font-bold">
+            VR
+          </div>
+<div>
+<div class="font-headline-sm text-sm font-bold text-white">VortexRider</div>
+<div class="font-label-code text-[11px] text-secondary-fixed">Top Arbitrage Trader</div>
+</div>
+</div>
+</div>
+<!-- Review 3 -->
+<div class="bg-surface/70 border border-outline-variant/40 rounded-2xl p-6 backdrop-blur-md flex flex-col justify-between hover:border-tertiary-fixed/50 transition-all">
+<div class="space-y-3">
+<div class="flex items-center text-tertiary-fixed gap-1">
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+</div>
+<p class="font-body-md text-sm text-on-surface leading-relaxed">
+            "The Leviathan radar pinged the Frozen Dimension gate opening within 10 seconds. Our 5-man crew got the Leviathan Heart on our very first run without waiting hours."
+          </p>
+</div>
+<div class="flex items-center gap-3 pt-6 mt-6 border-t border-outline-variant/30">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed/20 border border-tertiary-fixed/40 flex items-center justify-center font-label-code text-tertiary-fixed font-bold">
+            SL
+          </div>
+<div>
+<div class="font-headline-sm text-sm font-bold text-white">Solaris_Levi</div>
+<div class="font-label-code text-[11px] text-tertiary-fixed">Cyborg V4 Max Mastery</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ============================================================ -->
+<!-- 6. FINAL HIGH-CONVERTING CALL TO ACTION BANNER                -->
+<!-- ============================================================ -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10" id="get-started">
+<div class="relative rounded-3xl overflow-hidden border border-primary-container/50 bg-gradient-to-br from-surface-container-high/90 via-[#0a1024]/90 to-surface-container-lowest/90 p-8 sm:p-14 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,240,255,0.25)] text-center">
+<!-- Laser Neon Top Accent -->
+<div class="absolute -top-[1px] left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary-container to-transparent animate-pulse"></div>
+<!-- Glowing Radial Ambient Glow -->
+<div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary-container/20 blur-[100px] pointer-events-none rounded-full"></div>
+<div class="relative z-10 max-w-3xl mx-auto space-y-6">
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary-container/10 border border-primary-container/30 text-primary-container font-label-code text-xs font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px]">military_tech</span>
+          JOIN THE GRANDMASTER PROTOCOL
+        </div>
+<h2 class="font-display-lg text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-fixed to-secondary tracking-tight">
+          Ready to Rule the Third Sea?
+        </h2>
+<p class="font-body-lg text-base sm:text-lg text-on-surface-variant max-w-xl mx-auto leading-relaxed">
+          Join 142,000+ Blox Fruits grandmasters capitalizing on real-time neural trade predictions and unescapable combo trees. 100% free forever.
+        </p>
+<!-- CTA Action Cluster -->
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+<a class="w-full sm:w-auto px-9 py-4 rounded-xl bg-gradient-to-r from-primary-container via-primary to-primary-fixed text-on-primary-container font-label-code text-sm font-bold uppercase tracking-wider shadow-[0_0_40px_rgba(0,240,255,0.7)] hover:shadow-[0_0_60px_rgba(0,240,255,0.95)] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 border border-white/30" href="#">
+<span class="material-symbols-outlined text-[22px]">rocket_launch</span>
+<span class="">Launch Solas AI Free</span>
+</a>
+<a class="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#05070d]/80 hover:bg-surface-container-high border border-primary-container/40 text-primary-container font-label-code text-sm font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(0,240,255,0.2)] hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2.5" href="#vfx-stream">
+<span class="material-symbols-outlined text-[20px]">stream</span>
+<span class="">Watch Live VFX Stream</span>
+</a>
+</div>
+<!-- Trust Features -->
+<div class="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs font-label-code text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed">check_circle</span>
+            100% Free Forever
+          </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed">check_circle</span>
+            No Roblox Password Required
+          </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary-fixed">check_circle</span>
+            Sub-15ms Global CDN Response
+          </span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- ============================================================ -->
+<!-- 7. MINIMAL MARKETING FOOTER                                  -->
+<!-- ============================================================ -->
+<footer class="w-full bg-[#030509] border-t border-outline-variant/40 py-12 relative z-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-outline-variant/30">
+<!-- Brand & Description -->
+<div class="flex items-center gap-3">
+<img alt="Solas AI Crest" class="h-9 w-12 object-cover rounded-lg border border-primary-container/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCveXK537RLD342CfvmWutfOa79BI0PDtGo0FcAZXByt6QFhOtU30Mew4o6bZ9--P0t1kdaN4hk4ZtxFDY-DOcQc69paAEDtZMoxKoi4YXvX5OGLGk12I8fmPOg-8rn1eCYmGThsoUucT3VKPbnCzsmS0ZrqIvtshyoAM8mla5ahqjceaBlijR0Ztzb5VYVwF1YyFTzT25JXSv4UrTVBPK0wOwmvMvcWyKtreXq2h-ZZFY1Mm8d4UXb0N6ZCSaA8G4JaOE">
+<div class="flex flex-col">
+<span class="font-headline-sm text-base text-primary font-bold tracking-wider">SOLAS AI PROTOCOL</span>
+<span class="text-[10px] font-label-code text-on-surface-variant">Blox Fruits Neural Companion &amp; Trade Engine</span>
+</div>
+</div>
+<!-- Quick Nav Links -->
+<div class="flex flex-wrap items-center gap-6 text-xs font-label-code text-on-surface-variant">
+<a class="hover:text-primary-container transition-colors" href="#features">Features</a>
+<a class="hover:text-primary-container transition-colors" href="#vfx-stream">Fruit VFX</a>
+<a class="hover:text-primary-container transition-colors" href="#showcase">Showcase</a>
+<a class="hover:text-primary-container transition-colors" href="#naval-radar">Fleet Ops</a>
+<a class="hover:text-on-surface transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-on-surface transition-colors" href="#">Terms of Service</a>
+</div>
+<!-- System Telemetry Status -->
+<div class="flex items-center gap-2 font-label-code text-xs text-tertiary-fixed bg-surface-container-high/60 px-3 py-1.5 rounded-full border border-outline-variant/40">
+<span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse shadow-[0_0_6px_#00f985]"></span>
+<span class="">ALL SYSTEMS OPERATIONAL</span>
+</div>
+</div>
+<div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-body-sm text-xs text-on-surface-variant/70">
+<div class="">
+        © 2024 SOLAS AI. Free independent companion software. Not affiliated with Gamer Robot Inc. or Roblox Corporation.
+      </div>
+<div class="font-label-code text-[11px] text-outline">
+        ENCRYPTED SECURE CHANNEL · TOKYO-EAST 14ms
+      </div>
+</div>
+</div>
+</footer>
+<!-- ============================================================ -->
+<!-- EMBEDDED THREE.JS 3D MYTHICAL BLOX FRUIT ENGINE              -->
+<!-- ============================================================ -->
+<script>
+(function() {
+  const container = document.getElementById('threejs-hero-container');
+  if (!container) return;
+
+  const width = container.clientWidth || 360;
+  const height = container.clientHeight || 300;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera.position.set(0, 0, 7.5);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0x0a1026, 1.8);
+  scene.add(ambientLight);
+
+  const pointLightCyan = new THREE.PointLight(0x00f0ff, 4.5, 25);
+  pointLightCyan.position.set(4, 4, 4);
+  scene.add(pointLightCyan);
+
+  const pointLightPurple = new THREE.PointLight(0xa855f7, 4, 25);
+  pointLightPurple.position.set(-4, -3, 3);
+  scene.add(pointLightPurple);
+
+  const pointLightGold = new THREE.PointLight(0xffb703, 3, 15);
+  pointLightGold.position.set(0, 5, 2);
+  scene.add(pointLightGold);
+
+  // Mythic Fruit Artifact Group
+  const fruitGroup = new THREE.Group();
+  scene.add(fruitGroup);
+
+  // Fruit Core - Mythic Icosahedron Geosphere
+  const coreGeo = new THREE.IcosahedronGeometry(1.5, 2);
+  const coreMat = new THREE.MeshPhongMaterial({
+    color: 0x050b1a,
+    emissive: 0x003b5c,
+    specular: 0x00f0ff,
+    shininess: 90,
+    wireframe: false,
+    flatShading: true
+  });
+  const fruitCore = new THREE.Mesh(coreGeo, coreMat);
+  fruitGroup.add(fruitCore);
+
+  // Outer Cyber Wireframe Shield
+  const wireGeo = new THREE.IcosahedronGeometry(1.68, 1);
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: 0x00f0ff,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.4
+  });
+  const wireShield = new THREE.Mesh(wireGeo, wireMat);
+  fruitGroup.add(wireShield);
+
+  // Swirling Rings
+  const ringGeo1 = new THREE.TorusGeometry(2.2, 0.03, 16, 100);
+  const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.8 });
+  const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+  ring1.rotation.x = Math.PI / 3;
+  fruitGroup.add(ring1);
+
+  const ringGeo2 = new THREE.TorusGeometry(2.5, 0.025, 16, 100);
+  const ringMat2 = new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.75 });
+  const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+  ring2.rotation.y = Math.PI / 4;
+  fruitGroup.add(ring2);
+
+  // Swirling Mythic Horns
+  const hornGeo = new THREE.ConeGeometry(0.28, 1.1, 5);
+  const hornMat = new THREE.MeshPhongMaterial({ color: 0x00f0ff, emissive: 0x002233, flatShading: true });
+  for(let i = 0; i < 4; i++) {
+    const horn = new THREE.Mesh(hornGeo, hornMat);
+    const angle = (i / 4) * Math.PI * 2;
+    horn.position.set(Math.cos(angle) * 1.15, 1.35, Math.sin(angle) * 1.15);
+    horn.rotation.x = 0.4;
+    horn.rotation.y = angle;
+    fruitGroup.add(horn);
+  }
+
+  // Floating Particles
+  const particleCount = 100;
+  const particleGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  for(let i = 0; i < particleCount; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos((Math.random() * 2) - 1);
+    const dist = 2.2 + Math.random() * 2.0;
+    positions[i*3] = dist * Math.sin(phi) * Math.cos(theta);
+    positions[i*3+1] = dist * Math.sin(phi) * Math.sin(theta);
+    positions[i*3+2] = dist * Math.cos(phi);
+  }
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const particleMat = new THREE.PointsMaterial({
+    color: 0x00f0ff,
+    size: 0.07,
+    transparent: true,
+    opacity: 0.7
+  });
+  const particleSystem = new THREE.Points(particleGeo, particleMat);
+  fruitGroup.add(particleSystem);
+
+  // Mouse Interaction Drag / Hover
+  let mouseX = 0, mouseY = 0;
+  let targetX = 0, targetY = 0;
+  let isDragging = false;
+  let prevMouseX = 0, prevMouseY = 0;
+
+  container.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    prevMouseX = e.clientX;
+    prevMouseY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => { isDragging = false; });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const deltaX = e.clientX - prevMouseX;
+      const deltaY = e.clientY - prevMouseY;
+      fruitGroup.rotation.y += deltaX * 0.01;
+      fruitGroup.rotation.x += deltaY * 0.01;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+    } else {
+      const rect = container.getBoundingClientRect();
+      if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+        mouseX = ((e.clientX - rect.left) / width - 0.5) * 2;
+        mouseY = -((e.clientY - rect.top) / height - 0.5) * 2;
+      }
+    }
+  });
+
+  // Touch Support
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+      fruitGroup.rotation.y += 0.02;
+    }
+  }, { passive: true });
+
+  function onResize() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (w && h) {
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+  }
+  window.addEventListener('resize', onResize);
+
+  // Animation Loop
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const elapsedTime = clock.getElapsedTime();
+
+    if (!isDragging) {
+      targetX += (mouseX - targetX) * 0.05;
+      targetY += (mouseY - targetY) * 0.05;
+      fruitGroup.rotation.y += 0.008;
+      fruitGroup.rotation.x = Math.sin(elapsedTime * 0.5) * 0.12 - targetY * 0.4;
+      fruitGroup.position.y = Math.sin(elapsedTime * 1.5) * 0.15;
+    }
+
+    wireShield.rotation.y = -elapsedTime * 0.2;
+    ring1.rotation.z = elapsedTime * 0.45;
+    ring2.rotation.x = elapsedTime * 0.35;
+    particleSystem.rotation.y = elapsedTime * 0.12;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+</script>
+
+
+</body></html>

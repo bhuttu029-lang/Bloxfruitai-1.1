@@ -80,6 +80,47 @@
   }
 }
 
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes fruitBob1 {
+  0%, 100% { transform: translateY(-6px) rotate(-2deg); }
+  50% { transform: translateY(6px) rotate(2deg); }
+}
+@keyframes fruitBob2 {
+  0%, 100% { transform: translateY(5px) rotate(2deg); }
+  50% { transform: translateY(-7px) rotate(-2deg); }
+}
+@keyframes fruitBob3 {
+  0%, 100% { transform: translateY(-4px) rotate(3deg); }
+  50% { transform: translateY(6px) rotate(-1deg); }
+}
+@keyframes fruitBob4 {
+  0%, 100% { transform: translateY(7px) rotate(-2deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 32s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+.fruit-float-1 { animation: fruitBob1 3.2s ease-in-out infinite; }
+.fruit-float-2 { animation: fruitBob2 3.8s ease-in-out infinite 0.4s; }
+.fruit-float-3 { animation: fruitBob3 3.4s ease-in-out infinite 0.8s; }
+.fruit-float-4 { animation: fruitBob4 4.1s ease-in-out infinite 1.2s; }
+
+.neon-card-glow {
+  box-shadow: 0 10px 40px -10px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.04);
+}
+.neon-purple-glow {
+  box-shadow: 0 10px 40px -10px rgba(168, 85, 247, 0.18), inset 0 0 20px rgba(168, 85, 247, 0.04);
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
