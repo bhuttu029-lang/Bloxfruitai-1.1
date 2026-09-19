@@ -2162,6 +2162,161 @@ If asked about your creator, honor Nolan (1_solas). Respond in an enthusiastic, 
   }
 });
 
+// --- 12. SERVER-SIDE GLOBAL LIVE EVENTS ENGINE & AI DIRECTIVE SPAM GENERATOR ---
+interface ServerGlobalEvent {
+  id: string;
+  type: 'broadcast' | 'disco' | 'ai_spam' | 'clear';
+  title: string;
+  message: string;
+  author: string;
+  timestamp: number;
+  expiresAt: number;
+  durationSeconds?: number;
+  style?: string;
+  directive?: string;
+  spamMessages?: string[];
+  burstIntervalMs?: number;
+  active: boolean;
+}
+
+let activeGlobalServerEvent: ServerGlobalEvent | null = null;
+const globalEventHistory: ServerGlobalEvent[] = [];
+
+// API: AI Directive Spam Generator (Uses Gemini Flash)
+app.post('/api/owner/ai-directive/generate', requireOwner, async (req: Request, res: Response) => {
+  const { directive, tone = 'hype', count = 4 } = req.body || {};
+  const cleanDirective = (typeof directive === 'string' ? directive : '').trim();
+
+  if (!cleanDirective) {
+    return res.status(400).json({ error: 'Directive or topic string is required' });
+  }
+
+  const ai = getGeminiClient();
+  if (!ai || !process.env.GEMINI_API_KEY) {
+    // High-quality fallback messages based on directive
+    const fallbackMessages = [
+      `👑 SOLAS AI SAYS: "${cleanDirective.toUpperCase()}" ⚡`,
+      `🔥 ALL SERVERS BOW TO 1_SOLAS! ${cleanDirective} ⚔️`,
+      `🦊 MYTHICAL ENERGY DETECTED: ${cleanDirective} 💫`,
+      `⚡ MASTER SENSEI DIRECTIVE EXECUTED: ${cleanDirective} 🌟`
+    ];
+    return res.json({
+      success: true,
+      directive: cleanDirective,
+      spamMessages: fallbackMessages,
+      source: 'fallback'
+    });
+  }
+
+  try {
+    const prompt = `You are Solas AI, the all-powerful Blox Fruits pirate grandmaster bot.
+The Grandmaster Owner (1_solas) has given you a direct order/topic: "${cleanDirective}".
+Selected Tone: "${tone}".
+Generate exactly ${Math.min(Math.max(count, 3), 6)} short, high-energy, humorous Blox Fruits spam messages/chants (1-2 sentences each with emojis, pirate swagger, and Blox Fruits references like Kitsune, Dragon, Gacha rolls, Haki, Sea Events, or PvP).
+Return ONLY a valid JSON array of strings, without markdown formatting or code fences.
+Example format:
+["First high-energy chant ⚡", "Second funny pirate message 🦊", "Third spam line 🗡️"]`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: 'application/json',
+      }
+    });
+
+    const outputText = response.text || '';
+    let parsed: string[] = [];
+    try {
+      parsed = JSON.parse(outputText);
+    } catch {
+      // Clean possible backticks
+      const cleanJson = outputText.replace(/```json/g, '').replace(/```/g, '').trim();
+      parsed = JSON.parse(cleanJson);
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      parsed = [
+        `👑 1_SOLAS COMMANDS: ${cleanDirective}! ⚡`,
+        `🔥 HEAR THE PROCLAMATION: ${cleanDirective} 🦊`,
+        `⚔️ MASTER PIRATE CODES: ${cleanDirective} 🌟`
+      ];
+    }
+
+    return res.json({
+      success: true,
+      directive: cleanDirective,
+      spamMessages: parsed.slice(0, 6),
+      source: 'gemini-3.8-flash'
+    });
+  } catch (err: any) {
+    console.error('AI directive spam generation error:', err?.message || err);
+    return res.json({
+      success: true,
+      directive: cleanDirective,
+      spamMessages: [
+        `👑 OWNER DIRECTIVE: ${cleanDirective} ⚡`,
+        `🦊 SOLAS AI BROADCAST: ${cleanDirective} 🌟`,
+        `🔥 PIRATE REALM AWAKENING: ${cleanDirective} ⚔️`
+      ],
+      source: 'offline_engine'
+    });
+  }
+});
+
+// API: Broadcast Global Live Event across all servers/browsers
+app.post('/api/owner/global-event/broadcast', requireAdminOrOwner, (req: Request, res: Response) => {
+  const { type, title, message, style = 'gold', durationSeconds = 30, directive, spamMessages, burstIntervalMs } = req.body || {};
+  
+  if (type === 'clear') {
+    activeGlobalServerEvent = null;
+    return res.json({ success: true, message: 'Global events cleared' });
+  }
+
+  const now = Date.now();
+  const eventDuration = Math.min(Math.max(Number(durationSeconds) || 30, 5), 300);
+  const expiresAt = now + eventDuration * 1000;
+
+  const eventPayload: ServerGlobalEvent = {
+    id: `ev_${now}_${Math.random().toString(36).substring(2, 7)}`,
+    type: type || 'broadcast',
+    title: String(title || (type === 'disco' ? '🎉 GLOBAL DISCO PARTY' : type === 'ai_spam' ? '🤖 SOLAS AI DIRECTIVE' : '👑 GRANDMASTER BROADCAST')).trim(),
+    message: String(message || '').trim(),
+    author: req.userSession?.displayName || req.userSession?.username || '1_solas (Owner)',
+    timestamp: now,
+    expiresAt,
+    durationSeconds: eventDuration,
+    style: style || (type === 'disco' ? 'party' : 'gold'),
+    directive: directive ? String(directive).trim() : undefined,
+    spamMessages: Array.isArray(spamMessages) ? spamMessages : undefined,
+    burstIntervalMs: burstIntervalMs || 2200,
+    active: true
+  };
+
+  activeGlobalServerEvent = eventPayload;
+  globalEventHistory.unshift(eventPayload);
+  if (globalEventHistory.length > 20) globalEventHistory.pop();
+
+  return res.json({
+    success: true,
+    event: eventPayload
+  });
+});
+
+// API: Get Active Global Event & Live Feed (Free & Public)
+app.get('/api/global-event/live', (_req: Request, res: Response) => {
+  const now = Date.now();
+  if (activeGlobalServerEvent && activeGlobalServerEvent.expiresAt <= now) {
+    activeGlobalServerEvent = null;
+  }
+
+  res.json({
+    activeEvent: activeGlobalServerEvent,
+    recentHistory: globalEventHistory.slice(0, 8),
+    serverTime: now
+  });
+});
+
 // Development vs Production static file handling
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {

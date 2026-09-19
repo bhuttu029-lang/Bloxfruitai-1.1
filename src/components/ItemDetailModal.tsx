@@ -4,6 +4,7 @@ import { X, Sparkles, Shield, Swords, Plus, TrendingUp, AlertTriangle, Flame, Bo
 import { soundFX } from '../utils/audio';
 import { ALL_OBTAINMENT_DATA } from '../data/bloxObtainmentData';
 import { SafeFruitImage } from './SafeFruitImage';
+import { getLootGlowConfig } from '../utils/lootGlowUtils';
 
 interface ItemDetailModalProps {
   item: FruitItem | null;
@@ -63,45 +64,48 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </button>
 
           {/* Header with Emoji & Name */}
-          <div className="flex items-center gap-4 mb-4">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl border border-slate-700 bg-slate-800/90 shadow-inner relative overflow-hidden shrink-0"
-              style={{ borderColor: item.accentColor + '80' }}
-            >
-              <SafeFruitImage
-                src={item.iconUrl}
-                alt={item.name}
-                category={item.category}
-                rarity={item.rarity}
-                fallbackEmoji={item.imageEmoji}
-                className="w-12 h-12 object-contain"
-              />
-              {item.isNewOrReworked && (
-                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-black uppercase tracking-wider">
-                  NEW
-                </span>
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-white tracking-wide">{item.name}</h3>
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    backgroundColor: item.accentColor + '25',
-                    color: item.accentColor,
-                    border: `1px solid ${item.accentColor}50`,
-                  }}
+          {(() => {
+            const lootGlow = getLootGlowConfig(item.rarity);
+            return (
+              <div className="flex items-center gap-4 mb-4">
+                <div
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl border border-slate-700 bg-slate-800/90 shadow-inner relative overflow-hidden shrink-0 ${lootGlow.iconClass}`}
+                  style={{ borderColor: item.accentColor ? `${item.accentColor}90` : undefined }}
                 >
-                  {item.rarity}
-                </span>
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${lootGlow.haloGradient} opacity-40 blur-sm pointer-events-none`}
+                  />
+                  <SafeFruitImage
+                    src={item.iconUrl}
+                    alt={item.name}
+                    category={item.category}
+                    rarity={item.rarity}
+                    fallbackEmoji={item.imageEmoji}
+                    className="w-12 h-12 object-contain relative z-10"
+                  />
+                  {item.isNewOrReworked && (
+                    <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-black uppercase tracking-wider z-20">
+                      NEW
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-white tracking-wide">{item.name}</h3>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${lootGlow.badgeClass}`}
+                    >
+                      {item.rarity}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 capitalize">
+                    {item.type ? `${item.type} Type • ` : ''}
+                    {item.category === 'sword' ? 'Melee Weapon' : item.category === 'gamepass' ? 'Special Gamepass' : 'Devil Fruit'}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 capitalize">
-                {item.type ? `${item.type} Type • ` : ''}
-                {item.category === 'sword' ? 'Melee Weapon' : item.category === 'gamepass' ? 'Special Gamepass' : 'Devil Fruit'}
-              </p>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Permanent Toggle (if applicable) */}
           {item.permanentValue && (

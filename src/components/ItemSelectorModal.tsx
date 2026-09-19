@@ -3,6 +3,7 @@ import { FruitItem, getEffectiveFruitList, getUserValueOverrides, formatValueNum
 import { X, Search, Sparkles, Filter, Swords, Gift, Flame } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 import { SafeFruitImage } from './SafeFruitImage';
+import { getLootGlowConfig } from '../utils/lootGlowUtils';
 
 interface ItemSelectorModalProps {
   isOpen: boolean;
@@ -228,6 +229,7 @@ export const ItemSelectorModal: React.FC<ItemSelectorModalProps> = ({
           ) : (
             filteredItems.map((item) => {
               const val = isPermanentMode && item.permanentValue ? item.permanentValue : item.physicalValue;
+              const lootGlow = getLootGlowConfig(item.rarity);
               return (
                 <button
                   key={item.id}
@@ -237,17 +239,22 @@ export const ItemSelectorModal: React.FC<ItemSelectorModalProps> = ({
                     onSelect(item, isPermanentMode);
                     onClose();
                   }}
-                  className="group relative flex flex-col p-3 rounded-xl bg-slate-950/70 border border-slate-800/90 hover:border-cyan-500/60 hover:bg-slate-800/40 text-left transition-all hover:scale-[1.02] active:scale-95 shadow-sm overflow-hidden"
+                  className={`group relative flex flex-col p-3 rounded-xl bg-slate-950/80 border border-slate-800 hover:bg-slate-900 text-left transition-all hover:scale-[1.02] active:scale-95 shadow-sm overflow-hidden ${lootGlow.cardClass} loot-shimmer-ray`}
                 >
+                  {/* Subtle rarity backdrop glow */}
+                  <div
+                    className={`absolute -right-6 -top-6 w-20 h-20 rounded-full bg-gradient-to-br ${lootGlow.haloGradient} blur-lg pointer-events-none opacity-20 group-hover:opacity-60 transition-opacity`}
+                  />
+
                   {/* Highlight tag for new/dog blade */}
                   {item.isNewOrReworked && (
-                    <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300 uppercase">
+                    <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300 uppercase z-10">
                       Update
                     </span>
                   )}
 
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden group-hover:scale-110 transition-transform">
+                  <div className="flex items-center gap-2 mb-2 relative z-10">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900/90 border border-slate-800 shrink-0 overflow-hidden group-hover:scale-110 transition-transform ${lootGlow.iconClass}`}>
                       <SafeFruitImage
                         src={item.iconUrl}
                         alt={item.name}
@@ -258,19 +265,18 @@ export const ItemSelectorModal: React.FC<ItemSelectorModalProps> = ({
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white">
+                      <div className="text-xs font-bold text-slate-200 truncate group-hover:text-white transition-colors">
                         {isPermanentMode ? `Perm ${item.name}` : item.name}
                       </div>
                       <div
-                        className="text-[10px] font-medium"
-                        style={{ color: item.accentColor }}
+                        className={`text-[10px] truncate ${lootGlow.labelColor}`}
                       >
                         {item.rarity}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                  <div className="mt-auto pt-2 border-t border-slate-800/70 flex items-center justify-between text-xs relative z-10">
                     <span className="font-extrabold text-cyan-400">
                       {formatValueNumber(val)}
                     </span>

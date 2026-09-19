@@ -27,3 +27,23 @@ export interface QuotaStatusResponse {
   resetHoursRemaining: number;
   allowed: boolean;
 }
+
+export type GlobalEventType = 'broadcast' | 'disco' | 'ai_spam' | 'clear';
+export type GlobalEventStyle = 'gold' | 'neon' | 'conqueror' | 'magma' | 'party' | 'matrix';
+
+export interface GlobalLiveEvent {
+  id: string;
+  type: GlobalEventType;
+  title: string;
+  message: string;
+  author: string;
+  timestamp: number;
+  expiresAt: number;
+  durationSeconds?: number;
+  style?: GlobalEventStyle;
+  directive?: string;
+  spamMessages?: string[];
+  burstIntervalMs?: number;
+  active: boolean;
+}
+

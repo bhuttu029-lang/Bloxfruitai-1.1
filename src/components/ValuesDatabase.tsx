@@ -26,6 +26,7 @@ import {
 import { soundFX } from '../utils/audio';
 import { SafeFruitImage } from './SafeFruitImage';
 import { Interactive3DCard } from './Interactive3DCard';
+import { getLootGlowConfig } from '../utils/lootGlowUtils';
 
 interface ValuesDatabaseProps {
   onSelectItem: (item: FruitItem) => void;
@@ -329,29 +330,29 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
           const isPerm = viewPermValues || category === 'permanent';
           const displayVal = isPerm && item.permanentValue ? item.permanentValue : item.physicalValue;
           const hasCustom = !!overrides[item.id];
+          const lootGlow = getLootGlowConfig(item.rarity);
 
           return (
             <Interactive3DCard
               key={item.id}
-              glowColor={item.accentColor ? `${item.accentColor}40` : 'rgba(56, 189, 248, 0.3)'}
+              glowColor={lootGlow.glowColor}
               className="rounded-2xl h-full"
             >
               <div
                 id={`database-card-${item.id}`}
-                className="group relative rounded-2xl bg-slate-900/85 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 p-4 card-vfx-interactive foil-card-shine flex flex-col justify-between h-full"
+                className={`group relative rounded-2xl bg-slate-900/85 hover:bg-slate-900 border border-slate-800 p-4 card-vfx-interactive foil-card-shine flex flex-col justify-between h-full ${lootGlow.cardClass} loot-shimmer-ray`}
               >
                 {/* Item Top Row */}
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-3">
                       <div
-                        className="relative w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-950 border border-slate-800 group-hover:scale-105 transition-transform overflow-hidden shrink-0"
-                        style={{ borderColor: item.accentColor + '60' }}
+                        className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-slate-950 border border-slate-800 group-hover:scale-105 transition-transform overflow-hidden shrink-0 ${lootGlow.iconClass}`}
+                        style={{ borderColor: item.accentColor ? `${item.accentColor}80` : undefined }}
                       >
                         {/* Ambient rarity aura backdrop */}
                         <div
-                          className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity blur-sm pointer-events-none"
-                          style={{ backgroundColor: item.accentColor }}
+                          className={`absolute inset-0 bg-gradient-to-br ${lootGlow.haloGradient} opacity-30 group-hover:opacity-60 transition-opacity blur-sm pointer-events-none`}
                         />
                         <SafeFruitImage
                           src={item.iconUrl}
@@ -359,7 +360,7 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
                           category={item.category}
                           rarity={item.rarity}
                           fallbackEmoji={item.imageEmoji}
-                          className="w-10 h-10 object-contain"
+                          className="w-10 h-10 object-contain relative z-10"
                         />
                       </div>
                       <div>
@@ -368,8 +369,7 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
                         </h4>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span
-                            className="text-[10px] font-semibold"
-                            style={{ color: item.accentColor }}
+                            className={`text-[10px] font-semibold ${lootGlow.labelColor}`}
                           >
                             {item.rarity}
                           </span>

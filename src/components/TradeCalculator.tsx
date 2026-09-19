@@ -21,6 +21,7 @@ import {
 } from '../data/historicalTrends';
 import { generateLocalTradeBreakdown } from '../utils/bloxChatEngine';
 import { SafeFruitImage } from './SafeFruitImage';
+import { getLootGlowConfig } from '../utils/lootGlowUtils';
 import {
   Plus,
   Trash2,
@@ -495,15 +496,21 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                 const item = itemEntry.item;
                 const isPerm = itemEntry.isPermanent;
                 const itemVal = isPerm && item.permanentValue ? item.permanentValue : item.physicalValue;
+                const lootGlow = getLootGlowConfig(item.rarity);
 
                 return (
                   <Interactive3DCard
                     key={itemEntry.uid}
                     id={`you-slot-filled-${slotIdx}`}
-                    glowColor="rgba(56, 189, 248, 0.35)"
+                    glowColor={lootGlow.glowColor}
                     className="rounded-2xl"
                   >
-                    <div className="relative h-28 rounded-2xl bg-slate-950 border border-slate-800 p-3 flex flex-col justify-between group hover:border-cyan-500 transition-all shadow-md overflow-hidden">
+                    <div className={`relative h-28 rounded-2xl bg-slate-950/95 border border-slate-800 p-3 flex flex-col justify-between group transition-all shadow-md overflow-hidden ${lootGlow.cardClass} loot-shimmer-ray`}>
+                      {/* Ambient rarity gradient halo */}
+                      <div
+                        className={`absolute -right-8 -top-8 w-24 h-24 rounded-full bg-gradient-to-br ${lootGlow.haloGradient} blur-xl pointer-events-none opacity-40 group-hover:opacity-75 transition-opacity`}
+                      />
+
                       {/* Delete button */}
                       <button
                         id={`delete-you-item-${slotIdx}`}
@@ -512,21 +519,21 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                           soundFX.playPop();
                           onRemoveItem('you', itemEntry.uid);
                         }}
-                        className="absolute top-2 right-2 p-1 rounded-md bg-slate-900 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors z-20"
+                        className="absolute top-2 right-2 p-1 rounded-md bg-slate-900/90 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors z-20 border border-slate-800"
                         title="Remove item"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
 
                       <div
-                        className="cursor-pointer"
+                        className="cursor-pointer relative z-10"
                         onClick={() => {
                           soundFX.playPop();
                           onInspectItem(item);
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl bg-slate-900/90 border border-slate-800 shrink-0 overflow-hidden group-hover:scale-105 transition-transform ${lootGlow.iconClass}`}>
                             <SafeFruitImage
                               src={item.iconUrl}
                               alt={item.name}
@@ -537,21 +544,21 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                             />
                           </div>
                           <div className="min-w-0 flex-1 pr-4">
-                            <div className="text-xs font-bold text-white truncate">
+                            <div className="text-xs font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
                               {isPerm ? `Perm ${item.name}` : item.name}
                             </div>
-                            <div className="text-[10px] text-cyan-400 font-medium truncate">
+                            <div className={`text-[10px] truncate ${lootGlow.labelColor}`}>
                               {item.rarity}
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80 relative z-10">
                         <span className="font-extrabold text-cyan-400">
                           {formatValueNumber(itemVal)}
                         </span>
-                        <span className="text-[10px] text-amber-400 font-semibold">
+                        <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">
                           ★ {item.demand}/10
                         </span>
                       </div>
@@ -643,15 +650,21 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                 const item = itemEntry.item;
                 const isPerm = itemEntry.isPermanent;
                 const itemVal = isPerm && item.permanentValue ? item.permanentValue : item.physicalValue;
+                const lootGlow = getLootGlowConfig(item.rarity);
 
                 return (
                   <Interactive3DCard
                     key={itemEntry.uid}
                     id={`them-slot-filled-${slotIdx}`}
-                    glowColor="rgba(168, 85, 247, 0.35)"
+                    glowColor={lootGlow.glowColor}
                     className="rounded-2xl"
                   >
-                    <div className="relative h-28 rounded-2xl bg-slate-950 border border-slate-800 p-3 flex flex-col justify-between group hover:border-purple-500 transition-all shadow-md overflow-hidden">
+                    <div className={`relative h-28 rounded-2xl bg-slate-950/95 border border-slate-800 p-3 flex flex-col justify-between group transition-all shadow-md overflow-hidden ${lootGlow.cardClass} loot-shimmer-ray`}>
+                      {/* Ambient rarity gradient halo */}
+                      <div
+                        className={`absolute -right-8 -top-8 w-24 h-24 rounded-full bg-gradient-to-br ${lootGlow.haloGradient} blur-xl pointer-events-none opacity-40 group-hover:opacity-75 transition-opacity`}
+                      />
+
                       {/* Delete button */}
                       <button
                         id={`delete-them-item-${slotIdx}`}
@@ -660,21 +673,21 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                           soundFX.playPop();
                           onRemoveItem('them', itemEntry.uid);
                         }}
-                        className="absolute top-2 right-2 p-1 rounded-md bg-slate-900 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors z-20"
+                        className="absolute top-2 right-2 p-1 rounded-md bg-slate-900/90 hover:bg-rose-600 text-slate-400 hover:text-white transition-colors z-20 border border-slate-800"
                         title="Remove item"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
 
                       <div
-                        className="cursor-pointer"
+                        className="cursor-pointer relative z-10"
                         onClick={() => {
                           soundFX.playPop();
                           onInspectItem(item);
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xl bg-slate-900 border border-slate-800 shrink-0 overflow-hidden">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl bg-slate-900/90 border border-slate-800 shrink-0 overflow-hidden group-hover:scale-105 transition-transform ${lootGlow.iconClass}`}>
                             <SafeFruitImage
                               src={item.iconUrl}
                               alt={item.name}
@@ -685,21 +698,21 @@ export const TradeCalculator: React.FC<TradeCalculatorProps> = ({
                             />
                           </div>
                           <div className="min-w-0 flex-1 pr-4">
-                            <div className="text-xs font-bold text-white truncate">
+                            <div className="text-xs font-bold text-white truncate group-hover:text-purple-300 transition-colors">
                               {isPerm ? `Perm ${item.name}` : item.name}
                             </div>
-                            <div className="text-[10px] text-purple-400 font-medium truncate">
+                            <div className={`text-[10px] truncate ${lootGlow.labelColor}`}>
                               {item.rarity}
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80 relative z-10">
                         <span className="font-extrabold text-purple-400">
                           {formatValueNumber(itemVal)}
                         </span>
-                        <span className="text-[10px] text-amber-400 font-semibold">
+                        <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-0.5">
                           ★ {item.demand}/10
                         </span>
                       </div>

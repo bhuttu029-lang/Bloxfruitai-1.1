@@ -83,9 +83,36 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "triggerKeywords", "botResponse"]
+    },
+    "GlobalLiveEvent": {
+      "title": "Global Live Event",
+      "description": "Synchronized real-time broadcasts, disco parties, and AI spam events",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "author": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "durationSeconds": { "type": "number" },
+        "style": { "type": "string" },
+        "directive": { "type": "string" },
+        "spamMessages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "type", "timestamp", "expiresAt"]
     }
   },
   "firestore": {
+    "/global_events/{eventId}": {
+      "schema": { "$ref": "#/entities/GlobalLiveEvent" },
+      "description": "Stores synchronized real-time broadcasts, disco events, and AI directive spam"
+    },
     "/admin_accounts/{accountId}": {
       "schema": { "$ref": "#/entities/AdminAccount" },
       "description": "Stores administrator and owner user credentials"

@@ -35,7 +35,13 @@ import {
   Mail,
   RefreshCw,
   ArrowLeft,
-  Clock
+  Clock,
+  Radio,
+  PartyPopper,
+  Bot,
+  Disc3,
+  Music,
+  Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -71,7 +77,7 @@ import {
   toggleCustomResponseStatus,
   pushFruitDataToServer
 } from '../data/bloxFruitsData';
-import { seedBackupDataToFirebase } from '../lib/firebaseSync';
+import { seedBackupDataToFirebase, triggerGlobalEventToFirebase, clearGlobalEventFromFirebase } from '../lib/firebaseSync';
 import { soundFX } from '../utils/audio';
 import { getStoredSuggestions, saveStoredSuggestions, VisitorSuggestion } from './SuggestionsBoard';
 
@@ -88,7 +94,8 @@ interface SecretOwnerVaultModalProps {
   } | null;
 }
 
-type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
+type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'global_events' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
+
 
 export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   isOpen,
@@ -269,6 +276,186 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setAdminAccountsList(getStoredAdminAccounts());
     setSaveSuccessMsg('🗑️ Admin account revoked and deleted.');
     setTimeout(() => setSaveSuccessMsg(null), 3000);
+  };
+
+  // --- Global Live Events & AI Directive Spam State ---
+  const [broadcastTitle, setBroadcastTitle] = useState<string>('⚡ CONQUEROR HAKI PROCLAMATION');
+  const [broadcastMsg, setBroadcastMsg] = useState<string>('Grandmaster 1_solas has proclaimed a server-wide event! 10x Gacha Luck active for everyone!');
+  const [broadcastStyle, setBroadcastStyle] = useState<'gold' | 'neon' | 'conqueror' | 'magma' | 'matrix'>('gold');
+  const [broadcastDuration, setBroadcastDuration] = useState<number>(30);
+  
+  const [discoDuration, setDiscoDuration] = useState<number>(30);
+  const [discoTitle, setDiscoTitle] = useState<string>('🌮 IT\'S RAINING TACOS DISCO PARTY');
+
+  const [aiDirectiveText, setAiDirectiveText] = useState<string>('Praise Kitsune fruit and roast Dragon fruit users with pirate rhymes');
+  const [aiTone, setAiTone] = useState<string>('hype');
+  const [isAiGeneratingSpam, setIsAiGeneratingSpam] = useState<boolean>(false);
+  const [generatedAiSpamList, setGeneratedAiSpamList] = useState<string[]>([
+    '👑 1_SOLAS COMMANDS: KITSUNE SUPREMACY IS ABSOLUTE! ⚡',
+    '🦊 9 TAILS AWAKENING: ALL SERVERS GAIN +500% PIRATE SPEED! 🌟',
+    '🗡️ GRANDMASTER NO REACH: BOW TO THE STRONGEST SWORD MASTER! 🔥',
+    '💀 LEVIATHAN HEART REVEALED: MIRAGE ISLAND PORTAL OPENED! ⚔️'
+  ]);
+  const [isBroadcastingLive, setIsBroadcastingLive] = useState<boolean>(false);
+
+  const handleSendLiveBroadcast = async () => {
+    if (!broadcastMsg.trim()) {
+      setSaveSuccessMsg('⚠️ Please enter a broadcast message.');
+      return;
+    }
+    setIsBroadcastingLive(true);
+    soundFX.playConquerorBlast();
+    try {
+      const eventPayload = {
+        type: 'broadcast',
+        title: broadcastTitle.trim() || '👑 GRANDMASTER BROADCAST',
+        message: broadcastMsg.trim(),
+        author: '1_solas (Grandmaster Owner)',
+        style: broadcastStyle,
+        durationSeconds: broadcastDuration,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + broadcastDuration * 1000,
+        active: true
+      };
+
+      // Push to Firebase and server API simultaneously
+      await triggerGlobalEventToFirebase(eventPayload);
+      await fetch('/api/owner/global-event/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventPayload)
+      });
+
+      setSaveSuccessMsg(`⚡ Broadcast "${broadcastTitle}" sent to ALL connected servers!`);
+    } catch (err) {
+      setSaveSuccessMsg('❌ Broadcast triggered locally (fallback active).');
+    } finally {
+      setIsBroadcastingLive(false);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+    }
+  };
+
+  const handleStartGlobalDisco = async () => {
+    setIsBroadcastingLive(true);
+    soundFX.playDiscoBeat();
+    try {
+      const eventPayload = {
+        type: 'disco',
+        title: discoTitle.trim() || '🎉 1_SOLAS PIRATE DISCO PARTY',
+        message: 'Get ready to groove! Grandmaster 1_solas triggered server-wide disco mode!',
+        author: '1_solas (Grandmaster Owner)',
+        style: 'party',
+        durationSeconds: discoDuration,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + discoDuration * 1000,
+        active: true
+      };
+
+      await triggerGlobalEventToFirebase(eventPayload);
+      await fetch('/api/owner/global-event/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventPayload)
+      });
+
+      setSaveSuccessMsg(`🎉 Global Disco Mode (${discoDuration}s) activated across ALL servers!`);
+    } catch (err) {
+      setSaveSuccessMsg('❌ Disco party launched locally.');
+    } finally {
+      setIsBroadcastingLive(false);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+    }
+  };
+
+  const handleGenerateAiSpamChants = async () => {
+    if (!aiDirectiveText.trim()) {
+      setSaveSuccessMsg('⚠️ Please enter a directive or topic for Solas AI.');
+      return;
+    }
+    setIsAiGeneratingSpam(true);
+    soundFX.playPop();
+    try {
+      const res = await fetch('/api/owner/ai-directive/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          directive: aiDirectiveText.trim(),
+          tone: aiTone,
+          count: 4
+        })
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.spamMessages) && data.spamMessages.length > 0) {
+        soundFX.playWin();
+        setGeneratedAiSpamList(data.spamMessages);
+        setSaveSuccessMsg(`🤖 Solas AI generated ${data.spamMessages.length} spam chants ready to broadcast!`);
+      } else {
+        soundFX.playPop();
+        setSaveSuccessMsg('⚠️ AI generation fallback applied.');
+      }
+    } catch (err) {
+      soundFX.playPop();
+      setSaveSuccessMsg('❌ AI directive generation failed.');
+    } finally {
+      setIsAiGeneratingSpam(false);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+    }
+  };
+
+  const handleBroadcastAiSpam = async () => {
+    if (generatedAiSpamList.length === 0) {
+      setSaveSuccessMsg('⚠️ Please generate AI spam chants first.');
+      return;
+    }
+    setIsBroadcastingLive(true);
+    soundFX.playAiSpamChime();
+    try {
+      const totalDuration = generatedAiSpamList.length * 3 + 10;
+      const eventPayload = {
+        type: 'ai_spam',
+        title: '🤖 SOLAS AI DIRECTIVE SPAM',
+        message: generatedAiSpamList[0] || 'AI Directive Executed',
+        directive: aiDirectiveText.trim(),
+        spamMessages: generatedAiSpamList,
+        burstIntervalMs: 2400,
+        author: '1_solas (Owner via Solas AI)',
+        durationSeconds: totalDuration,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + totalDuration * 1000,
+        active: true
+      };
+
+      await triggerGlobalEventToFirebase(eventPayload);
+      await fetch('/api/owner/global-event/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventPayload)
+      });
+
+      setSaveSuccessMsg(`🤖 AI Directive Spam dispatched in synchronized waves to ALL servers!`);
+    } catch (err) {
+      setSaveSuccessMsg('❌ AI spam dispatched locally.');
+    } finally {
+      setIsBroadcastingLive(false);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+    }
+  };
+
+  const handleStopAllLiveEvents = async () => {
+    soundFX.playPop();
+    try {
+      await clearGlobalEventFromFirebase();
+      await fetch('/api/owner/global-event/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'clear' })
+      });
+      setSaveSuccessMsg('🛑 All live broadcasts, disco parties, and AI spam cleared from all servers.');
+    } catch (err) {
+      setSaveSuccessMsg('🛑 Live events cleared locally.');
+    } finally {
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    }
   };
 
   // Sync items
@@ -935,6 +1122,22 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                   <MessageSquarePlus className="w-4 h-4" />
                   <span>Custom AI Responses ({customResponsesList.length})</span>
                 </button>
+
+                <button
+                  onClick={() => {
+                    soundFX.playWin();
+                    setActiveTab('global_events');
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                    activeTab === 'global_events'
+                      ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 text-white shadow-lg shadow-pink-500/25 border-pink-400'
+                      : 'bg-slate-950/60 text-pink-300 hover:text-white border border-pink-500/30'
+                  }`}
+                >
+                  <Radio className="w-4 h-4 text-pink-400 animate-pulse" />
+                  <span>👑 Live Abuse, Disco & AI Spam</span>
+                </button>
+
 
                 <button
                   onClick={() => {
@@ -1895,6 +2098,349 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: GLOBAL LIVE EVENTS & AI SPAM DIRECTIVE */}
+              {activeTab === 'global_events' && (
+                <div className="space-y-6">
+                  {/* Master Header & Emergency Killswitch */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-pink-950/60 via-purple-950/60 to-slate-950 border-2 border-pink-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="p-2 rounded-xl bg-pink-500/20 text-pink-300 border border-pink-500/40">
+                          <Radio className="w-5 h-5 animate-pulse" />
+                        </span>
+                        <div>
+                          <h4 className="text-sm font-black text-white flex items-center gap-2">
+                            <span>👑 Live Abuse, Disco & AI Spam Control Deck</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-pink-500/20 text-pink-300 border border-pink-500/40">
+                              Real-Time Synchronized
+                            </span>
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Broadcast live announcements, trigger full-screen disco parties, or direct Solas AI to spam all connected browsers simultaneously.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleStopAllLiveEvents}
+                      className="px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-lg shadow-rose-950/50"
+                    >
+                      <X className="w-4 h-4 text-rose-400" />
+                      <span>🛑 Killswitch / Clear Events</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* SECTION 1: GLOBAL LIVE BROADCAST TRANSMITTER */}
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-amber-500/30 space-y-4 shadow-xl">
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                        <h5 className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-amber-400" />
+                          <span>1. Global Live Broadcast</span>
+                        </h5>
+                        <span className="text-[10px] font-mono text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                          Top Strike Banner
+                        </span>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-400">Quick Proclamation Presets:</label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { title: '⚡ CONQUEROR HAKI ALERT', msg: 'Grandmaster 1_solas has awakened Supreme Haki! 10x Gacha Luck is active for all servers!', style: 'conqueror' as const },
+                            { title: '🦊 MIRAGE ISLAND DETECTED', msg: 'Mythical Kitsune fruit has spawned at the Mirage Island! Full moon is rising!', style: 'neon' as const },
+                            { title: '🎁 10X GACHA LUCK EVENT', msg: 'Server-wide 10x Mythical Fruit roll probability enabled by 1_solas! Roll now!', style: 'gold' as const },
+                            { title: '💀 LEVIATHAN SEA RAID BOSS', msg: 'Danger Level 6: The Frozen Dimension Portal has opened! Leviathan Raid begins!', style: 'magma' as const }
+                          ].map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                soundFX.playPop();
+                                setBroadcastTitle(preset.title);
+                                setBroadcastMsg(preset.msg);
+                                setBroadcastStyle(preset.style);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-amber-300 text-[11px] font-semibold border border-slate-800 transition-colors"
+                            >
+                              {preset.title.split(' ')[0]} {preset.title.split(' ')[1]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-300">Broadcast Title:</label>
+                          <input
+                            type="text"
+                            value={broadcastTitle}
+                            onChange={(e) => setBroadcastTitle(e.target.value)}
+                            placeholder="e.g. ⚡ CONQUEROR HAKI PROCLAMATION"
+                            className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-300">Broadcast Message Body:</label>
+                          <textarea
+                            rows={3}
+                            value={broadcastMsg}
+                            onChange={(e) => setBroadcastMsg(e.target.value)}
+                            placeholder="Enter the announcement to display on all connected user screens..."
+                            className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 mt-1"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-300">Visual Aura Theme:</label>
+                            <select
+                              value={broadcastStyle}
+                              onChange={(e: any) => setBroadcastStyle(e.target.value)}
+                              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-amber-300 focus:outline-none mt-1"
+                            >
+                              <option value="gold">👑 Grandmaster Gold</option>
+                              <option value="conqueror">🩸 Conqueror Red</option>
+                              <option value="neon">⚡ Cyber Neon</option>
+                              <option value="magma">🔥 Magma Orange</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-300">Duration (Seconds):</label>
+                            <select
+                              value={broadcastDuration}
+                              onChange={(e) => setBroadcastDuration(Number(e.target.value))}
+                              className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-cyan-300 focus:outline-none mt-1"
+                            >
+                              <option value={15}>15 Seconds</option>
+                              <option value={30}>30 Seconds (Default)</option>
+                              <option value={60}>60 Seconds</option>
+                              <option value={120}>2 Minutes</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSendLiveBroadcast}
+                          disabled={isBroadcastingLive}
+                          className="w-full py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span>{isBroadcastingLive ? 'Transmitting...' : '🚀 Transmit Live Broadcast to ALL SERVERS'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* SECTION 2: GLOBAL DISCO & PARTY MODE */}
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-pink-500/30 space-y-4 shadow-xl flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                          <h5 className="text-xs font-black text-pink-400 uppercase tracking-wider flex items-center gap-2">
+                            <PartyPopper className="w-4 h-4 text-pink-400" />
+                            <span>2. 🌮 Raining Tacos Global Disco Party</span>
+                          </h5>
+                          <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            🌮 Raining Tacos Sync
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          Ignite a synchronized celebration across every user screen! Features the full 8-bit chiptune synth track of <strong>"It's Raining Tacos"</strong>, delicious tacos falling from the sky, rainbow aurora pulses, confetti cannons, and a live DJ Solas countdown HUD.
+                        </p>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-300">Party Event Title:</label>
+                            <input
+                              type="text"
+                              value={discoTitle}
+                              onChange={(e) => setDiscoTitle(e.target.value)}
+                              placeholder="e.g. 🌮 IT'S RAINING TACOS DISCO PARTY"
+                              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-400 mt-1"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-300">Party Duration:</label>
+                            <div className="grid grid-cols-4 gap-2 mt-1">
+                              {[15, 30, 60, 120].map((dur) => (
+                                <button
+                                  key={dur}
+                                  type="button"
+                                  onClick={() => setDiscoDuration(dur)}
+                                  className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                                    discoDuration === dur
+                                      ? 'bg-pink-500/20 text-pink-300 border-pink-400 shadow-md shadow-pink-500/20'
+                                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                                  }`}
+                                >
+                                  {dur}s
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleStartGlobalDisco}
+                        disabled={isBroadcastingLive}
+                        className="w-full py-3.5 bg-gradient-to-r from-amber-500 via-pink-500 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-pink-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        <Disc3 className="w-4 h-4 animate-spin text-slate-950" />
+                        <span>{isBroadcastingLive ? 'Activating...' : `🌮 ACTIVATE RAINING TACOS DISCO (${discoDuration}s)`}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SECTION 3: SOLAS AI DIRECTIVE & SYNCHRONIZED SPAM MACHINE */}
+                  <div className="p-5 rounded-2xl bg-slate-950 border-2 border-purple-500/40 space-y-4 shadow-2xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-cyan-400 flex items-center justify-center shadow-md">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs font-black text-purple-300 uppercase tracking-wider">
+                            3. Solas AI Directive & Synchronized Spam Machine
+                          </h5>
+                          <p className="text-[11px] text-slate-400">
+                            Give Solas AI any order or topic. The AI will generate witty Blox Fruits spam chants and dispatch them in synchronized waves across all live users.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                        ⚡ Gemini Powered
+                      </span>
+                    </div>
+
+                    {/* Quick Directive Prompts */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-400">Quick AI Directive Presets:</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { label: '🦊 Kitsune Superiority', prompt: 'Praise Kitsune fruit and roast Dragon fruit users with pirate rhymes', tone: 'hype' },
+                          { label: '🤣 Hilarious Trade Insults', prompt: 'Create 4 funny blox fruits trade roast chants for bad trade offers', tone: 'roast' },
+                          { label: '⚔️ 1_solas Sword God', prompt: 'Proclaim 1_solas as the invincible Blox Fruits grandmaster and sword king', tone: 'hype' },
+                          { label: '🎰 Gacha Gambler Pain', prompt: 'Chant about rolling Rocket & Spin fruits for the 50th time with tears and humor', tone: 'meme' },
+                          { label: '🐉 Dragon Fruit Rework', prompt: 'Make hype rhymes about the Dragon Fruit Rework and Mirage Island myths', tone: 'hype' }
+                        ].map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              soundFX.playPop();
+                              setAiDirectiveText(preset.prompt);
+                              setAiTone(preset.tone);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-purple-300 text-[11px] font-semibold border border-slate-800 transition-colors"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="text-[11px] font-bold text-slate-300">Owner Directive / Instruction to Solas AI:</label>
+                        <input
+                          type="text"
+                          value={aiDirectiveText}
+                          onChange={(e) => setAiDirectiveText(e.target.value)}
+                          placeholder="e.g. Praise Kitsune and roast Dragon fruit users with pirate rhymes..."
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-300">Tone & Personality:</label>
+                        <select
+                          value={aiTone}
+                          onChange={(e) => setAiTone(e.target.value)}
+                          className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-purple-300 focus:outline-none mt-1"
+                        >
+                          <option value="hype">🔥 Maximum Pirate Hype</option>
+                          <option value="roast">🤣 Hilarious Meme Roast</option>
+                          <option value="mythical">🦊 Mythical Grandmaster Lore</option>
+                          <option value="meme">🎰 Pure Blox Fruits Meme</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Step 1 Generate Button */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleGenerateAiSpamChants}
+                        disabled={isAiGeneratingSpam}
+                        className="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-purple-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        <Sparkles className="w-4 h-4 text-cyan-300" />
+                        <span>{isAiGeneratingSpam ? 'Asking Solas AI...' : '🤖 Step 1: Generate AI Spam Sequence'}</span>
+                      </button>
+                    </div>
+
+                    {/* Chant Preview Cards */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                        <span>Generated Spam Wave Sequence ({generatedAiSpamList.length} Messages):</span>
+                        <span className="text-[11px] text-cyan-400 font-mono">Synced Pop Interval: ~2.4s</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {generatedAiSpamList.map((chant, idx) => (
+                          <div key={idx} className="p-2.5 rounded-xl bg-slate-900 border border-purple-500/30 text-xs text-slate-200 flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2 min-w-0">
+                              <span className="font-mono text-[10px] font-black text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded shrink-0">
+                                #{idx + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={chant}
+                                onChange={(e) => {
+                                  const updated = [...generatedAiSpamList];
+                                  updated[idx] = e.target.value;
+                                  setGeneratedAiSpamList(updated);
+                                }}
+                                className="bg-transparent text-xs text-white focus:outline-none w-full border-b border-transparent focus:border-purple-400 font-medium"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGeneratedAiSpamList(generatedAiSpamList.filter((_, i) => i !== idx));
+                              }}
+                              className="text-slate-500 hover:text-rose-400 p-0.5"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Step 2 Dispatch Button */}
+                    <button
+                      type="button"
+                      onClick={handleBroadcastAiSpam}
+                      disabled={isBroadcastingLive || generatedAiSpamList.length === 0}
+                      className="w-full py-3.5 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 hover:opacity-95 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-xl shadow-purple-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <Zap className="w-4 h-4 text-slate-950" />
+                      <span>{isBroadcastingLive ? 'Dispatched!' : '⚡ Step 2: SPAM ALL SERVERS WITH AI DIRECTIVE'}</span>
+                    </button>
                   </div>
                 </div>
               )}

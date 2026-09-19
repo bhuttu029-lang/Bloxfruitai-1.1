@@ -23,6 +23,7 @@ import { ItemSelectorModal } from './components/ItemSelectorModal';
 import { CopyrightSecurityModal } from './components/CopyrightSecurityModal';
 import { SecretOwnerVaultModal } from './components/SecretOwnerVaultModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
+import { GlobalLiveEventsOverlay } from './components/GlobalLiveEventsOverlay';
 import { initSecurityProtection, COPYRIGHT_DATA } from './utils/security';
 import { initContinuousBrowserWikiSync } from './utils/browserWikiSync';
 import { soundFX } from './utils/audio';
@@ -556,6 +557,9 @@ export default function App() {
           isOpen={isCopyrightModalOpen}
           onClose={() => setIsCopyrightModalOpen(false)}
         />
+
+        {/* Global Live Events Overlay (Synchronized Broadcasts, Disco & AI Directives) */}
+        <GlobalLiveEventsOverlay />
 
         {/* Grandmaster Control Modal (Sequence: 477047704770 -> mouse4770) */}
         <SecretOwnerVaultModal

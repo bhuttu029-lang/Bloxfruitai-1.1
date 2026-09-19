@@ -8,12 +8,14 @@ const FRUIT_OVERRIDES_COLLECTION = 'fruit_overrides';
 const CUSTOM_ITEMS_COLLECTION = 'custom_items';
 const DELETED_ITEMS_COLLECTION = 'deleted_items';
 const CUSTOM_RESPONSES_COLLECTION = 'custom_responses';
+export const GLOBAL_EVENTS_COLLECTION = 'global_events';
 
 const STORAGE_KEY_ADMIN_ACCOUNTS = 'blox_fruits_admin_accounts_v1';
 const STORAGE_KEY_OVERRIDES = 'blox_fruits_user_overrides_v2';
 const STORAGE_KEY_CUSTOM_ITEMS = 'blox_fruits_custom_items_v2';
 const STORAGE_KEY_DELETED_ITEMS = 'blox_fruits_deleted_items_v2';
 const CUSTOM_RESPONSES_STORAGE_KEY = 'blox_fruits_custom_owner_responses_v1';
+const LAST_HANDLED_EVENT_ID_KEY = 'blox_fruits_last_handled_event_id';
 
 let isRealtimeInitialized = false;
 
@@ -102,6 +104,29 @@ export function initRealtimeFirebaseSync(): () => void {
       }
     }, (err) => console.warn('Realtime custom responses sync warning:', err));
     unsubscribes.push(unsubResponses);
+
+    // 5. Live synchronized Global Broadcast, Disco & AI Directive listener
+    const unsubGlobalEvents = onSnapshot(collection(db, GLOBAL_EVENTS_COLLECTION), (snapshot) => {
+      const now = Date.now();
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const eventData = change.doc.data() as any;
+          if (eventData && eventData.active !== false && (!eventData.expiresAt || eventData.expiresAt > now)) {
+            // Check if this is a fresh event that hasn't expired
+            const eventPayload = {
+              id: change.doc.id,
+              ...eventData
+            };
+            window.dispatchEvent(new CustomEvent('blox_fruits_global_event_triggered', { detail: eventPayload }));
+          } else if (eventData && eventData.type === 'clear') {
+            window.dispatchEvent(new CustomEvent('blox_fruits_global_event_cleared', { detail: { id: change.doc.id } }));
+          }
+        } else if (change.type === 'removed') {
+          window.dispatchEvent(new CustomEvent('blox_fruits_global_event_cleared', { detail: { id: change.doc.id } }));
+        }
+      });
+    }, (err) => console.warn('Realtime global events sync warning:', err));
+    unsubscribes.push(unsubGlobalEvents);
   } catch (e) {
     console.warn('Failed to attach Firebase realtime listeners:', e);
   }
@@ -318,3 +343,49 @@ export async function deleteCustomResponseFromFirebase(id: string): Promise<void
     console.error('Failed to delete custom response from Firebase:', err);
   }
 }
+
+export async function triggerGlobalEventToFirebase(event: any): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const eventId = event.id || `event_${Date.now()}`;
+    const payload = {
+      ...event,
+      id: eventId,
+      timestamp: event.timestamp || Date.now(),
+      expiresAt: event.expiresAt || (Date.now() + (event.durationSeconds ? event.durationSeconds * 1000 : 25000)),
+      active: true,
+    };
+    
+    // Store in active slot + event log
+    await setDoc(doc(db, GLOBAL_EVENTS_COLLECTION, 'active_live_event'), payload);
+    await setDoc(doc(db, GLOBAL_EVENTS_COLLECTION, eventId), payload);
+
+    // Also trigger locally immediately
+    window.dispatchEvent(new CustomEvent('blox_fruits_global_event_triggered', { detail: payload }));
+    return true;
+  } catch (err) {
+    console.error('Failed to broadcast global event to Firebase:', err);
+    // Fallback trigger locally
+    window.dispatchEvent(new CustomEvent('blox_fruits_global_event_triggered', { detail: event }));
+    return false;
+  }
+}
+
+export async function clearGlobalEventFromFirebase(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const clearPayload = {
+      id: 'active_live_event',
+      type: 'clear',
+      timestamp: Date.now(),
+      active: false,
+      expiresAt: Date.now()
+    };
+    await setDoc(doc(db, GLOBAL_EVENTS_COLLECTION, 'active_live_event'), clearPayload);
+    window.dispatchEvent(new CustomEvent('blox_fruits_global_event_cleared', { detail: { id: 'active_live_event' } }));
+  } catch (err) {
+    console.error('Failed to clear global event from Firebase:', err);
+    window.dispatchEvent(new CustomEvent('blox_fruits_global_event_cleared', { detail: { id: 'active_live_event' } }));
+  }
+}
+

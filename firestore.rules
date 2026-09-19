@@ -60,6 +60,12 @@ service cloud.firestore {
       allow create, update, delete: if isValidDocId(responseId);
     }
 
+    // Global Live Events & Synchronized Broadcast / Disco / AI Directives
+    match /global_events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if isValidDocId(eventId);
+    }
+
     // Default protection fallback - deny all unmatched root paths
     match /{document=**} {
       allow read, write: if false;

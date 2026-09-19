@@ -1,16 +1,60 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { soundFX } from '../utils/audio';
+import { Moon, CloudLightning, Waves, Sparkles, Compass, Zap } from 'lucide-react';
+
+export type AtmosphereType = 'mirage_moon' | 'leviathan_storm' | 'sunken_ocean' | 'conqueror_void' | 'auto_sync';
+export type PerformanceMode = 'high' | 'balanced' | 'performance';
 
 interface VfxBackgroundProps {
-  intensity?: 'subtle' | 'high';
+  forcedAtmosphere?: AtmosphereType;
 }
 
-export const VfxBackground: React.FC<VfxBackgroundProps> = ({ intensity = 'high' }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+interface SkillTriggerEvent {
+  name: string;
+  icon: string;
+  color: string;
+}
 
+const SKILL_TYPES: SkillTriggerEvent[] = [
+  { name: "Conqueror's Haki Burst", icon: '⚡', color: '#dc2626' },
+  { name: 'Dragon Magma Eruption', icon: '🔥', color: '#f97316' },
+  { name: 'Kitsune Foxfire Spiral', icon: '🦊', color: '#38bdf8' },
+  { name: 'Frost Nova Ice Surge', icon: '❄️', color: '#60a5fa' },
+  { name: 'Buddha Holy Radiant Ray', icon: '✨', color: '#fbbf24' },
+  { name: 'Yoru Dimensional Slash', icon: '🗡️', color: '#10b981' }
+];
+
+export const VfxBackground: React.FC<VfxBackgroundProps> = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [currentAtmosphere, setCurrentAtmosphere] = useState<AtmosphereType>('mirage_moon');
+  const [isAutoSync, setIsAutoSync] = useState<boolean>(true);
+  const [perfMode, setPerfMode] = useState<PerformanceMode>('balanced');
+  const [recentSkill, setRecentSkill] = useState<SkillTriggerEvent | null>(null);
+  const [showAtmospherePicker, setShowAtmospherePicker] = useState<boolean>(false);
+
+  const perfModeRef = useRef<PerformanceMode>(perfMode);
+  perfModeRef.current = perfMode;
+
+  const currentAtmosphereRef = useRef<AtmosphereType>(currentAtmosphere);
+  currentAtmosphereRef.current = currentAtmosphere;
+
+  // Auto-sync atmosphere cycle timer (cycles every 45s)
+  useEffect(() => {
+    if (!isAutoSync) return;
+    const environments: AtmosphereType[] = ['mirage_moon', 'leviathan_storm', 'sunken_ocean', 'conqueror_void'];
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % environments.length;
+      setCurrentAtmosphere(environments[idx]);
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [isAutoSync]);
+
+  // Main Canvas Animation Engine with Zero-ShadowBlur & Frame-Throttling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     let animationFrameId: number;
@@ -23,37 +67,24 @@ export const VfxBackground: React.FC<VfxBackgroundProps> = ({ intensity = 'high'
       height = canvas.height = window.innerHeight;
     };
 
-    // Track mouse coordinates for interactive Haki field repulsion & cursor sparkle trails
-    let mouseX = -1000;
-    let mouseY = -1000;
-    let isMouseActive = false;
-    let mouseLeaveTimeout: any = null;
+    // Parallax tracking (smooth & lightweight)
+    let targetMouseX = width / 2;
+    let targetMouseY = height / 2;
+    let currentMouseX = width / 2;
+    let currentMouseY = height / 2;
+    let lastMouseMoveTime = 0;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      isMouseActive = true;
-      clearTimeout(mouseLeaveTimeout);
-      mouseLeaveTimeout = setTimeout(() => {
-        isMouseActive = false;
-      }, 2000);
+    // Fast particle pools
+    interface Sparkle {
+      x: number;
+      y: number;
+      size: number;
+      opacity: number;
+      color: string;
+      speedX: number;
+      speedY: number;
+    }
 
-      // Spawn occasional micro cursor sparks when moving
-      if (Math.random() > 0.45 && cursorSparks.length < 25) {
-        cursorSparks.push({
-          x: mouseX + (Math.random() - 0.5) * 16,
-          y: mouseY + (Math.random() - 0.5) * 16,
-          size: Math.random() * 2 + 0.8,
-          speedX: (Math.random() - 0.5) * 1.2,
-          speedY: -(Math.random() * 1.4 + 0.4),
-          life: 1,
-          decay: Math.random() * 0.03 + 0.02,
-          color: getThemeColors()[Math.floor(Math.random() * getThemeColors().length)]
-        });
-      }
-    };
-
-    // Expanding shockwaves & Haki burst sparks on clicks anywhere on the site
     interface Shockwave {
       x: number;
       y: number;
@@ -61,10 +92,9 @@ export const VfxBackground: React.FC<VfxBackgroundProps> = ({ intensity = 'high'
       maxRadius: number;
       opacity: number;
       color: string;
-      lineWidth: number;
     }
 
-    interface BurstSpark {
+    interface Particle {
       x: number;
       y: number;
       speedX: number;
@@ -73,57 +103,80 @@ export const VfxBackground: React.FC<VfxBackgroundProps> = ({ intensity = 'high'
       opacity: number;
       color: string;
       decay: number;
+      shape: 'circle' | 'line' | 'diamond';
     }
 
-    interface CursorSpark {
-      x: number;
-      y: number;
-      size: number;
-      speedX: number;
-      speedY: number;
-      life: number;
-      decay: number;
-      color: string;
-    }
-
+    const cursorTrail: Sparkle[] = [];
     const shockwaves: Shockwave[] = [];
-    const burstSparks: BurstSpark[] = [];
-    const cursorSparks: CursorSpark[] = [];
+    const particles: Particle[] = [];
 
-    const handleWindowClick = (e: MouseEvent) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      const themeColors = getThemeColors();
-      const primaryColor = themeColors[0];
-      const accentColor = themeColors[1] || themeColors[0];
+    // Throttled mouse move for zero lag
+    const handleMouseMove = (e: MouseEvent) => {
+      const now = performance.now();
+      if (now - lastMouseMoveTime < 35) return; // Cap mouse processing to ~30fps
+      lastMouseMoveTime = now;
 
-      // Shockwave ring
-      if (shockwaves.length < 6) {
-        shockwaves.push({
-          x,
-          y,
-          radius: 4,
-          maxRadius: Math.random() * 40 + 75,
-          opacity: 0.85,
-          color: primaryColor,
-          lineWidth: 2.5
+      targetMouseX = e.clientX;
+      targetMouseY = e.clientY;
+
+      if (perfModeRef.current === 'performance') return; // skip trail in max performance
+
+      if (cursorTrail.length < (perfModeRef.current === 'balanced' ? 10 : 18)) {
+        cursorTrail.push({
+          x: e.clientX,
+          y: e.clientY,
+          size: Math.random() * 2 + 1,
+          opacity: 0.8,
+          color: Math.random() > 0.5 ? '#38bdf8' : '#fbbf24',
+          speedX: (Math.random() - 0.5) * 1.2,
+          speedY: -(Math.random() * 1.2 + 0.3)
         });
       }
+    };
 
-      // 10-14 Haki burst sparks shooting outward in radial directions
-      const sparkCount = intensity === 'high' ? 12 : 7;
-      for (let i = 0; i < sparkCount; i++) {
+    // Lightweight On Click Handler (No heavy shadowBlur, capped counts)
+    let lastClickTime = 0;
+    const handleWindowClick = (e: MouseEvent) => {
+      const now = performance.now();
+      if (now - lastClickTime < 60) return; // debounce rapid spam
+      lastClickTime = now;
+
+      const x = e.clientX;
+      const y = e.clientY;
+
+      const skillIdx = Math.floor(Math.random() * SKILL_TYPES.length);
+      const skill = SKILL_TYPES[skillIdx];
+      setRecentSkill(skill);
+
+      soundFX.playPop();
+
+      const isPerf = perfModeRef.current === 'performance';
+      const particleLimit = isPerf ? 6 : perfModeRef.current === 'balanced' ? 10 : 16;
+
+      // 1. Single primary shockwave
+      shockwaves.push({
+        x,
+        y,
+        radius: 4,
+        maxRadius: isPerf ? 55 : 85,
+        opacity: 0.9,
+        color: skill.color
+      });
+
+      // 2. Lightweight particles (strictly no expensive shadowBlur)
+      for (let i = 0; i < particleLimit; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 3.8 + 1.2;
-        burstSparks.push({
+        const speed = Math.random() * 3.5 + 1;
+        particles.push({
           x,
           y,
           speedX: Math.cos(angle) * speed,
           speedY: Math.sin(angle) * speed,
-          size: Math.random() * 2.6 + 1,
-          opacity: 1,
-          color: Math.random() > 0.4 ? primaryColor : accentColor,
-          decay: Math.random() * 0.028 + 0.018
+          size: Math.random() * 2.5 + 1.2,
+          opacity: 0.95,
+          color: skill.color,
+          decay: Math.random() * 0.035 + 0.025,
+          shape: skillIdx === 3 ? 'diamond' : skillIdx === 5 ? 'line' : 'circle'
         });
       }
     };
@@ -132,324 +185,368 @@ export const VfxBackground: React.FC<VfxBackgroundProps> = ({ intensity = 'high'
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('click', handleWindowClick, { passive: true });
 
-    // Dynamic Theme Palettes
-    function getThemeColors(): string[] {
-      const theme = document.documentElement.getAttribute('data-theme') || 'dark_void';
-      if (theme === 'ocean_blue') {
-        return [
-          'rgba(56, 189, 248, ',   // Sky Cyan
-          'rgba(59, 130, 246, ',   // Sea Blue
-          'rgba(45, 212, 191, ',   // Teal Aqua
-          'rgba(147, 197, 253, ',  // Light Frost Blue
-          'rgba(255, 255, 255, '   // Pure Star Spark
-        ];
-      }
-      if (theme === 'magma_red') {
-        return [
-          'rgba(245, 158, 11, ',   // Solar Gold
-          'rgba(239, 68, 68, ',    // Fiery Red
-          'rgba(249, 115, 22, ',   // Magma Orange
-          'rgba(251, 191, 36, ',   // Ember Yellow
-          'rgba(255, 255, 255, '   // Star Core
-        ];
-      }
-      // dark_void (Default Cyber/Conqueror Haki)
-      return [
-        'rgba(56, 189, 248, ',   // Cyan / Light Spirit
-        'rgba(168, 85, 247, ',  // Purple / Conqueror Haki
-        'rgba(245, 158, 11, ',   // Solar / Kitsune Gold
-        'rgba(99, 102, 241, ',   // Indigo / Celestial
-        'rgba(236, 72, 153, ',   // Pink / Mirage
-        'rgba(16, 185, 129, '    // Emerald / Dragon V4
-      ];
+    // Pre-allocated static star positions (capped to 40 for optimal performance)
+    const stars: Array<{ x: number; y: number; size: number; pulseVal: number; color: string }> = [];
+    const starCount = 42;
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random(),
+        y: Math.random(),
+        size: Math.random() * 1.5 + 0.6,
+        pulseVal: Math.random() * Math.PI * 2,
+        color: i % 3 === 0 ? '#bae6fd' : i % 3 === 1 ? '#fef08a' : '#ffffff'
+      });
     }
 
-    // Ambient floating particles (Haki embers, sea stars, spirit wisps)
-    const particleCount = intensity === 'high' ? 80 : 45;
-    const particles: Array<{
-      x: number;
-      y: number;
-      baseX: number;
-      size: number;
-      speedY: number;
-      speedX: number;
-      opacity: number;
-      maxOpacity: number;
-      color: string;
-      pulseSpeed: number;
-      pulseVal: number;
-      isTwinkle: boolean;
-    }> = [];
+    // Pre-allocated rain drops (capped to 25)
+    const rainDrops: Array<{ x: number; y: number; len: number; speed: number }> = [];
+    for (let i = 0; i < 28; i++) {
+      rainDrops.push({
+        x: Math.random(),
+        y: Math.random(),
+        len: Math.random() * 18 + 12,
+        speed: Math.random() * 8 + 7
+      });
+    }
 
-    // High velocity shooting stars / comets
-    const meteors: Array<{
-      x: number;
-      y: number;
-      length: number;
-      speed: number;
-      angle: number;
-      opacity: number;
-      color: string;
-      active: boolean;
-      tailWidth: number;
-    }> = [];
-
-    const initParticles = () => {
-      const colors = getThemeColors();
-      particles.length = 0;
-      for (let i = 0; i < particleCount; i++) {
-        const x = Math.random() * width;
-        particles.push({
-          x,
-          baseX: x,
-          y: Math.random() * height,
-          size: Math.random() * 2.6 + 0.8,
-          speedY: -(Math.random() * 0.45 + 0.18),
-          speedX: (Math.random() - 0.5) * 0.3,
-          opacity: Math.random() * 0.5 + 0.2,
-          maxOpacity: Math.random() * 0.65 + 0.35,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          pulseSpeed: Math.random() * 0.03 + 0.01,
-          pulseVal: Math.random() * Math.PI * 2,
-          isTwinkle: Math.random() > 0.7
-        });
-      }
-
-      meteors.length = 0;
-      for (let i = 0; i < 4; i++) {
-        meteors.push({
-          x: Math.random() * width,
-          y: Math.random() * (height * 0.5),
-          length: Math.random() * 110 + 70,
-          speed: Math.random() * 7 + 4.5,
-          angle: Math.PI / 4 + (Math.random() - 0.5) * 0.22,
-          opacity: Math.random() * 0.8 + 0.2,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          active: Math.random() > 0.4,
-          tailWidth: Math.random() * 1.5 + 1.2
-        });
-      }
-    };
-
-    initParticles();
-
-    // Re-initialize palette when theme changes
-    const handleThemeUpdated = () => {
-      initParticles();
-    };
-    window.addEventListener('blox_fruits_theme_updated', handleThemeUpdated);
+    // Pre-allocated bubbles (capped to 16)
+    const bubbles: Array<{ x: number; y: number; r: number; speed: number; wobble: number }> = [];
+    for (let i = 0; i < 16; i++) {
+      bubbles.push({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 3 + 1.5,
+        speed: Math.random() * 0.5 + 0.3,
+        wobble: Math.random() * Math.PI * 2
+      });
+    }
 
     let tick = 0;
+    let lastFrameTime = performance.now();
 
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
+    // High-Efficiency Render Loop
+    const render = (currentTime: number) => {
+      // Frame rate throttling for performance
+      const delta = currentTime - lastFrameTime;
+      if (delta < 15) {
+        // cap to ~60fps
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+      lastFrameTime = currentTime;
       tick++;
 
-      // 1. Render Active Meteors & Comets with luminous tails
-      if (tick % 100 === 0) {
-        meteors.forEach((m) => {
-          if (!m.active && Math.random() > 0.35) {
-            const colors = getThemeColors();
-            m.active = true;
-            m.x = Math.random() * width * 0.85;
-            m.y = Math.random() * (height * 0.35);
-            m.opacity = 0.95;
-            m.color = colors[Math.floor(Math.random() * colors.length)];
-          }
+      ctx.clearRect(0, 0, width, height);
+
+      const mode = perfModeRef.current;
+      const atmo = currentAtmosphereRef.current;
+
+      // Smooth Parallax Lerp
+      currentMouseX += (targetMouseX - currentMouseX) * 0.05;
+      currentMouseY += (targetMouseY - currentMouseY) * 0.05;
+      const pX = (currentMouseX - width / 2) * 0.015;
+      const pY = (currentMouseY - height / 2) * 0.015;
+
+      // 1. Atmosphere: Mirage Full Moon
+      if (atmo === 'mirage_moon') {
+        const mx = width * 0.82 + pX * 0.5;
+        const my = height * 0.2 + pY * 0.5;
+        const mr = Math.min(width, height) * 0.08 + 20;
+
+        // Moon Body
+        ctx.fillStyle = '#e0f2fe';
+        ctx.beginPath();
+        ctx.arc(mx, my, mr, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Single light ring
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(mx, my, mr + 6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // 2. Atmosphere: Leviathan Storm Rain
+      else if (atmo === 'leviathan_storm' && mode !== 'performance') {
+        ctx.strokeStyle = 'rgba(147, 197, 253, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        rainDrops.forEach((d) => {
+          d.y += d.speed / height;
+          if (d.y > 1) d.y = 0;
+          const rx = d.x * width;
+          const ry = d.y * height;
+          ctx.moveTo(rx, ry);
+          ctx.lineTo(rx + 2, ry + d.len);
+        });
+        ctx.stroke();
+      }
+
+      // 3. Atmosphere: Sunken Ocean Bubbles
+      else if (atmo === 'sunken_ocean' && mode !== 'performance') {
+        ctx.strokeStyle = 'rgba(165, 243, 252, 0.35)';
+        ctx.lineWidth = 1;
+        bubbles.forEach((b) => {
+          b.y -= b.speed / height;
+          b.wobble += 0.02;
+          if (b.y < 0) b.y = 1;
+          const bx = b.x * width + Math.sin(b.wobble) * 8 + pX;
+          const by = b.y * height;
+          ctx.beginPath();
+          ctx.arc(bx, by, b.r, 0, Math.PI * 2);
+          ctx.stroke();
         });
       }
 
-      meteors.forEach((m) => {
-        if (!m.active) return;
-        m.x += Math.cos(m.angle) * m.speed;
-        m.y += Math.sin(m.angle) * m.speed;
-        m.opacity -= 0.011;
+      // 4. Atmosphere: Conqueror Radar Ring
+      else if (atmo === 'conqueror_void' && mode !== 'performance') {
+        const cx = width / 2 + pX * 0.3;
+        const cy = height / 2 + pY * 0.3;
+        const radius = Math.min(width, height) * 0.35;
 
-        if (m.opacity <= 0 || m.x > width + 100 || m.y > height + 100) {
-          m.active = false;
-        } else {
-          ctx.beginPath();
-          const tailX = m.x - Math.cos(m.angle) * m.length;
-          const tailY = m.y - Math.sin(m.angle) * m.length;
-          const grad = ctx.createLinearGradient(tailX, tailY, m.x, m.y);
-          grad.addColorStop(0, `${m.color}0)`);
-          grad.addColorStop(0.6, `${m.color}${m.opacity * 0.5})`);
-          grad.addColorStop(1, `${m.color}${m.opacity})`);
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = m.tailWidth;
-          ctx.lineCap = 'round';
-          ctx.moveTo(tailX, tailY);
-          ctx.lineTo(m.x, m.y);
-          ctx.stroke();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
-          // Radiant comet head core
-          ctx.beginPath();
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = '#ffffff';
-          ctx.arc(m.x, m.y, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
+      // Universal Ambient Stars (Fast Render)
+      if (mode !== 'performance') {
+        const count = mode === 'balanced' ? 24 : stars.length;
+        for (let i = 0; i < count; i++) {
+          const s = stars[i];
+          s.pulseVal += 0.02;
+          const op = (Math.sin(s.pulseVal) * 0.3 + 0.6) * 0.6;
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = op;
+          ctx.fillRect(s.x * width + pX * 0.2, s.y * height + pY * 0.2, s.size, s.size);
         }
-      });
+        ctx.globalAlpha = 1;
+      }
 
-      // 2. Render Interactive Click Shockwaves (Haki Ripples)
+      // Cursor Trail
+      for (let i = cursorTrail.length - 1; i >= 0; i--) {
+        const ct = cursorTrail[i];
+        ct.x += ct.speedX;
+        ct.y += ct.speedY;
+        ct.opacity -= 0.05;
+
+        if (ct.opacity <= 0) {
+          cursorTrail.splice(i, 1);
+          continue;
+        }
+
+        ctx.fillStyle = ct.color;
+        ctx.globalAlpha = ct.opacity;
+        ctx.fillRect(ct.x, ct.y, ct.size, ct.size);
+      }
+      ctx.globalAlpha = 1;
+
+      // Shockwaves (Zero shadowBlur - pure fast stroke)
       for (let i = shockwaves.length - 1; i >= 0; i--) {
         const sw = shockwaves[i];
-        sw.radius += (sw.maxRadius - sw.radius) * 0.09 + 0.8;
-        sw.opacity -= 0.024;
-        sw.lineWidth = Math.max(0.5, sw.lineWidth * 0.96);
+        sw.radius += (sw.maxRadius - sw.radius) * 0.15 + 1;
+        sw.opacity -= 0.04;
 
         if (sw.opacity <= 0 || sw.radius >= sw.maxRadius) {
           shockwaves.splice(i, 1);
           continue;
         }
 
+        ctx.strokeStyle = sw.color;
+        ctx.globalAlpha = Math.max(0, sw.opacity);
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `${sw.color}${Math.max(0, sw.opacity)})`;
-        ctx.lineWidth = sw.lineWidth;
-        ctx.stroke();
-
-        // Inner glowing highlight
-        ctx.beginPath();
-        ctx.arc(sw.x, sw.y, sw.radius * 0.6, 0, Math.PI * 2);
-        ctx.strokeStyle = `${sw.color}${Math.max(0, sw.opacity * 0.35)})`;
-        ctx.lineWidth = 1;
         ctx.stroke();
       }
+      ctx.globalAlpha = 1;
 
-      // 3. Render Burst Sparks from clicks
-      for (let i = burstSparks.length - 1; i >= 0; i--) {
-        const bs = burstSparks[i];
-        bs.x += bs.speedX;
-        bs.y += bs.speedY;
-        bs.speedX *= 0.94; // Air resistance / drag
-        bs.speedY *= 0.94;
-        bs.opacity -= bs.decay;
-
-        if (bs.opacity <= 0) {
-          burstSparks.splice(i, 1);
-          continue;
-        }
-
-        ctx.beginPath();
-        ctx.arc(bs.x, bs.y, bs.size, 0, Math.PI * 2);
-        ctx.fillStyle = `${bs.color}${Math.max(0, bs.opacity)})`;
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = bs.color.slice(0, -1) + '1)';
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-
-      // 4. Render Mouse Cursor Micro-Sparks
-      for (let i = cursorSparks.length - 1; i >= 0; i--) {
-        const cs = cursorSparks[i];
-        cs.x += cs.speedX;
-        cs.y += cs.speedY;
-        cs.life -= cs.decay;
-
-        if (cs.life <= 0) {
-          cursorSparks.splice(i, 1);
-          continue;
-        }
-
-        ctx.beginPath();
-        ctx.arc(cs.x, cs.y, cs.size * cs.life, 0, Math.PI * 2);
-        ctx.fillStyle = `${cs.color}${Math.max(0, cs.life * 0.85)})`;
-        ctx.fill();
-      }
-
-      // 5. Render Ambient Haki Particles with gentle cursor repulsion field
-      particles.forEach((p) => {
-        p.y += p.speedY;
+      // Particles (Zero shadowBlur - fast direct geometry)
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
         p.x += p.speedX;
-        p.pulseVal += p.pulseSpeed;
+        p.y += p.speedY;
+        p.speedX *= 0.94;
+        p.speedY *= 0.94;
+        p.opacity -= p.decay;
 
-        // Interactive cursor repulsion (Haki aura field)
-        if (isMouseActive) {
-          const dx = p.x - mouseX;
-          const dy = p.y - mouseY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const maxDist = 110;
-          if (dist < maxDist && dist > 0) {
-            const force = (1 - dist / maxDist) * 1.8;
-            p.x += (dx / dist) * force;
-            p.y += (dy / dist) * force;
-          }
+        if (p.opacity <= 0) {
+          particles.splice(i, 1);
+          continue;
         }
 
-        const currentOpacity = (Math.sin(p.pulseVal) * 0.5 + 0.5) * p.maxOpacity;
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.opacity);
 
-        // Wrap boundaries seamlessly
-        if (p.y < -15) {
-          p.y = height + 15;
-          p.x = Math.random() * width;
+        if (p.shape === 'line') {
+          ctx.fillRect(p.x - p.size, p.y - 0.5, p.size * 2, 1);
+        } else {
+          ctx.fillRect(p.x - p.size * 0.5, p.y - p.size * 0.5, p.size, p.size);
         }
-        if (p.x < -15) p.x = width + 15;
-        if (p.x > width + 15) p.x = -15;
-
-        // Multi-stop soft radial glow aura
-        ctx.beginPath();
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.8);
-        gradient.addColorStop(0, `${p.color}${currentOpacity})`);
-        gradient.addColorStop(0.5, `${p.color}${currentOpacity * 0.4})`);
-        gradient.addColorStop(1, `${p.color}0)`);
-        ctx.fillStyle = gradient;
-        ctx.arc(p.x, p.y, p.size * 3.8, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Intense particle core
-        ctx.beginPath();
-        ctx.fillStyle = `${p.color}${Math.min(1, currentOpacity + 0.35)})`;
-        ctx.arc(p.x, p.y, p.size * 0.85, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Subtle 4-point cross glint on twinkling celestial particles
-        if (p.isTwinkle && currentOpacity > 0.55) {
-          ctx.beginPath();
-          ctx.strokeStyle = `rgba(255, 255, 255, ${currentOpacity * 0.6})`;
-          ctx.lineWidth = 0.8;
-          const arm = p.size * 2.2;
-          ctx.moveTo(p.x - arm, p.y);
-          ctx.lineTo(p.x + arm, p.y);
-          ctx.moveTo(p.x, p.y - arm);
-          ctx.lineTo(p.x, p.y + arm);
-          ctx.stroke();
-        }
-      });
+      }
+      ctx.globalAlpha = 1;
 
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    animationFrameId = requestAnimationFrame(render);
 
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('click', handleWindowClick);
-      window.removeEventListener('blox_fruits_theme_updated', handleThemeUpdated);
-      clearTimeout(mouseLeaveTimeout);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [intensity]);
+  }, []);
+
+  const atmospheresList: Array<{ id: AtmosphereType; name: string; icon: any; color: string; desc: string }> = [
+    { id: 'mirage_moon', name: 'Mirage Full Moon', icon: Moon, color: 'text-cyan-400', desc: 'Lunar halo & mist' },
+    { id: 'leviathan_storm', name: 'Leviathan Danger 6', icon: CloudLightning, color: 'text-purple-400', desc: 'Ocean storm rain' },
+    { id: 'sunken_ocean', name: 'Sunken Sea Abyss', icon: Waves, color: 'text-teal-400', desc: 'Underwater bubbles' },
+    { id: 'conqueror_void', name: 'Conqueror Void', icon: Compass, color: 'text-amber-400', desc: 'Cyber-sea radar' }
+  ];
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none">
-      {/* Dynamic Animated Cosmic Gradient Nebulas */}
-      <div className="absolute top-[-10%] left-[-10%] w-[58vw] h-[58vw] rounded-full bg-cyan-600/15 blur-[140px] animate-pulse" style={{ animationDuration: '6s' }} />
-      <div className="absolute bottom-[-15%] right-[-10%] w-[62vw] h-[62vw] rounded-full bg-purple-600/18 blur-[160px] animate-pulse" style={{ animationDuration: '9s' }} />
-      <div className="absolute top-[30%] right-[8%] w-[42vw] h-[42vw] rounded-full bg-indigo-900/22 blur-[130px]" />
-      <div className="absolute bottom-[20%] left-[6%] w-[38vw] h-[38vw] rounded-full bg-amber-600/12 blur-[140px]" />
+      {/* Optimized Lightweight Ambient Glows with hardware acceleration */}
+      {perfMode !== 'performance' && (
+        <>
+          <div
+            className={`absolute top-[-5%] left-[-5%] w-[45vw] h-[45vw] rounded-full blur-[70px] opacity-40 will-change-transform transition-colors duration-700 pointer-events-none ${
+              currentAtmosphere === 'mirage_moon'
+                ? 'bg-cyan-600/15'
+                : currentAtmosphere === 'leviathan_storm'
+                ? 'bg-purple-800/18'
+                : currentAtmosphere === 'sunken_ocean'
+                ? 'bg-teal-700/15'
+                : 'bg-indigo-700/15'
+            }`}
+          />
+          <div
+            className={`absolute bottom-[-5%] right-[-5%] w-[45vw] h-[45vw] rounded-full blur-[80px] opacity-35 will-change-transform transition-colors duration-700 pointer-events-none ${
+              currentAtmosphere === 'mirage_moon'
+                ? 'bg-purple-600/12'
+                : currentAtmosphere === 'leviathan_storm'
+                ? 'bg-blue-900/20'
+                : currentAtmosphere === 'sunken_ocean'
+                ? 'bg-cyan-800/15'
+                : 'bg-amber-600/10'
+            }`}
+          />
+        </>
+      )}
 
-      {/* Subtle Blox Fruits Cyber Grid & Radial Focus Mask */}
-      <div 
-        className="absolute inset-0 opacity-[0.045] bg-[linear-gradient(to_right,#38bdf8_1px,transparent_1px),linear-gradient(to_bottom,#38bdf8_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_45%,#000_60%,transparent_100%)]" 
-      />
+      {/* Main High-Performance Canvas */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full will-change-transform" />
 
-      {/* Floating Canvas Particles, Shockwaves & Interactive Haki Energy */}
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+      {/* Floating Atmosphere & Performance Controller (Interactive) */}
+      <div className="fixed bottom-4 left-4 z-40 pointer-events-auto flex items-center gap-2">
+        <div className="relative">
+          <button
+            onClick={() => {
+              soundFX.playPop();
+              setShowAtmospherePicker((prev) => !prev);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs text-slate-300 hover:text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 group"
+            title="Atmosphere & Performance Settings"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+            <span className="font-semibold capitalize text-[11px]">
+              {isAutoSync ? 'Auto-Sync' : currentAtmosphere.replace('_', ' ')}
+            </span>
+          </button>
+
+          {/* Atmosphere & Performance Dropdown Menu */}
+          {showAtmospherePicker && (
+            <div className="absolute bottom-full left-0 mb-2 w-64 p-2 rounded-2xl bg-slate-900/95 border border-slate-800 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+              {/* Performance Switch */}
+              <div className="flex items-center justify-between px-2 py-1 mb-1.5 border-b border-slate-800">
+                <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-400" /> MODE
+                </span>
+                <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                  {(['performance', 'balanced', 'high'] as PerformanceMode[]).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        setPerfMode(m);
+                        soundFX.playPop();
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase transition-colors ${
+                        perfMode === m
+                          ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {m === 'performance' ? '⚡ Lite' : m === 'balanced' ? 'Balanced' : 'Ultra'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Auto Sync Toggle */}
+              <div className="flex items-center justify-between px-2 py-1 mb-1 text-[11px] font-bold text-slate-400">
+                <span>ATMOSPHERE</span>
+                <button
+                  onClick={() => {
+                    setIsAutoSync(!isAutoSync);
+                    soundFX.playPop();
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                    isAutoSync ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {isAutoSync ? 'AUTO SYNC' : 'MANUAL'}
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                {atmospheresList.map((atm) => {
+                  const IconComp = atm.icon;
+                  const isSelected = currentAtmosphere === atm.id && !isAutoSync;
+                  return (
+                    <button
+                      key={atm.id}
+                      onClick={() => {
+                        setIsAutoSync(false);
+                        setCurrentAtmosphere(atm.id);
+                        setShowAtmospherePicker(false);
+                        soundFX.playPop();
+                      }}
+                      className={`w-full flex items-start gap-2.5 p-1.5 rounded-xl text-left transition-all ${
+                        isSelected
+                          ? 'bg-cyan-500/20 border border-cyan-500/50 text-white'
+                          : 'hover:bg-slate-800/80 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <div className={`p-1.5 rounded-lg bg-slate-950/80 ${atm.color} mt-0.5 shrink-0`}>
+                        <IconComp className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold truncate">{atm.name}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{atm.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Transient Click Skill HUD Toast */}
+        {recentSkill && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-[10px] text-slate-300 backdrop-blur-md shadow-md animate-in fade-in zoom-in-95 duration-150">
+            <span className="text-xs">{recentSkill.icon}</span>
+            <span className="font-bold text-white truncate max-w-[130px] sm:max-w-[160px]">
+              {recentSkill.name}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
-

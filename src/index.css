@@ -424,5 +424,256 @@
   will-change: transform;
 }
 
+/* ============================================================ */
+/* RARITY-BASED CSS 'LOOT GLOW' SYSTEM                          */
+/* ============================================================ */
+
+/* --- 1. MYTHICAL: Radiant Golden / Amber Pulses & Halos --- */
+@keyframes lootPulseMythic {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.4), inset 0 0 8px rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.55);
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.75), 0 0 42px rgba(251, 191, 36, 0.4), inset 0 0 16px rgba(245, 158, 11, 0.35);
+    border-color: rgba(251, 191, 36, 0.95);
+    filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.85));
+  }
+}
+
+.loot-icon-mythical {
+  animation: lootPulseMythic 2.4s ease-in-out infinite;
+  position: relative;
+}
+
+.loot-card-mythical {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px -4px rgba(245, 158, 11, 0.25);
+}
+
+.loot-card-mythical:hover {
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.45), 0 0 20px rgba(251, 191, 36, 0.3);
+  border-color: rgba(251, 191, 36, 0.8) !important;
+}
+
+/* --- 2. LEGENDARY: Cosmic Purple / Violet Pulses & Halos --- */
+@keyframes lootPulseLegendary {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.4), inset 0 0 8px rgba(168, 85, 247, 0.18);
+    border-color: rgba(168, 85, 247, 0.55);
+    filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.45));
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(168, 85, 247, 0.75), 0 0 42px rgba(192, 132, 252, 0.4), inset 0 0 16px rgba(168, 85, 247, 0.35);
+    border-color: rgba(192, 132, 252, 0.95);
+    filter: drop-shadow(0 0 16px rgba(192, 132, 252, 0.85));
+  }
+}
+
+.loot-icon-legendary {
+  animation: lootPulseLegendary 2.8s ease-in-out infinite;
+  position: relative;
+}
+
+.loot-card-legendary {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px -4px rgba(168, 85, 247, 0.25);
+}
+
+.loot-card-legendary:hover {
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.45), 0 0 20px rgba(192, 132, 252, 0.3);
+  border-color: rgba(192, 132, 252, 0.8) !important;
+}
+
+/* --- 3. RARE: Sapphire / Azure Blue Pulses & Halos --- */
+@keyframes lootPulseRare {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.35), inset 0 0 6px rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.5);
+    filter: drop-shadow(0 0 5px rgba(96, 165, 250, 0.35));
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(59, 130, 246, 0.65), 0 0 32px rgba(96, 165, 250, 0.3), inset 0 0 12px rgba(59, 130, 246, 0.25);
+    border-color: rgba(96, 165, 250, 0.85);
+    filter: drop-shadow(0 0 12px rgba(96, 165, 250, 0.7));
+  }
+}
+
+.loot-icon-rare {
+  animation: lootPulseRare 3.2s ease-in-out infinite;
+  position: relative;
+}
+
+.loot-card-rare {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 18px -4px rgba(59, 130, 246, 0.2);
+}
+
+.loot-card-rare:hover {
+  box-shadow: 0 6px 26px rgba(59, 130, 246, 0.4), 0 0 16px rgba(96, 165, 250, 0.25);
+  border-color: rgba(96, 165, 250, 0.75) !important;
+}
+
+/* --- 4. UNCOMMON: Luminous Emerald / Jade Pulses --- */
+@keyframes lootPulseUncommon {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.3), inset 0 0 5px rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.45);
+    filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.3));
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.55), 0 0 26px rgba(74, 222, 128, 0.25), inset 0 0 10px rgba(34, 197, 94, 0.2);
+    border-color: rgba(74, 222, 128, 0.8);
+    filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.6));
+  }
+}
+
+.loot-icon-uncommon {
+  animation: lootPulseUncommon 3.6s ease-in-out infinite;
+  position: relative;
+}
+
+.loot-card-uncommon {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px -4px rgba(34, 197, 94, 0.18);
+}
+
+.loot-card-uncommon:hover {
+  box-shadow: 0 6px 24px rgba(34, 197, 94, 0.35), 0 0 14px rgba(74, 222, 128, 0.2);
+  border-color: rgba(74, 222, 128, 0.7) !important;
+}
+
+/* --- 5. COMMON: Frost / Steel Silver Shimmer --- */
+@keyframes lootPulseCommon {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(148, 163, 184, 0.2), inset 0 0 4px rgba(148, 163, 184, 0.08);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(148, 163, 184, 0.4), inset 0 0 8px rgba(148, 163, 184, 0.15);
+    border-color: rgba(203, 213, 225, 0.55);
+  }
+}
+
+.loot-icon-common {
+  animation: lootPulseCommon 4s ease-in-out infinite;
+  position: relative;
+}
+
+.loot-card-common {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px -2px rgba(148, 163, 184, 0.12);
+}
+
+.loot-card-common:hover {
+  box-shadow: 0 4px 16px rgba(148, 163, 184, 0.25);
+  border-color: rgba(203, 213, 225, 0.5) !important;
+}
+
+/* --- Micro Shimmer Ray Effect for Loot Highlights --- */
+@keyframes lootRaySweep {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(25deg);
+  }
+}
+
+.loot-shimmer-ray {
+  position: relative;
+  overflow: hidden;
+}
+
+.loot-shimmer-ray::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 100%
+  );
+  transform: translateX(-100%) rotate(25deg);
+  pointer-events: none;
+  animation: lootRaySweep 4.5s ease-in-out infinite;
+}
+
+/* ============================================================ */
+/* ATMOSPHERIC ENVIRONMENT & COMBAT SCREEN FLASH FX             */
+/* ============================================================ */
+
+@keyframes screenPerimeterFlash {
+  0% {
+    opacity: 0.85;
+    box-shadow: inset 0 0 45px var(--flash-color, rgba(56, 189, 248, 0.6));
+  }
+  100% {
+    opacity: 0;
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+
+.screen-perimeter-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  animation: screenPerimeterFlash 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+/* Volumetric Lightning Screen Flare */
+@keyframes lightningFlash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  20% {
+    opacity: 0.1;
+  }
+  30% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-lightning-flash {
+  animation: lightningFlash 0.6s ease-out forwards;
+}
+
+/* Water Caustics Drift */
+@keyframes causticsDrift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-3%, 2%) scale(1.05);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.animate-caustics-drift {
+  animation: causticsDrift 14s ease-in-out infinite;
+}
+
+
 
 
