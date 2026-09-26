@@ -1,4 +1,4 @@
-import { FruitItem, TradeSideItem, formatValueNumber, getEffectiveFruitList, getStoredCustomResponses } from '../data/bloxFruitsData';
+import { FruitItem, TradeSideItem, formatValueNumber, getEffectiveFruitList, getStoredCustomResponses, getUserValueOverrides } from '../data/bloxFruitsData';
 import {
   FIGHTING_STYLES,
   ACCESSORIES_DATA,
@@ -291,53 +291,35 @@ export function generateLocalOracleResponse(
  * - mun -> hail tenxiku
  * - apple -> bsf forever
  * - soul -> ghost!
+ *
+ * Strict Rule: Trigger ONLY if the query is strictly that custom trigger without any other question/sentence.
  */
-function detectAndHandleSecretTriggers(query: string, rawQuery: string): string | null {
-  const clean = query.replace(/[?.,!/\\#'"“”‘’\-]/g, ' ').replace(/\s+/g, ' ').trim();
+export function detectAndHandleSecretTriggers(query: string, rawQuery: string): string | null {
+  const clean = query.toLowerCase().replace(/[?.,!/\\#'"“”‘’\-_:;`~]/g, ' ').replace(/\s+/g, ' ').trim();
+  const rawClean = rawQuery.toLowerCase().replace(/[?.,!/\\#'"“”‘’\-_:;`~]/g, ' ').replace(/\s+/g, ' ').trim();
 
-  // 1. AD -> forever vice captain 🟢
-  if (clean === 'ad' || clean === 'vice captain ad' || clean === 'ad vice captain') {
+  // 1. AD -> forever vice captain 🟢 (Strict exact match only)
+  if (clean === 'ad' || rawClean === 'ad' || clean === 'vice captain ad' || clean === 'ad vice captain') {
     return 'forever vice captain 🟢';
   }
 
-  // 2. faith -> nolan’s son
-  if (clean === 'faith' || clean === 'faith nolan' || clean === 'nolans son faith') {
+  // 2. faith -> nolan’s son (Strict exact match only)
+  if (clean === 'faith' || rawClean === 'faith') {
     return "nolan’s son";
   }
 
-  // 3. mun -> hail tenxiku
-  if (clean === 'mun' || clean === 'mun tenxiku' || clean === 'hail tenxiku mun') {
+  // 3. mun -> hail tenxiku (Strict exact match only)
+  if (clean === 'mun' || rawClean === 'mun') {
     return 'hail tenxiku';
   }
 
-  // 4. apple -> bsf forever
-  if (clean === 'apple' || clean === 'apple bsf' || clean === 'bsf apple') {
+  // 4. apple -> bsf forever (Strict exact match only)
+  if (clean === 'apple' || rawClean === 'apple') {
     return 'bsf forever';
   }
 
-  // 5. soul -> ghost!
-  if (clean === 'soul' || clean === 'soul fruit' || clean === 'what is soul') {
-    return 'ghost!';
-  }
-
-  // Standalone word boundary matches for short/direct queries
-  if (/\bad\b/i.test(rawQuery) && (clean.length <= 15 || clean.includes('secret') || clean.includes('who is ad') || clean.includes('write ad'))) {
-    return 'forever vice captain 🟢';
-  }
-
-  if (/\bfaith\b/i.test(rawQuery) && (clean.length <= 20 || clean.includes('secret') || clean.includes('who is faith') || clean.includes('write faith'))) {
-    return "nolan’s son";
-  }
-
-  if (/\bmun\b/i.test(rawQuery) && (clean.length <= 20 || clean.includes('secret') || clean.includes('who is mun') || clean.includes('write mun'))) {
-    return 'hail tenxiku';
-  }
-
-  if (/\bapple\b/i.test(rawQuery) && (clean.length <= 20 || clean.includes('secret') || clean.includes('write apple'))) {
-    return 'bsf forever';
-  }
-
-  if (/\bsoul\b/i.test(rawQuery) && !clean.includes('guitar') && (clean.length <= 20 || clean.includes('secret') || clean.includes('write soul'))) {
+  // 5. soul -> ghost! (Strict exact match only)
+  if (clean === 'soul' || rawClean === 'soul') {
     return 'ghost!';
   }
 
@@ -347,13 +329,14 @@ function detectAndHandleSecretTriggers(query: string, rawQuery: string): string 
 /**
  * Dynamic Owner Custom Responses Evaluation
  * Matches any custom trigger keyword/phrase added via the Owner Panel.
+ * Strict Rule: Trigger ONLY if the user query is strictly that custom command without other words.
  */
-function detectAndHandleOwnerCustomResponses(query: string, rawQuery: string): string | null {
+export function detectAndHandleOwnerCustomResponses(query: string, rawQuery: string): string | null {
   const customList = getStoredCustomResponses();
   if (!customList || customList.length === 0) return null;
 
-  const clean = query.replace(/[?.,!/\\#'"“”‘’\-]/g, ' ').replace(/\s+/g, ' ').trim();
-  const rawLower = rawQuery.toLowerCase().trim();
+  const clean = query.toLowerCase().replace(/[?.,!/\\#'"“”‘’\-_:;`~]/g, ' ').replace(/\s+/g, ' ').trim();
+  const rawLower = rawQuery.toLowerCase().replace(/[?.,!/\\#'"“”‘’\-_:;`~]/g, ' ').replace(/\s+/g, ' ').trim();
 
   for (const entry of customList) {
     if (!entry.enabled) continue;
@@ -361,18 +344,11 @@ function detectAndHandleOwnerCustomResponses(query: string, rawQuery: string): s
     if (!triggerRaw) continue;
 
     const triggerLower = triggerRaw.toLowerCase();
-    const cleanTrigger = triggerLower.replace(/[?.,!/\\#'"“”‘’\-]/g, ' ').replace(/\s+/g, ' ').trim();
+    const cleanTrigger = triggerLower.replace(/[?.,!/\\#'"“”‘’\-_:;`~]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // 1. Direct or clean exact match
-    if (rawLower === triggerLower || clean === cleanTrigger) {
+    // STRICT EXACT MATCH ONLY: Trigger ONLY if the sentence is exclusively that custom command without any other words
+    if (rawLower === cleanTrigger || clean === cleanTrigger || rawLower === triggerLower) {
       return entry.response;
-    }
-
-    // 2. Contains trigger match
-    if (cleanTrigger.length >= 2) {
-      if (clean === cleanTrigger || clean.split(' ').includes(cleanTrigger) || rawLower.includes(triggerLower)) {
-        return entry.response;
-      }
     }
   }
 
@@ -383,27 +359,28 @@ function detectAndHandleOwnerCustomResponses(query: string, rawQuery: string): s
  * 1. Developer Recognition & Creator Tribute (Nolan / 1_solas)
  * Handles all inquiries about the developer of the AI and the website with high praise and respect.
  */
-function detectAndHandleDeveloperQuery(query: string): string | null {
+export function detectAndHandleDeveloperQuery(query: string): string | null {
   const clean = query.toLowerCase().replace(/[?.,!/\\#'"“”‘’\-]/g, ' ').replace(/\s+/g, ' ').trim();
 
-  const isDevQuery =
-    clean.includes('nolan') ||
-    clean.includes('solas') ||
-    clean.includes('1_solas') ||
-    clean.includes('1 solas') ||
-    clean.includes('developer') ||
-    clean.includes('creator') ||
-    clean.includes('who made') ||
-    clean.includes('who built') ||
-    clean.includes('who coded') ||
-    clean.includes('who created') ||
-    clean.includes('who programmed') ||
-    clean.includes('who designed') ||
-    clean.includes('author') ||
-    clean.includes('founder') ||
-    clean.includes('credits');
+  // Safeguard: Do not hijack game questions if user casually mentions "Solas" as the bot name
+  const hasGameContent = clean.includes('fruit') || clean.includes('trade') || clean.includes('value') || 
+    clean.includes('worth') || clean.includes('eat') || clean.includes('better') || clean.includes('combo') || 
+    clean.includes('sword') || clean.includes('sea') || clean.includes('boss') || clean.includes('v4') || 
+    clean.includes('quest') || clean.includes('drop') || clean.includes('price') || clean.includes('versus') ||
+    clean.includes(' vs ');
 
-  if (!isDevQuery) {
+  const hasExplicitCreatorQuery = clean.includes('who made') || clean.includes('who built') || 
+    clean.includes('who created') || clean.includes('who coded') || clean.includes('who programmed') || 
+    clean.includes('who designed') || clean.includes('who is the dev') || clean.includes('who is the creator') ||
+    clean.includes('developer') || clean.includes('creator') || clean.includes('author') || clean.includes('founder') ||
+    clean.includes('credits') || clean.includes('nolan') || clean.includes('1_solas') || clean.includes('1 solas') ||
+    clean === 'who is solas' || clean === 'who are you';
+
+  if (hasGameContent && !hasExplicitCreatorQuery) {
+    return null;
+  }
+
+  if (!hasExplicitCreatorQuery && clean !== 'solas') {
     return null;
   }
 
@@ -435,25 +412,36 @@ function detectAndHandleGreetings(query: string): string | null {
   const clean = query.replace(/[?.,!/\\#'"“”‘’\-]/g, ' ').toLowerCase().replace(/\s+/g, ' ').trim();
   const words = clean.split(' ');
 
-  // Gen Z & Casual Slang matches ("sup wbu", "wsp wbu", "wyd", "wsg", "nm u", "fr", "no cap", etc.)
-  if (
-    clean.includes('wbu') ||
-    clean.includes('wyd') ||
-    clean.includes('nm u') ||
-    clean.includes('not much') ||
-    clean.includes('what you up to') ||
-    clean.includes('what are you up to') ||
+  // Safeguard: Never hijack game-specific queries as casual greetings
+  const hasGameKeywords = clean.includes('fruit') || clean.includes('sword') || clean.includes('trade') || 
+    clean.includes('value') || clean.includes('comb') || clean.includes('sea') || clean.includes('level') || 
+    clean.includes('quest') || clean.includes('v4') || clean.includes('drop') || clean.includes('better') || 
+    clean.includes('should') || clean.includes('eat') || clean.includes('boss') || clean.includes('stat') || 
+    clean.includes('raid') || clean.includes('worth') || clean.includes('price');
+  if (hasGameKeywords) {
+    return null;
+  }
+
+  // Gen Z & Casual Slang matches with exact boundaries
+  const isSlangGreeting = 
+    clean === 'wbu' ||
+    clean === 'wyd' ||
+    clean === 'nm u' ||
+    clean === 'not much' ||
+    clean === 'what you up to' ||
+    clean === 'what are you up to' ||
     clean === 'sup' ||
     clean === 'wsp' ||
     clean === 'wsg' ||
     clean === 'sup wbu' ||
     clean === 'wsp wbu' ||
-    clean.includes('no cap') ||
-    clean.includes('fr') ||
-    clean.includes('ong') ||
-    clean.includes('chat is this real') ||
-    clean.includes('cooked')
-  ) {
+    clean === 'no cap' ||
+    clean === 'chat is this real' ||
+    (/\bcooked\b/.test(clean) && words.length <= 4) ||
+    (/\bfr\b/.test(clean) && words.length <= 3) ||
+    (/\bong\b/.test(clean) && words.length <= 3);
+
+  if (isSlangGreeting) {
     if (clean.includes('cooked')) {
       return `Nah we ain't cooked yet, we got full Haki and max stats. We securing the W today fr. No cap! 🔥`;
     }
@@ -1337,6 +1325,40 @@ function detectAndHandleUniversalTradeQuery(query: string, allItems: FruitItem[]
     return null;
   }
 
+  // CASE 0: Auto-Render Live Values (Priority 1: Admin Panel, Priority 2: BloxFruitsValues)
+  const isAutoRenderRequest = 
+    clean.includes('auto render') ||
+    clean.includes('auto-render') ||
+    clean.includes('render value') ||
+    clean.includes('render values') ||
+    clean === 'values' ||
+    clean === 'show values' ||
+    clean === 'all values' ||
+    clean === 'market values' ||
+    clean === 'fruit values' ||
+    clean === 'bloxfruitsvalues' ||
+    clean === 'bloxfruitvalues' ||
+    clean === 'bloxfruit values';
+
+  if (isAutoRenderRequest) {
+    const overrides = typeof window !== 'undefined' ? getUserValueOverrides() : {};
+    const topTier = allItems.slice(0, 20);
+    const renderRows = topTier.map(item => {
+      const isCustomAdmin = !!overrides[item.id];
+      const sourceTag = isCustomAdmin ? '👑 Admin Panel Override' : '🌐 BloxFruitsValues Standard';
+      const permStr = item.permanentValue ? ` | Perm: **${formatValueNumber(item.permanentValue)}**` : '';
+      return `• ${item.imageEmoji || '🍎'} **${item.name}**: **${formatValueNumber(item.physicalValue)}**${permStr} (Demand: ${item.demand}/10, ${item.trend.toUpperCase()}) — *${sourceTag}*`;
+    }).join('\n');
+
+    return `📊 **Solas AI Auto-Rendered Live Values Matrix:**\n\n` +
+      `🛡️ **Hierarchy Priority Applied:**\n` +
+      `• **Priority 1:** Admin Panel / Owner Vault Custom Overrides (Absolute Authority)\n` +
+      `• **Priority 2:** BloxFruitsValues Certified Trading Standard\n\n` +
+      `**Live Market Values (Top Fruits & Limiteds):**\n` +
+      renderRows + `\n\n` +
+      `💡 **Auto-Evaluate Any Trade:** Ask me any trade offer (e.g. *"Is Kitsune fair for Dragon East?"* or *"Calculate Buddha + Portal + Sound"*) to auto-render instant mathematical W/F/L trade equity and 40% Beli verification!`;
+  }
+
   // CASE 1: Trade Comparison (Side A vs Side B)
   const isComparison = 
     clean.includes(' for ') || 
@@ -1404,21 +1426,101 @@ function detectAndHandleUniversalTradeQuery(query: string, allItems: FruitItem[]
           `• **Side A (Offer):** ${strA} ➔ **${formatValueNumber(valA)}**\n` +
           `• **Side B (Counter):** ${strB} ➔ **${formatValueNumber(valB)}**\n` +
           `• **Net Value Equity:** **${diff >= 0 ? '+' : ''}${formatValueNumber(diff)}** (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)\n` +
-          `• **In-Game 40% Beli Limit:** ${passes40 ? '✅ Valid in-game' : `⚠️ Exceeds 40% Beli gap (${beliDiff.toFixed(0)}%). Add filler fruits like Quake/Love!`}\n\n` +
+          `• **In-Game 40% Beli Limit:** ${passes40 ? '✅ Valid in-game' : `⚠️ Exceeds 40% Beli gap (${beliDiff.toFixed(0)}%). Add filler fruits like Quake/Love!`}\n` +
+          `• **Priority Engine:** Priority 1: Admin Panel • Priority 2: BloxFruitsValues\n\n` +
           `🎯 **Sensei Advice:** ${advice}`;
       }
     }
   }
 
-  // CASE 2: Multi-Item Combined Value (Sum of 2+ items or explicit combined query)
+  // CASE 1.5: Item Comparison & Selection Intent (e.g. "Kitsune vs Dragon", "Is Buddha better than Portal?")
+  const isComparisonIntent = 
+    clean.includes('better') || 
+    clean.includes(' or ') || 
+    clean.includes(' vs ') || 
+    clean.includes('versus') || 
+    clean.includes('compare') || 
+    clean.includes('choose') || 
+    clean.includes('which is') ||
+    clean.includes('prefer');
+
+  if (isComparisonIntent && allFoundItems.length >= 2) {
+    const itemA = allFoundItems[0].item;
+    const itemB = allFoundItems[1].item;
+
+    const grindWinner = (itemA.grindTier === 'S+' || itemA.grindTier === 'S') && (itemB.grindTier !== 'S+' && itemB.grindTier !== 'S')
+      ? itemA.name
+      : (itemB.grindTier === 'S+' || itemB.grindTier === 'S') && (itemA.grindTier !== 'S+' && itemA.grindTier !== 'S')
+      ? itemB.name
+      : (itemA.grindTier === itemB.grindTier ? 'Tie (Both Balanced)' : `${itemA.name} slightly favored`);
+
+    const pvpWinner = (itemA.pvpTier === 'S+' || itemA.pvpTier === 'S') && (itemB.pvpTier !== 'S+' && itemB.pvpTier !== 'S')
+      ? itemA.name
+      : (itemB.pvpTier === 'S+' || itemB.pvpTier === 'S') && (itemA.pvpTier !== 'S+' && itemA.pvpTier !== 'S')
+      ? itemB.name
+      : (itemA.pvpTier === itemB.pvpTier ? 'Tie (Skill Dependent)' : `${itemA.name} favored`);
+
+    const valueWinner = itemA.physicalValue > itemB.physicalValue
+      ? `${itemA.name} (+${formatValueNumber(itemA.physicalValue - itemB.physicalValue)} surplus)`
+      : itemB.physicalValue > itemA.physicalValue
+      ? `${itemB.name} (+${formatValueNumber(itemB.physicalValue - itemA.physicalValue)} surplus)`
+      : 'Equal Market Value';
+
+    return `⚔️ **Head-to-Head Comparison: ${itemA.name} vs ${itemB.name}**\n\n` +
+      `**1. ${itemA.imageEmoji || '🍎'} ${itemA.name}:**\n` +
+      `• Value: **${formatValueNumber(itemA.physicalValue)}** | Demand: **${itemA.demand}/10** (${itemA.trend.toUpperCase()})\n` +
+      `• Combat Tiers: PvP **${itemA.pvpTier}** | Grinding **${itemA.grindTier}**\n\n` +
+      `**2. ${itemB.imageEmoji || '🍎'} ${itemB.name}:**\n` +
+      `• Value: **${formatValueNumber(itemB.physicalValue)}** | Demand: **${itemB.demand}/10** (${itemB.trend.toUpperCase()})\n` +
+      `• Combat Tiers: PvP **${itemB.pvpTier}** | Grinding **${itemB.grindTier}**\n\n` +
+      `📊 **Category Verdicts:**\n` +
+      `• 🌾 **Best for Grinding & Leveling:** **${grindWinner}**\n` +
+      `• 🥊 **Best for PvP & Bounty Hunting:** **${pvpWinner}**\n` +
+      `• 💰 **Trading Value Superiority:** **${valueWinner}**\n\n` +
+      `🎯 **Sensei Recommendation:** If you are grinding in Sea 1 or Sea 2, prioritize high AoE/M1 fruits (like Buddha or Magma). For Max Level PvP and bounty chasing, prioritize high mobility and combo break capability (like Kitsune, Portal, or Dough)!`;
+  }
+
+  // CASE 1.8: Eat vs Trade Dilemma Advice (e.g. "Should I eat Kitsune or trade it?")
+  const isEatOrTradeIntent = 
+    clean.includes('should i eat') || 
+    clean.includes('eat or') || 
+    clean.includes('eat it') || 
+    clean.includes('store or') || 
+    clean.includes('worth eating') || 
+    clean.includes('keep or') || 
+    clean.includes('what should i do with') || 
+    clean.includes('what to do with');
+
+  if (isEatOrTradeIntent && allFoundItems.length > 0) {
+    const targetItem = allFoundItems[0].item;
+    const isHighValue = targetItem.physicalValue >= 50000000;
+    const isGrindKing = targetItem.id === 'buddha' || targetItem.id === 'magma' || targetItem.id === 'light';
+
+    let verdict = '';
+    if (isGrindKing) {
+      verdict = `🍽️ **EAT IT NOW!**\n**${targetItem.name}** is the absolute premier grinding tool in Blox Fruits. Eating it gives massive M1 range, boss clearing power, and raid solo capability.`;
+    } else if (isHighValue) {
+      verdict = `📦 **STORE AND TRADE IT!**\n**${targetItem.name}** holds immense trade equity (**${formatValueNumber(targetItem.physicalValue)}**, Demand: ${targetItem.demand}/10). Unless you are already Max Level (2550) with all masteries, trading it can unlock multiple dream fruits, gamepasses (2x Mastery, 2x Money, +1 Fruit Storage), or complete meta builds!`;
+    } else {
+      verdict = `⚖️ **BALANCED CHOICE:**\n**${targetItem.name}** offers solid utility (**${formatValueNumber(targetItem.physicalValue)}** value). If it matches your desired PvP playstyle, go ahead and eat it! Otherwise, use it as a sweetener in trade tables.`;
+    }
+
+    return `🧭 **Strategic Eat vs Trade Evaluation: ${targetItem.imageEmoji || '🍎'} ${targetItem.name}**\n\n` +
+      `• **Current Market Value:** **${formatValueNumber(targetItem.physicalValue)}** (Demand: ${targetItem.demand}/10)\n` +
+      `• **Combat Rating:** PvP: **${targetItem.pvpTier}** | Grinding: **${targetItem.grindTier}**\n\n` +
+      `💡 **Actionable Verdict:**\n${verdict}\n\n` +
+      `*Priority Applied: Priority 1: Admin Panel • Priority 2: BloxFruitsValues*`;
+  }
+
+  // CASE 2: Multi-Item Combined Value (Only if explicitly asking for sum/combined total)
   const isCombinedQuery = 
-    allFoundItems.length >= 2 || 
     clean.includes('combined') || 
     clean.includes('together') || 
     clean.includes('total') || 
     clean.includes('sum') || 
     clean.includes('plus') || 
     clean.includes('+') || 
+    (clean.includes('and') && (clean.includes('value') || clean.includes('worth'))) ||
     clean.includes('juntos') || 
     clean.includes('juntando');
 
@@ -1442,7 +1544,8 @@ function detectAndHandleUniversalTradeQuery(query: string, allItems: FruitItem[]
       `• **Total Beli Shop Cost:** $${totalBeli.toLocaleString()} Beli\n` +
       (totalRobux > 0 ? `• **Total Robux Value:** ${totalRobux.toLocaleString()} R$\n` : '') +
       `• **Average Demand Rating:** **${avgDemand}/10**\n` +
-      `• **Key Anchor Item:** ${anchor.item.name} (${formatValueNumber(anchor.item.physicalValue)})\n\n` +
+      `• **Key Anchor Item:** ${anchor.item.name} (${formatValueNumber(anchor.item.physicalValue)})\n` +
+      `• **Priority Engine:** Priority 1: Admin Panel • Priority 2: BloxFruitsValues\n\n` +
       `💡 **Trading Potential:** This bundle has strong trading power on Second/Third Sea tables and can easily be traded for high-tier mythical fruits or gamepasses of equivalent value!`;
   }
 
@@ -1485,7 +1588,7 @@ function detectAndHandleUniversalTradeQuery(query: string, allItems: FruitItem[]
 }
 
 /**
- * Formats Fruit item response
+ * Formats Fruit item response with auto-rendered value and active authority priority
  */
 function formatFruitItemResponse(item: FruitItem, query: string): string {
   const isPerm = query.includes('perm') || query.includes('permanent');
@@ -1496,11 +1599,18 @@ function formatFruitItemResponse(item: FruitItem, query: string): string {
   const widgetTagText = item.widgetTag ? `\n🏷️ **Custom Widget Tag:** [${item.widgetTag}]` : '';
   const customAddedText = item.isCustomAdded ? `\n👑 *Owner-Created Custom Item Verified*` : '';
 
+  const overrides = typeof window !== 'undefined' ? getUserValueOverrides() : {};
+  const isAdminOverride = !!overrides[item.id];
+  const priorityBadge = isAdminOverride
+    ? `\n🛡️ **Value Authority:** 👑 **Priority 1: Admin Panel Custom Override**`
+    : `\n🛡️ **Value Authority:** 🌐 **Priority 2: BloxFruitsValues Certified Standard**`;
+
   return `${item.imageEmoji || '🍎'} **${item.name} Value & Profile:**\n\n` +
     `• **Trade Value:** **${formatValueNumber(val)}**${permText}` +
     beliText +
     robuxText +
     `\n• **Demand Rating:** **${item.demand}/10** (${item.trend.toUpperCase()})` +
+    priorityBadge +
     `\n• **Category & Rarity:** ${item.rarity} ${item.type || item.category}` +
     `\n• **Combat Rating:** PvP: **${item.pvpTier}** | Grinding: **${item.grindTier}**` +
     widgetTagText +

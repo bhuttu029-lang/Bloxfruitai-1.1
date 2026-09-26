@@ -157,10 +157,10 @@ export const ValuesDatabase: React.FC<ValuesDatabaseProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>🌐 Live Web: BloxFruitsValues.com (Main) + FruityBlox (Backup)</span>
+            <span>🌐 Live Market: BloxFruitsValues.com (Standard)</span>
           </div>
           <span className="text-slate-400 hidden sm:inline">
-            Synced {lastSyncedTime} • Dog Blade (580M), Kitsune (145M), Dragon Rework (180M)
+            Priority: 1. Admin Panel • 2. BloxFruitsValues • Synced {lastSyncedTime}
           </span>
         </div>
 

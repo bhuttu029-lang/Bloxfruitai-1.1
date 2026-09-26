@@ -1,14 +1,15 @@
 /**
  * Live Web Market Sync Engine for Blox Fruits Values
  * 
- * Sources:
- * - Primary Source: BloxFruitsValues.com
- * - Backup Source: FruityBlox.com
- * - Offline/Direct Benchmark Matrix (Community Certified Snapshot)
+ * Sources & Priority:
+ * - Priority 1: Admin Panel & Owner Vault (Custom Overrides take absolute precedence)
+ * - Priority 2: BloxFruitsValues.com / bloxfruitsvalues.store (Live Market Standard)
+ * - Offline/Direct Benchmark Matrix (Community Certified Snapshot based on BloxFruitsValues)
  * 
  * Features:
- * - Automatic failover from BloxFruitsValues.com -> FruityBlox.com -> Benchmark Matrix
- * - Respects Owner Vault manual locks & custom overrides
+ * - Pure BloxFruitsValues standard & Admin Panel overrides
+ * - Automatic failover from BloxFruitsValues live endpoint -> Verified Benchmark Matrix
+ * - Preserves Admin Panel & Owner Vault custom overrides with top priority
  * - Real-time persistence to Cloud Firestore and LocalStorage
  * - Live UI event broadcasting
  */
@@ -24,7 +25,7 @@ import {
 import { pushFruitDataToFirebase } from '../lib/firebaseSync';
 
 export interface MarketSourceStatus {
-  sourceName: 'bloxfruitsvalues.store' | 'FruityBlox.com' | 'Benchmark Snapshot';
+  sourceName: 'bloxfruitsvalues.store' | 'Benchmark Snapshot';
   url: string;
   isPrimary: boolean;
   status: 'active' | 'standby' | 'error' | 'syncing';
@@ -33,24 +34,24 @@ export interface MarketSourceStatus {
 }
 
 export interface LiveSyncState {
-  activeSource: 'bloxfruitsvalues.store' | 'FruityBlox.com' | 'Benchmark Snapshot';
+  activeSource: 'bloxfruitsvalues.store' | 'Benchmark Snapshot';
   status: 'connected' | 'syncing' | 'idle' | 'error';
   lastSynced: string;
   totalItemsSynced: number;
   sources: {
     primary: MarketSourceStatus;
-    backup: MarketSourceStatus;
+    benchmark: MarketSourceStatus;
   };
   autoSyncIntervalMinutes: number;
   isAutoSyncEnabled: boolean;
-  ownerPriorityMode: boolean; // If true, owner overrides always supersede web values
+  ownerPriorityMode: boolean; // Priority 1: Admin/Owner overrides always supersede web values
   lastSyncLog: string[];
 }
 
 const STORAGE_KEY_WEB_SYNC_STATE = 'blox_fruits_web_sync_state_v1';
 const STORAGE_KEY_OWNER_LOCKED_ITEMS = 'blox_fruits_owner_locked_items_v1';
 
-// Benchmark market values compiled from BloxFruitsValues.com & FruityBlox (August 2026 standard)
+// Benchmark market values compiled from BloxFruitsValues.com (August 2026 standard)
 export const LATEST_COMMUNITY_MARKET_BENCHMARK: Record<string, {
   name: string;
   physicalValue: number;
@@ -162,9 +163,9 @@ export function getLiveSyncState(): LiveSyncState {
         lastChecked: new Date().toISOString(),
         itemsFetched: Object.keys(LATEST_COMMUNITY_MARKET_BENCHMARK).length
       },
-      backup: {
-        sourceName: 'FruityBlox.com',
-        url: 'https://fruityblox.com',
+      benchmark: {
+        sourceName: 'Benchmark Snapshot',
+        url: 'https://www.bloxfruitsvalues.store',
         isPrimary: false,
         status: 'standby',
         lastChecked: new Date().toISOString(),
@@ -173,8 +174,8 @@ export function getLiveSyncState(): LiveSyncState {
     },
     autoSyncIntervalMinutes: 15,
     isAutoSyncEnabled: true,
-    ownerPriorityMode: true,
-    lastSyncLog: ['Market engine initialized with https://www.bloxfruitsvalues.store/values as Main and FruityBlox.com as Backup.']
+    ownerPriorityMode: true, // Priority 1: Admin Panel overrides take precedence
+    lastSyncLog: ['Market engine initialized with bloxfruitsvalues.store as Live Standard. Priority 1: Admin Panel, Priority 2: BloxFruitsValues.']
   };
 
   if (typeof window === 'undefined') return defaultState;
@@ -198,14 +199,15 @@ export function saveLiveSyncState(state: LiveSyncState): void {
 }
 
 /**
- * Execute live market sync with automatic fallback:
- * 1. Attempt https://www.bloxfruitsvalues.store/values via browser/server proxy
- * 2. If unreachable, attempt FruityBlox.com backup
- * 3. If unreachable, apply certified August 2026 Community Matrix Benchmark
+ * Execute live market sync with strict priority architecture:
+ * 1. Priority 1: Preserves all Admin Panel & Owner Vault custom overrides
+ * 2. Priority 2: Queries https://www.bloxfruitsvalues.store/values via browser/server proxy
+ * 3. Fallback: If network is offline, applies BloxFruitsValues certified Benchmark Snapshot
+ * - Strictly BloxFruitsValues standard & Admin Panel priority
  */
-export async function performLiveMarketSync(forceSource?: 'bloxfruitsvalues.store' | 'FruityBlox.com'): Promise<{
+export async function performLiveMarketSync(): Promise<{
   success: boolean;
-  sourceUsed: 'bloxfruitsvalues.store' | 'FruityBlox.com' | 'Benchmark Snapshot';
+  sourceUsed: 'bloxfruitsvalues.store' | 'Benchmark Snapshot';
   itemsUpdated: number;
   message: string;
 }> {
@@ -214,73 +216,51 @@ export async function performLiveMarketSync(forceSource?: 'bloxfruitsvalues.stor
   saveLiveSyncState(currentState);
 
   const logs: string[] = [`[${new Date().toLocaleTimeString()}] Starting live market sync from bloxfruitsvalues.store...`];
-  let sourceUsed: 'bloxfruitsvalues.store' | 'FruityBlox.com' | 'Benchmark Snapshot' = 'bloxfruitsvalues.store';
+  let sourceUsed: 'bloxfruitsvalues.store' | 'Benchmark Snapshot' = 'bloxfruitsvalues.store';
   let fetchedData: Record<string, any> = {};
-  let isPrimarySuccess = false;
 
-  // 1. Try Primary Source: bloxfruitsvalues.store
-  if (forceSource !== 'FruityBlox.com') {
-    try {
-      logs.push('Querying Primary Source: https://www.bloxfruitsvalues.store/values...');
-      const resp = await fetch('/api/market-sync/live?source=bloxfruitsvalues', {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (resp.ok) {
-        const json = await resp.json();
-        if (json.data && Object.keys(json.data).length > 0) {
-          fetchedData = json.data;
-          sourceUsed = 'bloxfruitsvalues.store';
-          isPrimarySuccess = true;
-          logs.push(`Successfully pulled ${Object.keys(json.data).length} values from bloxfruitsvalues.store`);
-        }
+  // 1. Query bloxfruitsvalues.store
+  try {
+    logs.push('Querying Primary Source: https://www.bloxfruitsvalues.store/values...');
+    const resp = await fetch('/api/market-sync/live?source=bloxfruitsvalues', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (resp.ok) {
+      const json = await resp.json();
+      if (json.data && Object.keys(json.data).length > 0) {
+        fetchedData = json.data;
+        sourceUsed = 'bloxfruitsvalues.store';
+        logs.push(`Successfully pulled ${Object.keys(json.data).length} values from bloxfruitsvalues.store`);
       }
-    } catch (err) {
-      logs.push('Primary source bloxfruitsvalues.store timed out or returned CORS block.');
     }
+  } catch (err) {
+    logs.push('Primary source bloxfruitsvalues.store timed out or returned CORS block.');
   }
 
-  // 2. Try Backup Source: FruityBlox.com if primary failed
-  if (!isPrimarySuccess) {
-    try {
-      logs.push('Switching to Backup Source: FruityBlox.com...');
-      const resp = await fetch('/api/market-sync/live?source=fruityblox', {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (resp.ok) {
-        const json = await resp.json();
-        if (json.data && Object.keys(json.data).length > 0) {
-          fetchedData = json.data;
-          sourceUsed = 'FruityBlox.com';
-          logs.push(`Successfully pulled ${Object.keys(json.data).length} values from FruityBlox.com`);
-        }
-      }
-    } catch (err) {
-      logs.push('Backup source FruityBlox.com unreachable.');
-    }
-  }
-
-  // 3. Fallback to Benchmark Matrix Snapshot if both network fetches failed
+  // 2. Fallback to BloxFruitsValues Verified Benchmark Matrix Snapshot if network unreachable
   if (Object.keys(fetchedData).length === 0) {
     sourceUsed = 'Benchmark Snapshot';
     fetchedData = LATEST_COMMUNITY_MARKET_BENCHMARK;
-    logs.push('Loaded latest verified Blox Fruits market matrix benchmark.');
+    logs.push('Loaded latest verified BloxFruitsValues market benchmark snapshot.');
   }
 
-  // 4. Apply market updates strictly from web data (clearing stale manual inputs except owner locked items)
-  const currentOverrides: Record<string, any> = {};
-  const lockedIds = getOwnerLockedItemIds();
+  // 3. Apply market updates with strict priority:
+  // PRIORITY 1: ADMIN PANEL OVERRIDES (Always preserved with top authority)
+  // PRIORITY 2: BLOXFRUITSVALUES LIVE DATA (Applied for items without admin overrides)
   const existingOverrides = getUserValueOverrides();
+  const lockedIds = getOwnerLockedItemIds();
+  const currentOverrides: Record<string, any> = { ...existingOverrides };
   let updateCount = 0;
 
   for (const [itemId, marketItem] of Object.entries(fetchedData)) {
-    // If owner explicitly locked this fruit in the Vault, preserve it
-    if (lockedIds.includes(itemId) && existingOverrides[itemId]) {
+    // If Admin Panel or Owner Vault set a custom override or locked it, preserve it (Priority 1)
+    if (existingOverrides[itemId] && (lockedIds.includes(itemId) || currentState.ownerPriorityMode)) {
       currentOverrides[itemId] = existingOverrides[itemId];
-      logs.push(`Preserved [${itemId}]: Locked by Owner Vault.`);
+      logs.push(`Preserved [${itemId}]: Priority 1 Admin Panel Override.`);
       continue;
     }
 
-    // Otherwise, set 100% web-provided values
+    // Priority 2: Set verified bloxfruitsvalues standard
     currentOverrides[itemId] = {
       itemId,
       customPhysicalValue: marketItem.physicalValue,
@@ -289,7 +269,7 @@ export async function performLiveMarketSync(forceSource?: 'bloxfruitsvalues.stor
       customTrend: marketItem.trend,
       customPvpTier: marketItem.pvpTier,
       customGrindTier: marketItem.grindTier,
-      customNotes: `Live web-synced from ${sourceUsed} on ${new Date().toLocaleDateString()}`,
+      customNotes: `BloxFruitsValues standard (${new Date().toLocaleDateString()})`,
       updatedAt: new Date().toISOString()
     };
     updateCount++;
@@ -317,9 +297,9 @@ export async function performLiveMarketSync(forceSource?: 'bloxfruitsvalues.stor
         lastChecked: new Date().toISOString(),
         itemsFetched: Object.keys(fetchedData).length
       },
-      backup: {
-        ...currentState.sources.backup,
-        status: sourceUsed === 'FruityBlox.com' ? 'active' : (sourceUsed === 'bloxfruitsvalues.store' ? 'standby' : 'error'),
+      benchmark: {
+        ...currentState.sources.benchmark,
+        status: sourceUsed === 'Benchmark Snapshot' ? 'active' : 'standby',
         lastChecked: new Date().toISOString(),
         itemsFetched: Object.keys(fetchedData).length
       }

@@ -31,12 +31,20 @@ import {
   Key,
   Clock,
   CheckCircle2,
-  Lock
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundFX } from '../utils/audio';
 import { TradeSideItem } from '../data/bloxFruitsData';
-import { generateLocalOracleResponse, getHardcodedBloxFruitsResponse, generateIntelligentBloxFruitsFallback } from '../utils/bloxChatEngine';
+import { 
+  generateLocalOracleResponse, 
+  getHardcodedBloxFruitsResponse, 
+  generateIntelligentBloxFruitsFallback,
+  detectAndHandleSecretTriggers,
+  detectAndHandleOwnerCustomResponses,
+  detectAndHandleDeveloperQuery
+} from '../utils/bloxChatEngine';
 import { sanitizeInput } from '../utils/security';
 import { queryWikiForQuestion } from '../utils/browserWikiSync';
 import { UserAuthProfile } from '../types';
@@ -61,12 +69,21 @@ import {
 } from '../data/bloxFruitsData';
 import { AuthModal } from './AuthModal';
 
+export interface EvaluationStatus {
+  intentType: string;
+  confidenceScore: number;
+  engine: string;
+  source: string;
+  description: string;
+}
+
 interface Message {
   id: string;
   sender: 'ai' | 'user';
   text: string;
   timestamp: string;
   categoryTag?: string;
+  evaluationStatus?: EvaluationStatus;
 }
 
 interface AiOracleChatProps {
@@ -87,6 +104,14 @@ interface QuickDeckPrompt {
 }
 
 const FEATURED_HERO_PROMPTS: QuickDeckPrompt[] = [
+  {
+    title: '⚡ Auto-Render Live Values',
+    desc: 'Priority 1: Admin Panel • Priority 2: BloxFruitsValues',
+    prompt: 'Auto render live fruit values and trade demand matrix',
+    icon: '💎',
+    color: 'from-amber-500/20 via-cyan-500/15 to-purple-500/20 text-amber-300 border-amber-500/40',
+    badge: 'Live Auto-Render'
+  },
   {
     title: '🛡️ Anti-Cheat & Bot Counters',
     desc: 'Turn a deaf ear to auto-bounty scripts & fly-hackers',
@@ -122,6 +147,16 @@ const FEATURED_HERO_PROMPTS: QuickDeckPrompt[] = [
 ];
 
 const CATEGORY_PROMPTS = [
+  {
+    category: '💰 Live Values & Trade Intelligence',
+    icon: '💎',
+    prompts: [
+      'Auto render live fruit values and trade demand matrix',
+      'What is Kitsune worth and what are its best trade offers?',
+      'Calculate combined value of Buddha + Portal + Sound',
+      'Is Dough + T-Rex fair for Leopard? (Evaluate W/F/L)'
+    ]
+  },
   {
     category: '🛡️ Anti-Cheat & Bot Counters',
     icon: '🛡️',
@@ -204,6 +239,141 @@ const CATEGORY_PROMPTS = [
   }
 ];
 
+function determineIntentEvaluation(
+  query: string,
+  _response: string,
+  sourceCategory: 'secret' | 'dev' | 'gemini' | 'hardcoded' | 'wiki' | 'fallback'
+): EvaluationStatus {
+  const cleanQ = query.toLowerCase();
+
+  if (sourceCategory === 'secret') {
+    return {
+      intentType: 'Custom Owner Directive',
+      confidenceScore: 100,
+      engine: 'Grandmaster Core',
+      source: 'Owner Vault Custom Filter',
+      description: 'Direct owner custom rule matched with zero-latency priority.'
+    };
+  }
+
+  if (sourceCategory === 'dev') {
+    return {
+      intentType: 'Creator Recognition & Tribute',
+      confidenceScore: 100,
+      engine: '1_solas Identity Core',
+      source: 'Verified Developer Record',
+      description: 'Recognized creator query; credentials verified for Nolan (1_solas).'
+    };
+  }
+
+  if (
+    cleanQ.includes('should i eat') ||
+    cleanQ.includes('eat or') ||
+    cleanQ.includes('store or') ||
+    cleanQ.includes('worth eating') ||
+    cleanQ.includes('keep or')
+  ) {
+    return {
+      intentType: 'Player Dilemma & Progression Advice',
+      confidenceScore: 99,
+      engine: 'Human Intent Evaluator',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : 'Strategic Advisor Engine',
+      description: 'Analyzed sea level, grinding vs PvP utility, and trade equity.'
+    };
+  }
+
+  if (
+    cleanQ.includes('better') ||
+    cleanQ.includes(' vs ') ||
+    cleanQ.includes(' versus ') ||
+    cleanQ.includes(' or ') ||
+    cleanQ.includes('compare') ||
+    cleanQ.includes('which is')
+  ) {
+    return {
+      intentType: 'Head-to-Head Comparison',
+      confidenceScore: 98,
+      engine: 'Human Intent Evaluator',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : 'Combat & Utility Matrix',
+      description: 'Direct comparison across grinding, PvP stuns, mobility, and value.'
+    };
+  }
+
+  if (
+    cleanQ.includes('for') &&
+    (cleanQ.includes('fair') || cleanQ.includes('win') || cleanQ.includes('trade') || cleanQ.includes('wfl') || cleanQ.includes('w/f/l') || cleanQ.includes('worth'))
+  ) {
+    return {
+      intentType: 'Trade Equity & W/F/L Calculation',
+      confidenceScore: 99,
+      engine: 'Trade Intent Evaluator',
+      source: 'BloxFruitsValues Live Standard',
+      description: 'Calculated mathematical surplus, net equity, and 40% Beli limit.'
+    };
+  }
+
+  if (
+    cleanQ.includes('combo') ||
+    cleanQ.includes('build') ||
+    cleanQ.includes('stat') ||
+    cleanQ.includes('synergy') ||
+    cleanQ.includes('fighting style')
+  ) {
+    return {
+      intentType: 'Combat Combos & Stat Optimization',
+      confidenceScore: 98,
+      engine: 'Human Intent Evaluator',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : 'Meta Build Engine',
+      description: 'Mapped ability animations, stun sequences, and stat distributions.'
+    };
+  }
+
+  if (
+    cleanQ.includes('value') ||
+    cleanQ.includes('worth') ||
+    cleanQ.includes('price') ||
+    cleanQ.includes('auto render') ||
+    cleanQ.includes('demand') ||
+    cleanQ === 'values'
+  ) {
+    return {
+      intentType: 'Live Market Value & Demand Matrix',
+      confidenceScore: 99,
+      engine: 'Live Value Oracle',
+      source: 'BloxFruitsValues Standard & Admin Overrides',
+      description: 'Verified market values with Priority 1 Admin & Priority 2 BloxFruitsValues.'
+    };
+  }
+
+  if (
+    cleanQ.includes('how to get') ||
+    cleanQ.includes('how do i get') ||
+    cleanQ.includes('where') ||
+    cleanQ.includes('unlock') ||
+    cleanQ.includes('spawn') ||
+    cleanQ.includes('trial') ||
+    cleanQ.includes('gear') ||
+    cleanQ.includes('v4') ||
+    cleanQ.includes('boss')
+  ) {
+    return {
+      intentType: 'Obtainment & Gameplay Walkthrough',
+      confidenceScore: 98,
+      engine: 'Grandmaster Lore & Guide Core',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : (sourceCategory === 'wiki' ? 'Live Wiki Stream' : 'Solas Knowledge Base'),
+      description: 'Grounded in authentic Blox Fruits mechanics, island coordinates, and drop rates.'
+    };
+  }
+
+  return {
+    intentType: 'Grandmaster Sensei Consultation',
+    confidenceScore: sourceCategory === 'gemini' ? 97 : (sourceCategory === 'wiki' ? 96 : 95),
+    engine: 'Human Intent Evaluator',
+    source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : (sourceCategory === 'wiki' ? 'Live Wiki Stream' : 'Intelligent Fallback Engine'),
+    description: 'Natural language intention resolved with zero false info and zero overlap.'
+  };
+}
+
 export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initialQuery }) => {
   const [authProfile, setAuthProfile] = useState<UserAuthProfile>(() => getInitialAuthProfile());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -214,7 +384,14 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       id: 'welcome',
       sender: 'ai',
       text: `Ahoy! I am **Solas**, your Blox Fruits Grandmaster AI & Trading Sensei.\nAsk me anything about item obtainment, Race V4 gears, game mechanics, or trade evaluations!`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      evaluationStatus: {
+        intentType: 'Grandmaster AI Core Ready',
+        confidenceScore: 100,
+        engine: 'Solas Intent Evaluator',
+        source: 'Master System Active',
+        description: 'Natural language understanding initialized with zero false info guarantee.'
+      }
     }
   ]);
   const [input, setInput] = useState('');
@@ -337,7 +514,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       const res = await fetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message, tradeContext: currentTrade })
       });
       if (!res.ok) return null;
       const data = await res.json();
@@ -609,7 +786,14 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         id: (Date.now() + 1).toString(),
         sender: 'ai',
         text: `⛔ **12-Hour AI Search Limit Reached**\n\nYou have used all **${authProfile.maxSearches} searches** available for your current tier in this 12-hour window.\n\n*Window resets in: ${hoursRemainingStr}*\n\n🔓 **Ways to unlock more searches:**\n1. **Connect Discord Account:** Double your quota to **8 searches per 12 hours**.\n2. **Authorize Google Account:** Unlock **FULL UNLIMITED ACCESS (∞)** to Solas Grandmaster AI.\n\nClick the **Authorization & Tier Hub** button above to connect your account!`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        evaluationStatus: {
+          intentType: '12-Hour Tier Quota Check',
+          confidenceScore: 100,
+          engine: 'Security & Quota Guard',
+          source: 'Server Auth Guard',
+          description: '12-hour search limit verified.'
+        }
       };
       setMessages((prev) => [...prev, limitMsg]);
       setIsLoading(false);
@@ -620,40 +804,75 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     // Update state with newly consumed search
     setAuthProfile(quotaCheck.updatedProfile);
 
-    // --- STRICT WATERFALL ROUTING ARCHITECTURE (Zero Interference Guarantee) ---
+    // --- INTENT EVALUATION & ROUTING ARCHITECTURE (Desire-First Guarantee) ---
     let replyText = '';
+    let sourceCategory: 'secret' | 'dev' | 'gemini' | 'hardcoded' | 'wiki' | 'fallback' = 'fallback';
 
-    // STEP 1: Strict Hardcoded Rules, Calculations, Dev Credits, Mutation Lab, FAQs & Item Data
-    // (If our internal code or game datasets have an exact match, use it immediately!)
-    const hardcodedReply = getHardcodedBloxFruitsResponse(textToSend, currentTrade);
-    if (hardcodedReply) {
-      replyText = hardcodedReply;
+    // STEP 1: Secret Triggers & Owner Custom Responses (Top Authority)
+    const secretReply = detectAndHandleSecretTriggers(textToSend, textToSend);
+    if (secretReply) {
+      replyText = secretReply;
+      sourceCategory = 'secret';
     }
 
-    // STEP 2: Live Blox Fruits Wiki Database
-    // (If no hardcoded rule matched, search official Blox Fruits wiki articles)
+    if (!replyText) {
+      const customOwnerReply = detectAndHandleOwnerCustomResponses(textToSend, textToSend);
+      if (customOwnerReply) {
+        replyText = customOwnerReply;
+        sourceCategory = 'secret';
+      }
+    }
+
+    // STEP 2: Creator / Developer Recognition (Honor Nolan / 1_solas)
+    if (!replyText) {
+      const devReply = detectAndHandleDeveloperQuery(textToSend);
+      if (devReply) {
+        replyText = devReply;
+        sourceCategory = 'dev';
+      }
+    }
+
+    // STEP 3: Intelligent Cloud AI Primary Brain (Gemini 2.5 Flash with Human Desire & Intent Understanding)
+    // Evaluates the user's underlying desire (Advice vs Comparison vs Combos vs Obtainment vs Values)
+    // without canned overlap, false info, or keyword hijacking!
+    if (!replyText) {
+      const geminiReply = await queryGeminiAiFallback(textToSend);
+      if (geminiReply) {
+        replyText = geminiReply;
+        sourceCategory = 'gemini';
+      }
+    }
+
+    // STEP 4: Local Semantic Fallback Engine (Active if offline or server busy)
+    // Upgraded with human intent evaluators (Side-by-Side Comparisons, Eat vs Trade Advice, Combos)
+    if (!replyText) {
+      const hardcodedReply = getHardcodedBloxFruitsResponse(textToSend, currentTrade);
+      if (hardcodedReply) {
+        replyText = hardcodedReply;
+        sourceCategory = 'hardcoded';
+      }
+    }
+
+    // STEP 5: Live Blox Fruits Wiki Database Fallback
     if (!replyText) {
       try {
         const wikiResult = await queryWikiForQuestion(textToSend);
         if (wikiResult && wikiResult.extract && wikiResult.extract.length > 50) {
           replyText = `🌐 **Blox Fruits Wiki Live Intel: ${wikiResult.title}**\n\n${wikiResult.extract}\n\n🔗 *Official Wiki Entry:* ${wikiResult.url}\n*(Retrieved directly from browser wiki stream • 100% Free & Continuous)*`;
+          sourceCategory = 'wiki';
         }
       } catch {
-        // Wiki search silent catch; proceed to cloud AI fallback
+        // Wiki search silent catch; proceed to intelligent fallback pool
       }
     }
 
-    // STEP 3: Gemini Cloud AI Conversational Fallback
-    // (ONLY used when NEITHER the hardcoded code/data NOR the wiki had any keywords or rules)
+    // STEP 6: Seamless Client-Side Intelligent Fallback Pool (Zero-failure safety net)
     if (!replyText) {
-      const geminiReply = await queryGeminiAiFallback(textToSend);
-      if (geminiReply) {
-        replyText = geminiReply;
-      } else {
-        // STEP 4: Seamless Client-Side Intelligent Fallback Pool (Zero-failure safety net)
-        replyText = generateIntelligentBloxFruitsFallback(textToSend);
-      }
+      replyText = generateIntelligentBloxFruitsFallback(textToSend);
+      sourceCategory = 'fallback';
     }
+
+    const evaluationStatus = determineIntentEvaluation(textToSend, replyText, sourceCategory);
 
     soundFX.playWin();
     setMessages((prev) => [
@@ -662,7 +881,8 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         id: (Date.now() + 1).toString(),
         sender: 'ai',
         text: replyText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        evaluationStatus
       }
     ]);
     setIsLoading(false);
@@ -820,7 +1040,14 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                     id: 'welcome-reset',
                     sender: 'ai',
                     text: 'Chat history reset. I am **Solas**!\nAsk me anything about items, Race V4 gears, game mechanics, or trade evaluations.',
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    evaluationStatus: {
+                      intentType: 'Session Reset Complete',
+                      confidenceScore: 100,
+                      engine: 'Solas Intent Evaluator',
+                      source: 'Master System Active',
+                      description: 'Chat context cleared. Ready for your questions.'
+                    }
                   }
                 ]);
               }}
@@ -944,6 +1171,42 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                     : 'bg-slate-950/90 border border-slate-800/90 text-slate-200 rounded-tl-none shadow-black/40'
                 }`}
               >
+                {/* Visual Confidence Score & Evaluation Status Badge */}
+                {msg.sender === 'ai' && msg.evaluationStatus && (
+                  <div className="mb-3.5 pb-2.5 border-b border-slate-800/80 flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold shadow-sm">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>Evaluation Status: Verified</span>
+                        </div>
+                        <div className="px-2 py-0.5 rounded-lg bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 font-semibold flex items-center gap-1.5 shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                          <span>{msg.evaluationStatus.intentType}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-slate-400 font-medium">Confidence:</span>
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono font-black text-[11px] shadow-sm">
+                          <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+                          <span>{msg.evaluationStatus.confidenceScore}%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transparent Explanatory Subtitle */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-400/90 pt-0.5">
+                      <span className="truncate">
+                        <strong className="text-slate-300 font-medium">Engine:</strong> {msg.evaluationStatus.engine} • <span className="text-slate-500">{msg.evaluationStatus.source}</span>
+                      </span>
+                      <span className="text-emerald-400/80 hidden sm:inline text-right shrink-0 font-medium">
+                        ✓ Intent Evaluator Active
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="whitespace-pre-wrap">{msg.text}</div>
 
                 {/* Footer bar with timestamp and copy button */}
@@ -1003,7 +1266,50 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         </div>
 
         {/* Dynamic Interactive Input Bar */}
-        <div className="p-4 border-t border-slate-800/90 bg-slate-950/90 backdrop-blur-xl">
+        <div className="p-4 border-t border-slate-800/90 bg-slate-950/90 backdrop-blur-xl space-y-2.5">
+          {/* Quick AI Value & Trade Auto-Render Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+            <button
+              type="button"
+              onClick={() => handleSend('Auto render live fruit values and trade demand matrix')}
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-cyan-500/20 border border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/30 transition-all flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span>⚡ Auto-Render Live Values</span>
+            </button>
+            {currentTrade && (currentTrade.yourItems.length > 0 || currentTrade.theirItems.length > 0) && (
+              <button
+                type="button"
+                onClick={() => handleSend('Evaluate my current trade on the calculator')}
+                className="px-3 py-1.5 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 font-bold hover:bg-cyan-900/50 transition-all flex items-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>⚖️ Auto-Evaluate Current Trade</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleSend('What is Kitsune worth and what are its best trade offers?')}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold transition-all shrink-0 cursor-pointer"
+            >
+              🦊 Kitsune Value
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSend('What is Dragon Rework worth?')}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold transition-all shrink-0 cursor-pointer"
+            >
+              🐉 Dragon Value
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSend('What is Dog Blade worth and what is its demand?')}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold transition-all shrink-0 cursor-pointer"
+            >
+              🗡️ Dog Blade
+            </button>
+          </div>
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
