@@ -75,8 +75,19 @@ import {
   updateCustomResponse,
   deleteCustomResponse,
   toggleCustomResponseStatus,
-  pushFruitDataToServer
+  pushFruitDataToServer,
+  SolasPersonaMode,
+  PersonaConfig,
+  PERSONA_CONFIGS,
+  getStoredPersonaMode,
+  setStoredPersonaMode,
+  getPersonaConfig,
+  checkTrustedOwnerWithServer,
+  revokeTrustedOwnerOnServer,
+  STORAGE_KEY_OWNER_TRUSTED_EXPIRY,
+  STORAGE_KEY_OWNER_TRUSTED_IP
 } from '../data/bloxFruitsData';
+import { generateLocalOracleResponse } from '../utils/bloxChatEngine';
 import { seedBackupDataToFirebase, triggerGlobalEventToFirebase, clearGlobalEventFromFirebase } from '../lib/firebaseSync';
 import { soundFX } from '../utils/audio';
 import { getStoredSuggestions, saveStoredSuggestions, VisitorSuggestion } from './SuggestionsBoard';
@@ -94,7 +105,7 @@ interface SecretOwnerVaultModalProps {
   } | null;
 }
 
-type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'global_events' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
+type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'ai_personas' | 'global_events' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
 
 
 export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
@@ -119,6 +130,20 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
+  const [remember30Days, setRemember30Days] = useState<boolean>(true);
+  const [trustedIpInfo, setTrustedIpInfo] = useState<{ isTrusted: boolean; remainingDays: number; ip?: string } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const expStr = localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY);
+    const ip = localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_IP) || '';
+    if (expStr) {
+      const exp = parseInt(expStr, 10);
+      const remaining = Math.ceil((exp - Date.now()) / (24 * 60 * 60 * 1000));
+      if (remaining > 0) {
+        return { isTrusted: true, remainingDays: remaining, ip };
+      }
+    }
+    return null;
+  });
 
   useEffect(() => {
     let interval: any = null;
@@ -242,6 +267,36 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setEditingCustomResponseId(item.id);
     setNewTriggerInput(item.trigger);
     setNewResponseInput(item.response);
+  };
+
+  // Dynamic AI Persona State
+  const [currentPersonaMode, setCurrentPersonaMode] = useState<SolasPersonaMode>(() => getStoredPersonaMode());
+  const [personaTestQuery, setPersonaTestQuery] = useState<string>('Is Kitsune and Dough for Dragon West a win or loss?');
+  const [personaTestResponse, setPersonaTestResponse] = useState<string>('');
+  const [isGeneratingTestResponse, setIsGeneratingTestResponse] = useState<boolean>(false);
+
+  const handleSelectPersona = (mode: SolasPersonaMode) => {
+    soundFX.playWin();
+    setCurrentPersonaMode(mode);
+    setStoredPersonaMode(mode);
+    const cfg = PERSONA_CONFIGS[mode];
+    setSaveSuccessMsg(`🎭 Switched Solas AI Persona to "${cfg.name}" (${cfg.badge}) globally!`);
+    setTimeout(() => setSaveSuccessMsg(null), 3500);
+    // Generate sample preview
+    const sample = generateLocalOracleResponse(personaTestQuery, undefined, mode);
+    setPersonaTestResponse(sample);
+  };
+
+  const handleTestPersonaQuery = (queryToTest?: string) => {
+    soundFX.playPop();
+    const q = (queryToTest || personaTestQuery).trim();
+    if (!q) return;
+    setIsGeneratingTestResponse(true);
+    setTimeout(() => {
+      const resp = generateLocalOracleResponse(q, undefined, currentPersonaMode);
+      setPersonaTestResponse(resp);
+      setIsGeneratingTestResponse(false);
+    }, 80);
   };
 
   const handleDeleteSuggestion = (id: string) => {
@@ -497,10 +552,24 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
         if (isAuth) {
           setIsAuthenticated(true);
         } else {
-          setIsAuthenticated(false);
-          if (initialPrefillKey) {
-            setKeyInput(initialPrefillKey);
-          }
+          // Check if current IP or browser has 30-day verified trust
+          checkTrustedOwnerWithServer().then((trustedRes) => {
+            if (trustedRes.success && trustedRes.trusted) {
+              setIsAuthenticated(true);
+              setTrustedIpInfo({
+                isTrusted: true,
+                remainingDays: trustedRes.remainingDays || 30,
+                ip: trustedRes.clientIp
+              });
+              setSaveSuccessMsg(`🛡️ 30-Day Verified IP Recognized (${trustedRes.clientIp || 'This Device'}) — Codes Bypassed!`);
+              setTimeout(() => setSaveSuccessMsg(null), 4000);
+            } else {
+              setIsAuthenticated(false);
+              if (initialPrefillKey) {
+                setKeyInput(initialPrefillKey);
+              }
+            }
+          });
         }
       }
       reloadData();
@@ -541,6 +610,15 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     };
   }, []);
 
+  const handleRevoke30DayTrust = async () => {
+    soundFX.playPop();
+    await revokeTrustedOwnerOnServer();
+    setTrustedIpInfo(null);
+    setIsAuthenticated(false);
+    setSaveSuccessMsg('🛡️ 30-Day IP & device trust revoked. Authentication codes will now be required.');
+    setTimeout(() => setSaveSuccessMsg(null), 4000);
+  };
+
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanStep1 = step1Input.trim();
@@ -553,6 +631,15 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     const effectivePreAuth = cleanStep1 || (cleanKey.toLowerCase().startsWith('477047704770') ? '477047704770' : undefined);
 
     const res = await loginOwnerWithServer(effectiveKey, effectivePreAuth);
+    if (res.success && res.trustedAutoLogin) {
+      setIsAuthenticated(true);
+      setIsOtpPending(false);
+      setSaveSuccessMsg(`🛡️ 30-Day Verified IP Recognized — Grandmaster Vault unlocked automatically!`);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+      soundFX.playWin();
+      reloadData();
+      return;
+    }
     if (res.success && res.requiresOtp && res.otpToken) {
       setIsOtpPending(true);
       setOtpToken(res.otpToken);
@@ -578,7 +665,7 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setIsVerifyingOtp(true);
     setAuthError(null);
 
-    const res = await verifyOwnerOtpWithServer(cleanOtp, otpToken);
+    const res = await verifyOwnerOtpWithServer(cleanOtp, otpToken, remember30Days);
     setIsVerifyingOtp(false);
 
     if (res.success) {
@@ -586,6 +673,17 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       setOwnerAuthStatus(true);
       setAdminAuthStatus(true);
       setIsAuthenticated(true);
+      if (remember30Days) {
+        setTrustedIpInfo({
+          isTrusted: true,
+          remainingDays: 30,
+          ip: res.clientIp
+        });
+        setSaveSuccessMsg(`👑 Verified! Your IP (${res.clientIp || 'this device'}) is remembered for 30 days — code will be skipped!`);
+      } else {
+        setSaveSuccessMsg('👑 Grandmaster Clearance Verified!');
+      }
+      setTimeout(() => setSaveSuccessMsg(null), 4500);
       setOtpInput('');
       setAuthError(null);
       soundFX.playWin();
@@ -851,21 +949,37 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
 
           <div className="flex items-center gap-2">
             {isAuthenticated && (
-              <button
-                onClick={handleLogout}
-                className="px-3 py-1.5 rounded-xl bg-red-950/60 hover:bg-red-900 border border-red-500/40 text-xs text-red-300 font-bold transition-all flex items-center gap-1"
-                title="Lock Vault"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Lock</span>
-              </button>
+              <>
+                {trustedIpInfo && (
+                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-[11px] text-emerald-300 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>IP Remembered: <strong>{trustedIpInfo.remainingDays}d</strong></span>
+                    <button
+                      type="button"
+                      onClick={handleRevoke30DayTrust}
+                      className="ml-1 text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                      title="Revoke 30-Day Trust (Require code on next login)"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 rounded-xl bg-red-950/60 hover:bg-red-900 border border-red-500/40 text-xs text-red-300 font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  title="Lock Vault"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Lock</span>
+                </button>
+              </>
             )}
             <button
               onClick={() => {
                 soundFX.playPop();
                 onClose();
               }}
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -944,6 +1058,25 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                       <span>{authError}</span>
                     </div>
                   )}
+
+                  {/* 30-Day Remember IP & Device Checkbox */}
+                  <label className="flex items-center gap-3 p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-200 cursor-pointer hover:bg-cyan-950/70 transition-colors select-none">
+                    <input
+                      type="checkbox"
+                      checked={remember30Days}
+                      onChange={(e) => setRemember30Days(e.target.checked)}
+                      className="w-4 h-4 rounded border-cyan-500 text-cyan-500 focus:ring-cyan-400 accent-cyan-400 cursor-pointer shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 font-bold text-white">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Remember my IP & browser for 30 Days</span>
+                      </div>
+                      <span className="text-[11px] text-cyan-300/80 block mt-0.5">
+                        Never ask for code or OTP on this IP / device for the next 30 days.
+                      </span>
+                    </div>
+                  </label>
 
                   <div className="space-y-2 pt-1">
                     <button
@@ -1121,6 +1254,21 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                 >
                   <MessageSquarePlus className="w-4 h-4" />
                   <span>Custom AI Responses ({customResponsesList.length})</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundFX.playWin();
+                    setActiveTab('ai_personas');
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                    activeTab === 'ai_personas'
+                      ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-amber-400 text-white shadow-lg shadow-purple-500/25 border-purple-400'
+                      : 'bg-slate-950/60 text-purple-300 hover:text-white border border-purple-500/30'
+                  }`}
+                >
+                  <Bot className="w-4 h-4 text-amber-300 animate-pulse" />
+                  <span>🎭 AI Personas ({PERSONA_CONFIGS[currentPersonaMode]?.name.split(' ')[0]})</span>
                 </button>
 
                 <button
@@ -1781,6 +1929,204 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: DYNAMIC AI PERSONA SELECTOR & NEURAL VOICE MODULATOR */}
+              {activeTab === 'ai_personas' && (
+                <div className="space-y-6">
+                  {/* Persona Matrix Header */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-slate-950/90 border border-purple-500/40 relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 via-pink-500 to-amber-400 flex items-center justify-center text-slate-950 text-2xl font-black shadow-lg shadow-purple-500/30">
+                          {PERSONA_CONFIGS[currentPersonaMode]?.avatarEmoji || '🎭'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-base font-black text-white">Dynamic AI Persona & Voice Modulator</h4>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                              Active: {PERSONA_CONFIGS[currentPersonaMode]?.name}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-0.5">
+                            Toggle Solas AI's voice, tone, and reasoning style across the entire platform in real-time.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-purple-500/30 text-xs font-mono text-amber-300 flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                          <span>GLOBAL SYNC ACTIVE</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3 Persona Selection Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(Object.keys(PERSONA_CONFIGS) as SolasPersonaMode[]).map((modeKey) => {
+                      const cfg = PERSONA_CONFIGS[modeKey];
+                      const isSelected = currentPersonaMode === modeKey;
+
+                      return (
+                        <motion.div
+                          key={modeKey}
+                          whileHover={{ scale: 1.015 }}
+                          className={`p-5 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden ${
+                            isSelected
+                              ? `bg-slate-950/95 ${cfg.borderAccent} shadow-xl shadow-purple-950/40 ring-2 ring-cyan-400/40`
+                              : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-80 hover:opacity-100'
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="absolute top-0 right-0 px-3 py-1 bg-gradient-to-l from-cyan-400 to-blue-600 text-slate-950 font-black text-[10px] rounded-bl-xl shadow-md">
+                              CURRENTLY ACTIVE
+                            </div>
+                          )}
+
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${cfg.gradient} flex items-center justify-center text-2xl shadow-md`}>
+                                {cfg.avatarEmoji}
+                              </div>
+                              <div>
+                                <h5 className="text-sm font-black text-white">{cfg.name}</h5>
+                                <p className="text-[11px] text-cyan-300 font-semibold">{cfg.tagline}</p>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                              {cfg.description}
+                            </p>
+
+                            <div className="space-y-1.5 pt-1">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Voice Traits:</span>
+                              <div className="space-y-1">
+                                {cfg.keyTraits.map((trait, idx) => (
+                                  <div key={idx} className="flex items-center gap-1.5 text-[11px] text-slate-300">
+                                    <Check className="w-3 h-3 text-emerald-400 shrink-0" />
+                                    <span>{trait}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 text-[11px] text-slate-300 italic">
+                              "{cfg.sampleGreeting}"
+                            </div>
+                          </div>
+
+                          <div className="pt-4">
+                            <button
+                              type="button"
+                              onClick={() => handleSelectPersona(modeKey)}
+                              disabled={isSelected}
+                              className={`w-full py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                isSelected
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 cursor-default'
+                                  : `bg-gradient-to-r ${cfg.gradient} text-slate-950 hover:brightness-110 shadow-md`
+                              }`}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <Check className="w-4 h-4 text-cyan-300" />
+                                  <span>Active Persona</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Crown className="w-4 h-4 text-slate-950" />
+                                  <span>Activate {cfg.name}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Interactive Test Sandbox */}
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-4 h-4 text-cyan-400" />
+                        <h5 className="text-xs font-black uppercase tracking-wider text-slate-200">
+                          Live Voice Testing Sandbox ({PERSONA_CONFIGS[currentPersonaMode]?.badge})
+                        </h5>
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        Test how the active persona responds in real time
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">Preset Prompts:</span>
+                      {[
+                        'Is Kitsune and Dough for Dragon West a win or loss?',
+                        'Best Godhuman & CDK PvP Combo',
+                        'Fastest route to reach Third Sea',
+                        'How do I spawn Leviathan & get Heart?'
+                      ].map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setPersonaTestQuery(preset);
+                            handleTestPersonaQuery(preset);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-300 hover:text-white transition-colors cursor-pointer"
+                        >
+                          {preset.slice(0, 32)}...
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={personaTestQuery}
+                        onChange={(e) => setPersonaTestQuery(e.target.value)}
+                        placeholder="Type any question to test current persona voice..."
+                        className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleTestPersonaQuery();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleTestPersonaQuery()}
+                        disabled={isGeneratingTestResponse || !personaTestQuery.trim()}
+                        className="px-4 py-2.5 bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-cyan-500/20"
+                      >
+                        {isGeneratingTestResponse ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                        <span>Run Test</span>
+                      </button>
+                    </div>
+
+                    {personaTestResponse && (
+                      <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+                          <span className="flex items-center gap-1.5 text-cyan-300">
+                            <span>{PERSONA_CONFIGS[currentPersonaMode]?.avatarEmoji}</span>
+                            <span>{PERSONA_CONFIGS[currentPersonaMode]?.name} Output:</span>
+                          </span>
+                          <span className="font-mono text-[10px] text-slate-500">Live Persona Engine</span>
+                        </div>
+                        <div className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                          {personaTestResponse}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

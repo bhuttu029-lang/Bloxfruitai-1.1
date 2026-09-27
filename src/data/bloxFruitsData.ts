@@ -1051,6 +1051,10 @@ export async function armOwnerSequenceOnServer(code: string): Promise<{ success:
   return { success: false, error: 'Invalid Pre-authorization Code (477047704770 required)' };
 }
 
+export const STORAGE_KEY_OWNER_TRUSTED_TOKEN = 'solas_owner_trusted_token_30d';
+export const STORAGE_KEY_OWNER_TRUSTED_EXPIRY = 'solas_owner_trusted_expiry_30d';
+export const STORAGE_KEY_OWNER_TRUSTED_IP = 'solas_owner_trusted_ip_30d';
+
 export interface OwnerLoginResponse {
   success: boolean;
   requiresOtp?: boolean;
@@ -1059,13 +1063,78 @@ export interface OwnerLoginResponse {
   expiresIn?: number;
   message?: string;
   error?: string;
+  trustedAutoLogin?: boolean;
+  remainingDays?: number;
+}
+
+export async function checkTrustedOwnerWithServer(): Promise<{
+  success: boolean;
+  trusted: boolean;
+  remainingDays?: number;
+  clientIp?: string;
+  message?: string;
+}> {
+  if (typeof window === 'undefined') return { success: false, trusted: false };
+  try {
+    const trustedToken = localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN) || undefined;
+    const res = await fetch('/api/auth/owner/check-trusted', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trustedToken })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.trusted) {
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        if (data.trustedToken) {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN, data.trustedToken);
+        }
+        if (data.expiresAt) {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY, data.expiresAt.toString());
+        }
+        if (data.clientIp) {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_IP, data.clientIp);
+        }
+        return {
+          success: true,
+          trusted: true,
+          remainingDays: data.remainingDays || 30,
+          clientIp: data.clientIp,
+          message: data.message
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Check trusted owner error:', err);
+  }
+  return { success: false, trusted: false };
+}
+
+export async function revokeTrustedOwnerOnServer(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const trustedToken = localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN) || undefined;
+    await fetch('/api/auth/owner/revoke-trusted', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trustedToken })
+    });
+  } catch {}
+  localStorage.removeItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN);
+  localStorage.removeItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY);
+  localStorage.removeItem(STORAGE_KEY_OWNER_TRUSTED_IP);
+  setOwnerAuthStatus(false);
+  setAdminAuthStatus(false);
+  return true;
 }
 
 export async function loginOwnerWithServer(key: string, preAuthCode?: string, armToken?: string): Promise<OwnerLoginResponse> {
   const cleanKey = (key || '').trim();
   const cleanPre = (preAuthCode || '').trim();
+  const trustedToken = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN) || undefined : undefined;
 
-  if (!cleanKey && !cleanPre) {
+  if (!cleanKey && !cleanPre && !trustedToken) {
     return { success: false, error: 'Pre-authorization code and Master Clearance Key are required.' };
   }
 
@@ -1074,11 +1143,22 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
     const res = await fetch('/api/auth/owner/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: cleanKey, preAuthCode: cleanPre, armToken })
+      body: JSON.stringify({ key: cleanKey, preAuthCode: cleanPre, armToken, trustedToken })
     });
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
+        if (data.trustedAutoLogin) {
+          setOwnerAuthStatus(true);
+          setAdminAuthStatus(true);
+          return {
+            success: true,
+            requiresOtp: false,
+            trustedAutoLogin: true,
+            remainingDays: data.remainingDays || 30,
+            message: data.message
+          };
+        }
         if (data.requiresOtp && data.otpToken) {
           return {
             success: true,
@@ -1135,7 +1215,11 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
   };
 }
 
-export async function verifyOwnerOtpWithServer(otp: string, otpToken: string): Promise<{ success: boolean; error?: string }> {
+export async function verifyOwnerOtpWithServer(
+  otp: string,
+  otpToken: string,
+  remember30Days: boolean = true
+): Promise<{ success: boolean; error?: string; remembered30Days?: boolean; clientIp?: string; message?: string }> {
   const cleanOtp = (otp || '').trim();
   if (!cleanOtp || !otpToken || cleanOtp.length !== 6) {
     return { success: false, error: 'Please enter the complete 6-digit numeric OTP code.' };
@@ -1146,14 +1230,29 @@ export async function verifyOwnerOtpWithServer(otp: string, otpToken: string): P
     const res = await fetch('/api/auth/owner/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ otp: cleanOtp, otpToken })
+      body: JSON.stringify({ otp: cleanOtp, otpToken, remember30Days })
     });
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
         setOwnerAuthStatus(true);
         setAdminAuthStatus(true);
-        return { success: true };
+        if (data.trustedToken) {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN, data.trustedToken);
+        }
+        if (data.remembered30Days) {
+          const expiryTime = Date.now() + 30 * 24 * 60 * 60 * 1000;
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY, expiryTime.toString());
+        }
+        if (data.clientIp) {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_IP, data.clientIp);
+        }
+        return {
+          success: true,
+          remembered30Days: data.remembered30Days,
+          clientIp: data.clientIp,
+          message: data.message
+        };
       }
       return { success: false, error: data.error || 'Invalid 6-Digit OTP code.' };
     }
@@ -1254,7 +1353,15 @@ export function setAdminAuthStatus(authenticated: boolean): void {
 export function getOwnerAuthStatus(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return localStorage.getItem(STORAGE_KEY_OWNER_AUTH) === 'true';
+    if (localStorage.getItem(STORAGE_KEY_OWNER_AUTH) === 'true') return true;
+    const expiryStr = localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY);
+    if (expiryStr) {
+      const exp = parseInt(expiryStr, 10);
+      if (!isNaN(exp) && exp > Date.now()) {
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -1913,3 +2020,109 @@ export function toggleCustomResponseStatus(id: string): void {
   });
   saveStoredCustomResponses(updated);
 }
+
+// ============================================================
+// DYNAMIC AI PERSONAS & VOICE MODULATOR ENGINE
+// ============================================================
+export type SolasPersonaMode = 'grandmaster' | 'pirate_king' | 'speedrunner';
+
+export interface PersonaConfig {
+  id: SolasPersonaMode;
+  name: string;
+  tagline: string;
+  badge: string;
+  avatarEmoji: string;
+  gradient: string;
+  borderAccent: string;
+  glowColor: string;
+  voiceStyle: string;
+  description: string;
+  sampleGreeting: string;
+  prefixMotto: string;
+  keyTraits: string[];
+}
+
+export const PERSONA_CONFIGS: Record<SolasPersonaMode, PersonaConfig> = {
+  grandmaster: {
+    id: 'grandmaster',
+    name: 'Grandmaster Sensei',
+    tagline: 'Detailed, Strategic & Respectful',
+    badge: '🧘‍♂️ SENSEI ORACLE',
+    avatarEmoji: '🧘‍♂️👑',
+    gradient: 'from-cyan-500 via-blue-600 to-indigo-600',
+    borderAccent: 'border-cyan-500/50',
+    glowColor: 'rgba(6, 182, 212, 0.4)',
+    voiceStyle: 'Deep tactical breakdowns, mathematical equity analysis, respectful honorifics, and complete master secrets.',
+    description: 'The supreme ancient master of Blox Fruits. Analyzes every frame, stat point, and trade value with deep wisdom and patience.',
+    sampleGreeting: 'Greetings, fellow warrior. I am Solas in Grandmaster Sensei form. Present your query, and let us dissect the optimal tactical path.',
+    prefixMotto: '⚡ [GRANDMASTER WISDOM]:',
+    keyTraits: ['100% In-Depth Explanations', 'Frame Data & Stat Point Math', 'Respectful & Wise Tone', 'Comprehensive Obtainment Guides']
+  },
+  pirate_king: {
+    id: 'pirate_king',
+    name: 'Ruthless Pirate King',
+    tagline: 'Blunt, Aggressive Trade Shark & Witty',
+    badge: '🏴‍☠️ PIRATE SHARK',
+    avatarEmoji: '🏴‍☠️🔥',
+    gradient: 'from-red-500 via-orange-600 to-amber-500',
+    borderAccent: 'border-red-500/50',
+    glowColor: 'rgba(239, 68, 68, 0.4)',
+    voiceStyle: 'Aggressive trading shark, witty roasts, blunt verdicts, zero patience for bad offers, and pirate plunder banter.',
+    description: 'The terrifying ruler of the Grand Sea. Hates lowballers, laughs at bad trades, and demands you conquer the market by force.',
+    sampleGreeting: 'Ahoy, landlubber! Step into the captain\'s deck. Don\'t bring me rookie trades or I\'ll feed you to the Terrorshark. What do you need?',
+    prefixMotto: '🏴‍☠️ [CAPTAIN\'S VERDICT]:',
+    keyTraits: ['Aggressive W/F/L Judgments', 'Anti-Scam & Anti-Lowball Roasts', 'High-Energy Pirate Slang', 'Raw Unfiltered Truth']
+  },
+  speedrunner: {
+    id: 'speedrunner',
+    name: 'Speedrun Grinder',
+    tagline: 'Ultra-Concise Bullet Points & Zero Fluff',
+    badge: '⚡ SPEED DEMON',
+    avatarEmoji: '⚡⏱️',
+    gradient: 'from-emerald-400 via-teal-500 to-cyan-500',
+    borderAccent: 'border-emerald-500/50',
+    glowColor: 'rgba(16, 185, 129, 0.4)',
+    voiceStyle: 'High-speed execution plan, strict numbered bullets, zero fluff, fastest grinding routes, and optimal DPS numbers.',
+    description: 'The maximum efficiency cyborg speedrunner. Eliminates all filler words to give you instant numbers and action steps.',
+    sampleGreeting: 'SYSTEM ONLINE. Efficiency mode active. 0% filler words. Drop your question for instant execution metrics.',
+    prefixMotto: '⚡ [EXECUTION DIRECTIVE]:',
+    keyTraits: ['Strict Numbered Bullets Only', 'Zero Fluff / Instant Reading', 'Fastest Obtainment Routes', 'Maximum DPS Stat Priorities']
+  }
+};
+
+const PERSONA_STORAGE_KEY = 'solas_ai_persona_mode';
+
+export function getStoredPersonaMode(): SolasPersonaMode {
+  if (typeof window === 'undefined') return 'grandmaster';
+  try {
+    const raw = localStorage.getItem(PERSONA_STORAGE_KEY);
+    if (raw === 'grandmaster' || raw === 'pirate_king' || raw === 'speedrunner') {
+      return raw;
+    }
+    return 'grandmaster';
+  } catch {
+    return 'grandmaster';
+  }
+}
+
+export function setStoredPersonaMode(mode: SolasPersonaMode): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PERSONA_STORAGE_KEY, mode);
+    window.dispatchEvent(new CustomEvent('blox_fruits_persona_changed', { detail: { mode } }));
+    // Asynchronously update server state
+    fetch('/api/owner/ai-persona', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
+    }).catch(() => {});
+  } catch (err) {
+    console.error('Failed to set persona mode', err);
+  }
+}
+
+export function getPersonaConfig(mode?: SolasPersonaMode): PersonaConfig {
+  const current = mode || getStoredPersonaMode();
+  return PERSONA_CONFIGS[current] || PERSONA_CONFIGS.grandmaster;
+}
+

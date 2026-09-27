@@ -383,15 +383,15 @@ export default function App() {
             />
           )}
 
-          {/* Animated Tab Content Transitions */}
-          <AnimatePresence mode="wait">
+          {/* Animated Tab Content Transitions (GPU-Accelerated, Zero-Lag) */}
+          <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-full"
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full transform-gpu"
             >
               {/* 0. Solas AI Landing Page & 3D Mythic Core */}
               {activeTab === 'landing' && (

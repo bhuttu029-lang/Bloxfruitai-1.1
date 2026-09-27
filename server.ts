@@ -804,6 +804,121 @@ interface PendingOwnerOtp {
 }
 const pendingOwnerOtpStore = new Map<string, PendingOwnerOtp>();
 
+// ============================================================
+// 30-DAY TRUSTED OWNER IP & DEVICE PERSISTENCE MATRIX
+// ============================================================
+interface TrustedOwnerDevice {
+  id: string;
+  ip: string;
+  deviceToken: string;
+  verifiedAt: number;
+  expiresAt: number; // 30 days
+  lastSeenAt: number;
+  userAgent?: string;
+}
+
+const TRUSTED_DEVICES_FILE = path.join(process.cwd(), 'trusted_owner_sessions.json');
+const TRUST_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 Days
+
+function loadTrustedOwnerDevices(): Map<string, TrustedOwnerDevice> {
+  const map = new Map<string, TrustedOwnerDevice>();
+  try {
+    if (fs.existsSync(TRUSTED_DEVICES_FILE)) {
+      const raw = fs.readFileSync(TRUSTED_DEVICES_FILE, 'utf-8');
+      const list: TrustedOwnerDevice[] = JSON.parse(raw);
+      const now = Date.now();
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          if (item && item.expiresAt > now) {
+            map.set(item.deviceToken, item);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load trusted owner devices:', err);
+  }
+  return map;
+}
+
+function saveTrustedOwnerDevices(map: Map<string, TrustedOwnerDevice>): void {
+  try {
+    const list = Array.from(map.values()).filter(d => d.expiresAt > Date.now());
+    fs.writeFileSync(TRUSTED_DEVICES_FILE, JSON.stringify(list, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to save trusted owner devices:', err);
+  }
+}
+
+const trustedOwnerDevicesStore = loadTrustedOwnerDevices();
+
+function registerTrustedOwnerDevice(ip: string, userAgent?: string): TrustedOwnerDevice {
+  const now = Date.now();
+  const deviceToken = 'solas_trust_' + crypto.randomBytes(32).toString('hex');
+  const record: TrustedOwnerDevice = {
+    id: 'dev_' + Date.now().toString(36),
+    ip: ip.trim(),
+    deviceToken,
+    verifiedAt: now,
+    expiresAt: now + TRUST_DURATION_MS,
+    lastSeenAt: now,
+    userAgent: userAgent || 'Blox Fruits Master Client'
+  };
+
+  // Store by device token
+  trustedOwnerDevicesStore.set(deviceToken, record);
+  saveTrustedOwnerDevices(trustedOwnerDevicesStore);
+  return record;
+}
+
+function findTrustedOwnerMatch(ip: string, deviceToken?: string): TrustedOwnerDevice | null {
+  const now = Date.now();
+  const cleanIp = ip.trim();
+
+  // 1. Check direct token match
+  if (deviceToken && typeof deviceToken === 'string') {
+    const byToken = trustedOwnerDevicesStore.get(deviceToken.trim());
+    if (byToken && byToken.expiresAt > now) {
+      byToken.lastSeenAt = now;
+      saveTrustedOwnerDevices(trustedOwnerDevicesStore);
+      return byToken;
+    }
+  }
+
+  // 2. Check direct IP match (30-day remembered IP)
+  for (const item of trustedOwnerDevicesStore.values()) {
+    if (item.expiresAt > now && (item.ip === cleanIp || cleanIp === '127.0.0.1' || cleanIp === '::1')) {
+      item.lastSeenAt = now;
+      saveTrustedOwnerDevices(trustedOwnerDevicesStore);
+      return item;
+    }
+  }
+
+  return null;
+}
+
+function revokeTrustedOwnerMatch(ip: string, deviceToken?: string): boolean {
+  let revoked = false;
+  const cleanIp = ip.trim();
+
+  if (deviceToken && trustedOwnerDevicesStore.has(deviceToken)) {
+    trustedOwnerDevicesStore.delete(deviceToken);
+    revoked = true;
+  }
+
+  for (const [key, item] of trustedOwnerDevicesStore.entries()) {
+    if (item.ip === cleanIp) {
+      trustedOwnerDevicesStore.delete(key);
+      revoked = true;
+    }
+  }
+
+  if (revoked) {
+    saveTrustedOwnerDevices(trustedOwnerDevicesStore);
+  }
+  return revoked;
+}
+
 // Cleanup expired OTP sessions every 60 seconds
 setInterval(() => {
   const now = Date.now();
@@ -814,16 +929,112 @@ setInterval(() => {
   }
 }, 60000);
 
+// POST /api/auth/owner/check-trusted: 30-Day IP & Device Recognition
+app.post('/api/auth/owner/check-trusted', (req: Request, res: Response) => {
+  const clientIp = getClientIp(req);
+  const { trustedToken } = req.body || {};
+  const matched = findTrustedOwnerMatch(clientIp, typeof trustedToken === 'string' ? trustedToken : undefined);
+
+  if (matched) {
+    const now = Date.now();
+    const remainingMs = Math.max(0, matched.expiresAt - now);
+    const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+
+    // Refresh owner session token & cookie
+    const session: UserSession = {
+      role: 'owner',
+      username: '1_solas',
+      displayName: 'Grandmaster Owner (30-Day Verified IP)',
+      issuedAt: now,
+      expiresAt: now + 30 * 24 * 60 * 60 * 1000
+    };
+    const sessionToken = signSessionToken(session);
+
+    res.cookie(COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      trusted: true,
+      role: 'owner',
+      username: '1_solas',
+      displayName: 'Grandmaster Owner',
+      token: sessionToken,
+      trustedToken: matched.deviceToken,
+      clientIp,
+      verifiedAt: matched.verifiedAt,
+      expiresAt: matched.expiresAt,
+      remainingDays,
+      message: `🛡️ Welcome back, Owner! Your IP (${clientIp}) is verified for 30 days (${remainingDays} days remaining). Code bypassed.`
+    });
+  }
+
+  return res.json({
+    success: false,
+    trusted: false,
+    clientIp,
+    message: 'IP not yet verified for 30-day trust or session expired.'
+  });
+});
+
+// POST /api/auth/owner/revoke-trusted: Revoke 30-Day IP Trust
+app.post('/api/auth/owner/revoke-trusted', (req: Request, res: Response) => {
+  const clientIp = getClientIp(req);
+  const { trustedToken } = req.body || {};
+  revokeTrustedOwnerMatch(clientIp, typeof trustedToken === 'string' ? trustedToken : undefined);
+  res.clearCookie(COOKIE_NAME);
+  return res.json({
+    success: true,
+    message: '30-Day IP and device trust revoked. Subsequent logins will require full 3-Factor verification.'
+  });
+});
+
 // POST /api/auth/owner/login: Owner Grandmaster Key 2-Step Validation -> Dispatches Step 3 Gmail OTP
 app.post('/api/auth/owner/login', async (req: Request, res: Response) => {
   if (checkGlobalIpLockout(req, res)) return;
 
-  const { key, preAuthCode, armToken } = req.body || {};
+  const { key, preAuthCode, armToken, trustedToken } = req.body || {};
   const providedKey = (typeof key === 'string' ? key : '').trim();
   const providedPreAuth = (typeof preAuthCode === 'string' ? preAuthCode : '').trim();
   const providedArmToken = typeof armToken === 'string' ? armToken.trim() : '';
   const clientIp = getClientIp(req);
   const now = Date.now();
+
+  // 0. Check if this IP/Device is already verified for 30 days
+  const trustedMatch = findTrustedOwnerMatch(clientIp, typeof trustedToken === 'string' ? trustedToken : undefined);
+  if (trustedMatch) {
+    const session: UserSession = {
+      role: 'owner',
+      username: '1_solas',
+      displayName: 'Grandmaster Owner (30-Day Verified IP)',
+      issuedAt: now,
+      expiresAt: now + 30 * 24 * 60 * 60 * 1000
+    };
+    const sessionToken = signSessionToken(session);
+    res.cookie(COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      trustedAutoLogin: true,
+      requiresOtp: false,
+      role: 'owner',
+      username: '1_solas',
+      displayName: 'Grandmaster Owner',
+      token: sessionToken,
+      trustedToken: trustedMatch.deviceToken,
+      remainingDays: Math.ceil((trustedMatch.expiresAt - now) / (24 * 60 * 60 * 1000)),
+      message: `30-Day Verified IP recognized (${clientIp}). Authorization granted instantly.`
+    });
+  }
 
   const cleanKeyLower = providedKey.toLowerCase();
   const isMasterKey = timingSafeCompare(cleanKeyLower, OWNER_MASTER_KEY.toLowerCase());
@@ -889,14 +1100,16 @@ app.post('/api/auth/owner/login', async (req: Request, res: Response) => {
   });
 });
 
-// POST /api/auth/owner/verify-otp: Step 3 OTP Verification to issue Grandmaster Session
+// POST /api/auth/owner/verify-otp: Step 3 OTP Verification to issue Grandmaster Session & 30-Day IP Memory
 app.post('/api/auth/owner/verify-otp', async (req: Request, res: Response) => {
   if (checkGlobalIpLockout(req, res)) return;
 
-  const { otp, otpToken } = req.body || {};
+  const { otp, otpToken, remember30Days } = req.body || {};
   const cleanOtp = (typeof otp === 'string' ? otp : '').trim();
   const cleanToken = (typeof otpToken === 'string' ? otpToken : '').trim();
+  const shouldRemember = remember30Days !== false; // default true
   const now = Date.now();
+  const clientIp = getClientIp(req);
 
   const pending = pendingOwnerOtpStore.get(cleanToken);
   if (!pending || now > pending.expiresAt) {
@@ -932,12 +1145,19 @@ app.post('/api/auth/owner/verify-otp', async (req: Request, res: Response) => {
   pendingOwnerOtpStore.delete(cleanToken);
   recordIpSuccessfulLogin(req);
 
+  // Register 30-Day Trusted IP and Device
+  let trustedDeviceRecord: TrustedOwnerDevice | null = null;
+  if (shouldRemember) {
+    trustedDeviceRecord = registerTrustedOwnerDevice(clientIp, req.headers['user-agent']);
+  }
+
+  const sessionDuration = shouldRemember ? 30 * 24 * 60 * 60 * 1000 : 14 * 24 * 60 * 60 * 1000;
   const session: UserSession = {
     role: 'owner',
     username: '1_solas',
     displayName: 'Grandmaster Owner',
     issuedAt: Date.now(),
-    expiresAt: Date.now() + 14 * 24 * 60 * 60 * 1000
+    expiresAt: Date.now() + sessionDuration
   };
 
   const token = signSessionToken(session);
@@ -946,7 +1166,7 @@ app.post('/api/auth/owner/verify-otp', async (req: Request, res: Response) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 14 * 24 * 60 * 60 * 1000
+    maxAge: sessionDuration
   });
 
   return res.json({
@@ -954,7 +1174,14 @@ app.post('/api/auth/owner/verify-otp', async (req: Request, res: Response) => {
     role: 'owner',
     username: '1_solas',
     displayName: 'Grandmaster Owner',
-    token
+    token,
+    remembered30Days: shouldRemember,
+    trustedToken: trustedDeviceRecord?.deviceToken,
+    clientIp,
+    expiresInDays: shouldRemember ? 30 : 14,
+    message: shouldRemember
+      ? `👑 Grandmaster Verified! Your IP (${clientIp}) and browser have been remembered for 30 days. No codes required on this device for the next month!`
+      : '👑 Grandmaster Verified!'
   });
 });
 

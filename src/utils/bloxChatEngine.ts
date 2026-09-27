@@ -1,4 +1,14 @@
-import { FruitItem, TradeSideItem, formatValueNumber, getEffectiveFruitList, getStoredCustomResponses, getUserValueOverrides } from '../data/bloxFruitsData';
+import { 
+  FruitItem, 
+  TradeSideItem, 
+  formatValueNumber, 
+  getEffectiveFruitList, 
+  getStoredCustomResponses, 
+  getUserValueOverrides,
+  getStoredPersonaMode,
+  SolasPersonaMode,
+  getPersonaConfig
+} from '../data/bloxFruitsData';
 import {
   FIGHTING_STYLES,
   ACCESSORIES_DATA,
@@ -266,6 +276,45 @@ export function getHardcodedBloxFruitsResponse(
 }
 
 /**
+ * Applies active persona tone styling and catchphrases to AI responses
+ */
+export function applyPersonaVoice(response: string, mode?: SolasPersonaMode): string {
+  const currentMode = mode || getStoredPersonaMode();
+  if (!response || currentMode === 'grandmaster') return response;
+
+  // Ruthless Pirate King
+  if (currentMode === 'pirate_king') {
+    const piratePrefixes = [
+      '🏴‍☠️ **[CAPTAIN\'S DECK — SHARK VERDICT]**\n\n',
+      '🔥 **[PIRATE KING RAW TRUTH]**\n\n',
+      '⚔️ **[AVAST YE! PLUNDER DIRECTIVE]**\n\n'
+    ];
+    const prefix = piratePrefixes[Math.abs(response.length) % piratePrefixes.length];
+    
+    // Convert gentle openings
+    let styled = response
+      .replace(/^(👋\s*)?Greetings[,!]?/i, "🏴‍☠️ Ahoy there!")
+      .replace(/^(👋\s*)?Hello[,!]?/i, "🏴‍☠️ What's good, rookie!");
+
+    return `${prefix}${styled}\n\n---\n*🏴‍☠️ Pirate King Command: Demand maximum booty — never let lowballers rob your vault!*`;
+  }
+
+  // Speedrun Grinder
+  if (currentMode === 'speedrunner') {
+    const speedHeader = '⚡ **[SPEEDRUN OVERCLOCK — 0% FLUFF DIRECTIVE]**\n\n';
+    let cleaned = response
+      .replace(/Greetings[,!]?\s*/gi, '')
+      .replace(/Hello[,!]?\s*/gi, '')
+      .replace(/I am Solas[,.]?\s*/gi, '')
+      .replace(/Hope this helps you on your journey!?/gi, '');
+
+    return `${speedHeader}${cleaned}\n\n---\n*⚡ Speedrun Metric: Zero downtime. Execute steps immediately.*`;
+  }
+
+  return response;
+}
+
+/**
  * Universal NLP & Conversational Grandmaster Engine
  * Evaluates internal hardcoded logic first, and falls back to randomized intelligent responses.
  */
@@ -274,14 +323,30 @@ export function generateLocalOracleResponse(
   tradeContext?: {
     yourItems: TradeSideItem[];
     theirItems: TradeSideItem[];
-  }
+  },
+  personaMode?: SolasPersonaMode
 ): string {
   const hardcodedMatch = getHardcodedBloxFruitsResponse(userQuery, tradeContext);
   if (hardcodedMatch) {
-    return hardcodedMatch;
+    // Keep exact triggers, custom responses, and developer easter eggs unstyled
+    const cleanQuery = userQuery.toLowerCase().trim();
+    if (
+      cleanQuery === 'ad' || 
+      cleanQuery === 'faith' || 
+      cleanQuery === 'mun' || 
+      cleanQuery === 'apple' || 
+      cleanQuery === 'soul' || 
+      cleanQuery.includes('nolan') || 
+      cleanQuery.includes('1_solas') || 
+      cleanQuery.includes('who made you')
+    ) {
+      return hardcodedMatch;
+    }
+    return applyPersonaVoice(hardcodedMatch, personaMode);
   }
 
-  return generateIntelligentBloxFruitsFallback(userQuery);
+  const fallback = generateIntelligentBloxFruitsFallback(userQuery);
+  return applyPersonaVoice(fallback, personaMode);
 }
 
 /**

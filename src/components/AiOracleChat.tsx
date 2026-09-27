@@ -43,7 +43,8 @@ import {
   generateIntelligentBloxFruitsFallback,
   detectAndHandleSecretTriggers,
   detectAndHandleOwnerCustomResponses,
-  detectAndHandleDeveloperQuery
+  detectAndHandleDeveloperQuery,
+  applyPersonaVoice
 } from '../utils/bloxChatEngine';
 import { sanitizeInput } from '../utils/security';
 import { queryWikiForQuestion } from '../utils/browserWikiSync';
@@ -65,7 +66,13 @@ import {
   loginOwnerWithServer, 
   verifyOwnerOtpWithServer,
   armOwnerSequenceOnServer,
-  loginAdminWithServer 
+  loginAdminWithServer,
+  SolasPersonaMode,
+  PersonaConfig,
+  PERSONA_CONFIGS,
+  getStoredPersonaMode,
+  setStoredPersonaMode,
+  getPersonaConfig
 } from '../data/bloxFruitsData';
 import { AuthModal } from './AuthModal';
 
@@ -378,15 +385,28 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
   const [authProfile, setAuthProfile] = useState<UserAuthProfile>(() => getInitialAuthProfile());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [hoursRemainingStr, setHoursRemainingStr] = useState<string>('');
+  const [currentPersona, setCurrentPersona] = useState<SolasPersonaMode>(() => getStoredPersonaMode());
+  const [showPersonaQuickMenu, setShowPersonaQuickMenu] = useState(false);
+
+  useEffect(() => {
+    const handlePersonaChange = (e: any) => {
+      const newMode = e?.detail?.mode || getStoredPersonaMode();
+      setCurrentPersona(newMode);
+    };
+    window.addEventListener('blox_fruits_persona_changed', handlePersonaChange);
+    return () => window.removeEventListener('blox_fruits_persona_changed', handlePersonaChange);
+  }, []);
+
+  const personaConfig = PERSONA_CONFIGS[currentPersona] || PERSONA_CONFIGS.grandmaster;
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       sender: 'ai',
-      text: `Ahoy! I am **Solas**, your Blox Fruits Grandmaster AI & Trading Sensei.\nAsk me anything about item obtainment, Race V4 gears, game mechanics, or trade evaluations!`,
+      text: `${PERSONA_CONFIGS[getStoredPersonaMode()]?.sampleGreeting || 'Ahoy! I am **Solas**, your Blox Fruits Grandmaster AI & Trading Sensei.'}\nAsk me anything about item obtainment, Race V4 gears, game mechanics, or trade evaluations!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       evaluationStatus: {
-        intentType: 'Grandmaster AI Core Ready',
+        intentType: `AI Persona: ${PERSONA_CONFIGS[getStoredPersonaMode()]?.name}`,
         confidenceScore: 100,
         engine: 'Solas Intent Evaluator',
         source: 'Master System Active',
@@ -872,6 +892,11 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       sourceCategory = 'fallback';
     }
 
+    // Apply Active Persona Voice & Tone Transformation
+    if (sourceCategory !== 'secret' && sourceCategory !== 'dev') {
+      replyText = applyPersonaVoice(replyText, currentPersona);
+    }
+
     const evaluationStatus = determineIntentEvaluation(textToSend, replyText, sourceCategory);
 
     soundFX.playWin();
@@ -975,8 +1000,78 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
             </div>
           </div>
 
-          {/* Discord Dev Credits Badge & Auth Tier Button */}
+          {/* Discord Dev Credits Badge & Auth Tier Button & Persona Selector */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            {/* Persona Selector Pill */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playPop();
+                  setShowPersonaQuickMenu(!showPersonaQuickMenu);
+                }}
+                className={`w-full sm:w-auto px-4 py-2.5 rounded-2xl border text-xs font-black flex items-center justify-between gap-2.5 transition-all shadow-lg cursor-pointer active:scale-95 bg-slate-950/90 ${personaConfig.borderAccent} text-white shadow-purple-950/50`}
+                title="Click to toggle Solas AI Persona Voice"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base animate-float">{personaConfig.avatarEmoji}</span>
+                  <span>{personaConfig.name}</span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-lg bg-white/10 text-cyan-200 font-mono border border-white/10">
+                  {personaConfig.badge.split(' ')[0]}
+                </span>
+              </button>
+
+              {/* Persona Quick Dropdown */}
+              <AnimatePresence>
+                {showPersonaQuickMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    className="absolute right-0 top-full mt-2 w-72 p-3 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl shadow-slate-950/90 z-50 space-y-2 backdrop-blur-xl"
+                  >
+                    <div className="flex items-center justify-between px-1 pb-1 border-b border-slate-800 text-[11px] font-bold text-slate-400">
+                      <span>🎭 Select Solas AI Persona</span>
+                      <span className="text-[10px] text-cyan-400">Instant Sync</span>
+                    </div>
+
+                    {(Object.keys(PERSONA_CONFIGS) as SolasPersonaMode[]).map((modeKey) => {
+                      const cfg = PERSONA_CONFIGS[modeKey];
+                      const isSelected = currentPersona === modeKey;
+
+                      return (
+                        <button
+                          key={modeKey}
+                          type="button"
+                          onClick={() => {
+                            soundFX.playWin();
+                            setCurrentPersona(modeKey);
+                            setStoredPersonaMode(modeKey);
+                            setShowPersonaQuickMenu(false);
+                          }}
+                          className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                            isSelected
+                              ? 'bg-slate-950 border-cyan-400 text-white shadow-md'
+                              : 'bg-slate-950/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <span className="text-xl shrink-0">{cfg.avatarEmoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-black truncate">{cfg.name}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+                            </div>
+                            <span className="text-[10px] text-slate-400 block truncate">{cfg.tagline}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button
               id="solas-auth-hub-btn"
               onClick={() => {
