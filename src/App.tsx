@@ -24,6 +24,7 @@ import { CopyrightSecurityModal } from './components/CopyrightSecurityModal';
 import { SecretOwnerVaultModal } from './components/SecretOwnerVaultModal';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { GlobalLiveEventsOverlay } from './components/GlobalLiveEventsOverlay';
+import { LiveMarketTicker } from './components/LiveMarketTicker';
 import { initSecurityProtection, COPYRIGHT_DATA } from './utils/security';
 import { initContinuousBrowserWikiSync } from './utils/browserWikiSync';
 import { soundFX } from './utils/audio';
@@ -367,6 +368,13 @@ export default function App() {
           isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
         }`}
       >
+        {/* Global 2026 Live Market Benchmark Rolling Ticker */}
+        <LiveMarketTicker
+          onSelectItem={(item) => {
+            setInspectedItem(item);
+          }}
+        />
+
         <main className={`flex-1 w-full ${activeTab === 'landing' ? 'p-0 max-w-none' : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6'}`}>
           {/* Top HUD Banner with Animated Status, Moon Timer & Dev Credits (Hidden on Landing Page) */}
           {activeTab !== 'landing' && (

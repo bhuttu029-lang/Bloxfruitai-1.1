@@ -32,7 +32,10 @@ import {
   Clock,
   CheckCircle2,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  ThumbsUp,
+  ThumbsDown,
+  CheckCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundFX } from '../utils/audio';
@@ -419,6 +422,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
   const [selectedCategory, setSelectedCategory] = useState<number>(0);
   const [copiedDcCredit, setCopiedDcCredit] = useState(false);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [messageFeedbacks, setMessageFeedbacks] = useState<Record<string, { rating: 'up' | 'down'; note?: string }>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ownerStep1TimeRef = useRef<number>(0);
   const ownerStep1TextCountRef = useRef<number>(0);
@@ -527,6 +531,27 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     setCopiedMsgId(msgId);
     soundFX.playPop();
     setTimeout(() => setCopiedMsgId(null), 2000);
+  };
+
+  const handleProvideFeedback = async (msgId: string, text: string, rating: 'up' | 'down') => {
+    if (rating === 'up') {
+      soundFX.playWin();
+    } else {
+      soundFX.playPop();
+    }
+    setMessageFeedbacks(prev => ({ ...prev, [msgId]: { rating } }));
+    try {
+      await fetch('/api/ai/memory/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memoryId: msgId,
+          query: text.slice(0, 150),
+          responseSnippet: text.slice(0, 500),
+          rating
+        })
+      });
+    } catch {}
   };
 
   const queryGeminiAiFallback = async (message: string): Promise<string | null> => {
@@ -898,6 +923,19 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     }
 
     const evaluationStatus = determineIntentEvaluation(textToSend, replyText, sourceCategory);
+
+    // Silent Neural Memory Bank Ingestion (Captures & stores knowledge continuously)
+    try {
+      fetch('/api/ai/memory/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: textToSend,
+          responseSnippet: replyText.slice(0, 800),
+          tradeContext: currentTrade
+        })
+      }).catch(() => {});
+    } catch {}
 
     soundFX.playWin();
     setMessages((prev) => [
@@ -1315,44 +1353,88 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                   <span className="font-mono">{msg.timestamp}</span>
 
                   {msg.sender === 'ai' && (
-                    <button
-                      onClick={() => copyMessageText(msg.id, msg.text)}
-                      className="flex items-center gap-1 text-slate-400 hover:text-cyan-300 font-bold transition-colors px-2 py-0.5 rounded bg-slate-900 border border-slate-800 hover:border-cyan-500/30"
-                      title="Copy guide text"
-                    >
-                      {copiedMsgId === msg.id ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-400" />
-                          <span className="text-emerald-400">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy</span>
-                        </>
+                    <div className="flex items-center gap-1.5">
+                      {/* RLHF Reinforcement Learning: Thumbs Up / Down */}
+                      <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-lg p-0.5 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => handleProvideFeedback(msg.id, msg.text, 'up')}
+                          className={`p-1 rounded-md transition-all cursor-pointer ${
+                            messageFeedbacks[msg.id]?.rating === 'up'
+                              ? 'bg-emerald-500/20 text-emerald-400 font-bold'
+                              : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+                          }`}
+                          title="Helpful Answer (+1 Knowledge to Neural Memory)"
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleProvideFeedback(msg.id, msg.text, 'down')}
+                          className={`p-1 rounded-md transition-all cursor-pointer ${
+                            messageFeedbacks[msg.id]?.rating === 'down'
+                              ? 'bg-rose-500/20 text-rose-400 font-bold'
+                              : 'text-slate-400 hover:text-rose-300 hover:bg-rose-500/10'
+                          }`}
+                          title="Needs Improvement (Flags for AI Correction)"
+                        >
+                          <ThumbsDown className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {messageFeedbacks[msg.id]?.rating === 'up' && (
+                        <span className="text-[9px] text-emerald-400 font-bold animate-pulse hidden sm:inline">
+                          ✓ Learned!
+                        </span>
                       )}
-                    </button>
+
+                      <button
+                        onClick={() => copyMessageText(msg.id, msg.text)}
+                        className="flex items-center gap-1 text-slate-400 hover:text-cyan-300 font-bold transition-colors px-2 py-0.5 rounded bg-slate-900 border border-slate-800 hover:border-cyan-500/30"
+                        title="Copy guide text"
+                      >
+                        {copiedMsgId === msg.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-400">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
             </motion.div>
           ))}
 
-          {/* Thinking / Calculating VFX State */}
+          {/* Thinking / Calculating VFX State & Kinetic Shockwave Scanner */}
           {isLoading && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-start gap-3.5"
+              className="relative overflow-hidden flex items-start gap-3.5 p-4 rounded-3xl bg-slate-950/90 border border-cyan-500/50 shadow-xl shadow-cyan-500/20"
             >
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-amber-400 via-cyan-400 to-indigo-600 text-slate-950 flex items-center justify-center text-sm font-black shrink-0 animate-pulse">
+              {/* Kinetic Scanning Laser Wave */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent animate-shimmer pointer-events-none" />
+              
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 via-cyan-400 to-indigo-600 text-slate-950 flex items-center justify-center text-lg font-black shrink-0 animate-spin-slow shadow-md shadow-cyan-500/30">
                 ☀️
               </div>
-              <div className="p-4 rounded-3xl rounded-tl-none bg-slate-950/90 border border-cyan-500/40 text-cyan-300 text-xs sm:text-sm flex items-center gap-3 shadow-lg shadow-cyan-950/30">
-                <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
-                <span className="font-medium animate-pulse">
-                  Querying Solas knowledge core for exact obtainment steps & stats...
-                </span>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
+                  <span className="text-xs font-black uppercase tracking-wider text-cyan-300">
+                    Solas Neural Synthesis Active • {personaConfig.name}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-200 font-medium">
+                  Scanning Blox Fruits 2026 codex, item obtainment vectors, and mathematical trade equity...
+                </p>
               </div>
             </motion.div>
           )}
@@ -1360,7 +1442,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Dynamic Interactive Input Bar */}
+        {/* Dynamic Interactive Input Bar with Haki Charge Aura */}
         <div className="p-4 border-t border-slate-800/90 bg-slate-950/90 backdrop-blur-xl space-y-2.5">
           {/* Quick AI Value & Trade Auto-Render Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
@@ -1405,55 +1487,111 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
             </button>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
-            className="flex items-center gap-3"
-          >
-            <div className="relative flex-1">
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (input.trim() && !isLoading) {
-                      handleSend();
-                    }
-                  }
-                }}
-                placeholder="Ask Solas: 'How to get Cupid Helmet?', 'How to beat bounty bots?', 'How to get CDK?'..."
-                disabled={isLoading}
-                className="w-full pl-4 pr-24 py-3 bg-slate-900/90 border border-slate-800 rounded-2xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 transition-all shadow-inner resize-none max-h-32 min-h-[48px]"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={handleInsertNewline}
-                  className="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-bold border border-slate-700 transition-all shadow-sm cursor-pointer flex items-center gap-0.5"
-                  title="Insert New Line (Change Line on Mobile/Phone)"
-                >
-                  <span>↵</span>
-                  <span>New Line</span>
-                </button>
-              </div>
-            </div>
+          {/* Haki Charge Aura Typing Container */}
+          {(() => {
+            const inputLen = input.trim().length;
+            const hakiTier = inputLen === 0 
+              ? 'dormant' 
+              : inputLen < 18 
+              ? 'observation' 
+              : inputLen < 38 
+              ? 'armament' 
+              : 'conqueror';
 
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="px-5 py-3.5 bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 hover:from-cyan-300 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 rounded-2xl font-black shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 shrink-0"
-            >
-              <span>Transmit</span>
-              <Send className="w-4 h-4" />
-            </motion.button>
-          </form>
+            const hakiBorderClasses = 
+              hakiTier === 'dormant'
+                ? 'border-slate-800 focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-500/25'
+                : hakiTier === 'observation'
+                ? 'border-cyan-400/90 shadow-lg shadow-cyan-500/25 ring-2 ring-cyan-400/30'
+                : hakiTier === 'armament'
+                ? 'border-purple-500/90 shadow-xl shadow-purple-500/35 ring-2 ring-purple-400/40'
+                : 'border-rose-500 shadow-2xl shadow-rose-500/50 ring-4 ring-amber-400/50 animate-pulse';
+
+            return (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="space-y-2"
+              >
+                <div className={`relative flex items-center bg-slate-900/95 rounded-2xl border transition-all duration-300 p-1.5 ${hakiBorderClasses}`}>
+                  <textarea
+                    ref={textareaRef}
+                    rows={1}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (input.trim() && !isLoading) {
+                          handleSend();
+                        }
+                      }
+                    }}
+                    placeholder="Ask Solas: 'How to get Cupid Helmet?', 'How to beat bounty bots?', 'How to get CDK?'..."
+                    disabled={isLoading}
+                    className="w-full pl-3 pr-24 py-2 bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none max-h-32 min-h-[44px]"
+                  />
+
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleInsertNewline}
+                      className="px-2 py-1 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-bold border border-slate-700 transition-all shadow-sm cursor-pointer flex items-center gap-0.5"
+                      title="Insert New Line (Change Line on Mobile/Phone)"
+                    >
+                      <span>↵</span>
+                      <span>Line</span>
+                    </button>
+
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      type="submit"
+                      disabled={!input.trim() || isLoading}
+                      className={`px-3.5 py-2 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md ${
+                        hakiTier === 'conqueror'
+                          ? 'bg-gradient-to-r from-red-500 via-orange-500 to-amber-400 text-slate-950 shadow-rose-500/40 animate-pulse'
+                          : hakiTier === 'armament'
+                          ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-purple-500/30'
+                          : 'bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-600 text-slate-950 shadow-cyan-500/25'
+                      }`}
+                    >
+                      <span>Send</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Real-Time Haki Aura State Meter */}
+                {input.trim().length > 0 && (
+                  <div className="flex items-center justify-between px-1 text-[10px] font-mono">
+                    <div className="flex items-center gap-1.5">
+                      {hakiTier === 'observation' && (
+                        <span className="text-cyan-300 flex items-center gap-1">
+                          <span>🌊 Observation Haki Active</span>
+                          <span className="text-slate-500">({input.trim().length}/18 chars)</span>
+                        </span>
+                      )}
+                      {hakiTier === 'armament' && (
+                        <span className="text-purple-300 flex items-center gap-1 font-bold">
+                          <span>⚡ Armament Haki Hardened</span>
+                          <span className="text-slate-500">({input.trim().length}/38 chars)</span>
+                        </span>
+                      )}
+                      {hakiTier === 'conqueror' && (
+                        <span className="text-amber-300 flex items-center gap-1 font-black animate-pulse">
+                          <span>🔥 CONQUEROR'S HAKI OVERDRIVE!</span>
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-slate-500">Press Enter ↵ to unleash</span>
+                  </div>
+                )}
+              </form>
+            );
+          })()}
 
           {/* 12-Hour Quota & AI Disclaimer Footnote */}
           <div className="mt-2.5 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 gap-1.5 px-1">

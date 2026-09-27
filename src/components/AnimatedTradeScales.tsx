@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { formatValueNumber } from '../data/bloxFruitsData';
 import { soundFX } from '../utils/audio';
-import { Scale, Zap, Sparkles, TrendingUp, TrendingDown, Equal } from 'lucide-react';
+import { Scale, Zap, Sparkles, TrendingUp, TrendingDown, Equal, Swords, Trophy, Flame } from 'lucide-react';
 
 interface AnimatedTradeScalesProps {
   yourTotalValue: number;
@@ -18,17 +18,17 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
   difference,
 }) => {
   const prevDiffRef = useRef<number>(difference);
+  const [isClashing, setIsClashing] = useState<boolean>(false);
+  const [clashFlash, setClashFlash] = useState<boolean>(false);
 
   // Compute scale tilt angle (-14deg to +14deg)
-  // Positive tilt = theirTotalValue > yourTotalValue (They Give is heavier -> tilts clockwise/right)
-  // Negative tilt = yourTotalValue > theirTotalValue (You Give is heavier -> tilts counter-clockwise/left)
   const totalBoth = Math.max(1, yourTotalValue + theirTotalValue);
   const ratio = (theirTotalValue - yourTotalValue) / totalBoth; // -1 to +1
   const tiltAngle = Math.max(-14, Math.min(14, ratio * 28));
 
   // Pan vertical displacement in pixels based on tilt
-  const leftPanY = (tiltAngle / 14) * -20; // If tilt is positive (right down), left goes up
-  const rightPanY = -leftPanY; // If tilt is positive, right goes down
+  const leftPanY = (tiltAngle / 14) * -20;
+  const rightPanY = -leftPanY;
 
   // Play subtle metallic balance tick when balance shifts noticeably
   useEffect(() => {
@@ -37,6 +37,19 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
     }
     prevDiffRef.current = difference;
   }, [difference]);
+
+  const handleTriggerClash = () => {
+    soundFX.playWhoosh();
+    setIsClashing(true);
+    setClashFlash(true);
+    setTimeout(() => {
+      soundFX.playWin();
+      setClashFlash(false);
+    }, 450);
+    setTimeout(() => {
+      setIsClashing(false);
+    }, 1200);
+  };
 
   const isWin = verdict.includes('Win');
   const isLoss = verdict.includes('Loss');
@@ -59,6 +72,19 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
       {/* Background Energy Lines & Clashing Sparks */}
       <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.15),transparent_70%)]" />
 
+      {/* Kinetic Clash Shockwave Flash Overlay */}
+      <AnimatePresence>
+        {clashFlash && (
+          <motion.div
+            initial={{ opacity: 0.8, scale: 0.8 }}
+            animate={{ opacity: 0, scale: 1.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            className="absolute inset-0 z-30 bg-gradient-to-r from-cyan-400/30 via-amber-400/40 to-purple-400/30 backdrop-blur-sm pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header bar of scale */}
       <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-800/80 text-xs">
         <div className="flex items-center gap-2">
@@ -70,14 +96,27 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span className="text-cyan-400 font-semibold flex items-center gap-1">
-            You: {formatValueNumber(yourTotalValue)}
-          </span>
-          <span className="text-slate-600 font-bold">vs</span>
-          <span className="text-purple-400 font-semibold flex items-center gap-1">
-            Them: {formatValueNumber(theirTotalValue)}
-          </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleTriggerClash}
+            disabled={isClashing}
+            className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-purple-500/20 hover:from-amber-500/30 hover:to-purple-500/30 border border-amber-500/40 text-amber-300 font-black text-[10px] uppercase flex items-center gap-1.5 transition-all shadow-sm cursor-pointer active:scale-95"
+            title="Simulate Elemental Clash Battle"
+          >
+            <Swords className="w-3 h-3 text-amber-400 animate-spin-slow" />
+            <span>Simulate Clash</span>
+          </button>
+
+          <div className="flex items-center gap-2 font-mono text-[11px]">
+            <span className="text-cyan-400 font-semibold flex items-center gap-1">
+              You: {formatValueNumber(yourTotalValue)}
+            </span>
+            <span className="text-slate-600 font-bold">vs</span>
+            <span className="text-purple-400 font-semibold flex items-center gap-1">
+              Them: {formatValueNumber(theirTotalValue)}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -96,7 +135,7 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
 
         {/* Articulated Tilting Crossbeam */}
         <motion.div
-          animate={{ rotate: tiltAngle }}
+          animate={{ rotate: isClashing ? [0, -18, 18, tiltAngle] : tiltAngle }}
           transition={{ type: 'spring', stiffness: 120, damping: 14, mass: 0.8 }}
           style={{ transformOrigin: 'center center' }}
           className="absolute top-13 left-1/2 -translate-x-1/2 w-[85%] max-w-md h-2.5 rounded-full bg-gradient-to-r from-cyan-400 via-amber-400 to-purple-400 border border-amber-200/60 shadow-[0_0_12px_rgba(245,158,11,0.4)] z-10 flex items-center justify-between px-1"
@@ -113,7 +152,7 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
 
         {/* Left Pan (You Give) Suspended with Counter-displacement */}
         <motion.div
-          animate={{ y: leftPanY }}
+          animate={{ y: isClashing ? [0, 24, -24, leftPanY] : leftPanY }}
           transition={{ type: 'spring', stiffness: 120, damping: 14, mass: 0.8 }}
           className="absolute top-13 left-[12%] sm:left-[18%] flex flex-col items-center z-10"
         >
@@ -147,7 +186,7 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
 
         {/* Right Pan (They Give) Suspended with Counter-displacement */}
         <motion.div
-          animate={{ y: rightPanY }}
+          animate={{ y: isClashing ? [0, -24, 24, rightPanY] : rightPanY }}
           transition={{ type: 'spring', stiffness: 120, damping: 14, mass: 0.8 }}
           className="absolute top-13 right-[12%] sm:right-[18%] flex flex-col items-center z-10"
         >
@@ -216,3 +255,4 @@ export const AnimatedTradeScales: React.FC<AnimatedTradeScalesProps> = ({
     </div>
   );
 };
+

@@ -41,7 +41,9 @@ import {
   Bot,
   Disc3,
   Music,
-  Send
+  Send,
+  Copy,
+  FileCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -105,7 +107,7 @@ interface SecretOwnerVaultModalProps {
   } | null;
 }
 
-type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'ai_personas' | 'global_events' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
+type VaultTab = 'edit_values' | 'add_new' | 'custom_responses' | 'ai_personas' | 'vip_passcodes' | 'teach_solas' | 'global_events' | 'manage_items' | 'backup_export' | 'manage_suggestions' | 'manage_admins' | 'discord_webhooks';
 
 
 export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
@@ -297,6 +299,172 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
       setPersonaTestResponse(resp);
       setIsGeneratingTestResponse(false);
     }, 80);
+  };
+
+  // VIP Passcode Factory State
+  interface VipPasscodeItem {
+    code: string;
+    label: string;
+    createdBy: string;
+    createdAt: number;
+    redemptions: number;
+    maxRedemptions?: number;
+    expiresAt?: number;
+    active: boolean;
+  }
+  const [vipPasscodesList, setVipPasscodesList] = useState<VipPasscodeItem[]>([]);
+  const [newPasscodeCode, setNewPasscodeCode] = useState<string>('');
+  const [newPasscodeLabel, setNewPasscodeLabel] = useState<string>('');
+  const [newPasscodeDays, setNewPasscodeDays] = useState<number>(30);
+  const [isCreatingPasscode, setIsCreatingPasscode] = useState<boolean>(false);
+
+  // Neural Brain & Teach Solas State
+  interface NeuralEntryItem {
+    id: string;
+    timestamp: number;
+    type: 'user_interaction' | 'owner_lesson' | 'trade_eval' | 'community_qa';
+    query: string;
+    responseSnippet?: string;
+    tags: string[];
+    category: string;
+    confidence: string;
+    upvotes: number;
+    downvotes: number;
+    ownerVerified?: boolean;
+    ownerNotes?: string;
+  }
+  const [neuralEntriesList, setNeuralEntriesList] = useState<NeuralEntryItem[]>([]);
+  const [neuralStats, setNeuralStats] = useState<any>(null);
+  const [newLessonTitle, setNewLessonTitle] = useState<string>('');
+  const [newLessonContent, setNewLessonContent] = useState<string>('');
+  const [newLessonCategory, setNewLessonCategory] = useState<string>('combos');
+  const [newLessonTags, setNewLessonTags] = useState<string>('');
+  const [isSubmittingLesson, setIsSubmittingLesson] = useState<boolean>(false);
+  const [neuralSearchQuery, setNeuralSearchQuery] = useState<string>('');
+  const [neuralCategoryFilter, setNeuralCategoryFilter] = useState<string>('all');
+
+  const loadNeuralBrainData = async () => {
+    try {
+      const [resStats, resEntries] = await Promise.all([
+        fetch('/api/ai/memory/stats'),
+        fetch('/api/owner/ai-memory')
+      ]);
+      if (resStats.ok) {
+        const statsData = await resStats.json();
+        if (statsData.success) setNeuralStats(statsData);
+      }
+      if (resEntries.ok) {
+        const entriesData = await resEntries.json();
+        if (entriesData.success && Array.isArray(entriesData.entries)) {
+          setNeuralEntriesList(entriesData.entries);
+        }
+      }
+    } catch {}
+  };
+
+  const handleTeachSolas = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLessonTitle.trim() || !newLessonContent.trim()) return;
+    setIsSubmittingLesson(true);
+    try {
+      const tagArr = newLessonTags.split(',').map(t => t.trim()).filter(Boolean);
+      const res = await fetch('/api/owner/ai-teach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newLessonTitle.trim(),
+          content: newLessonContent.trim(),
+          category: newLessonCategory,
+          tags: tagArr
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          soundFX.playWin();
+          setNewLessonTitle('');
+          setNewLessonContent('');
+          setNewLessonTags('');
+          setSaveSuccessMsg(`🧠 Solas ingested new lesson: "${data.lesson?.query}"!`);
+          setTimeout(() => setSaveSuccessMsg(null), 3500);
+          loadNeuralBrainData();
+        }
+      }
+    } catch {}
+    setIsSubmittingLesson(false);
+  };
+
+  const handleDeleteNeuralNode = async (id: string) => {
+    soundFX.playPop();
+    try {
+      const res = await fetch(`/api/owner/ai-memory/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setNeuralEntriesList(prev => prev.filter(e => e.id !== id));
+          setSaveSuccessMsg(`🗑️ Pruned memory node: ${id}`);
+          setTimeout(() => setSaveSuccessMsg(null), 2500);
+          loadNeuralBrainData();
+        }
+      }
+    } catch {}
+  };
+
+  const loadVipPasscodes = async () => {
+    try {
+      const res = await fetch('/api/owner/vip-passcodes');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.passcodes)) {
+          setVipPasscodesList(data.passcodes);
+        }
+      }
+    } catch {}
+  };
+
+  const handleCreatePasscode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = newPasscodeCode.trim().toUpperCase();
+    if (!code) return;
+    setIsCreatingPasscode(true);
+    try {
+      const res = await fetch('/api/owner/vip-passcodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, label: newPasscodeLabel.trim() || 'Custom VIP Pass', expiresInDays: newPasscodeDays })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          soundFX.playWin();
+          setVipPasscodesList(data.passcodes || []);
+          setNewPasscodeCode('');
+          setNewPasscodeLabel('');
+          setSaveSuccessMsg(`🎟️ Created VIP Passcode: ${code}!`);
+          setTimeout(() => setSaveSuccessMsg(null), 3500);
+        }
+      }
+    } catch {}
+    setIsCreatingPasscode(false);
+  };
+
+  const handleDeletePasscode = async (code: string) => {
+    soundFX.playPop();
+    try {
+      const res = await fetch(`/api/owner/vip-passcodes/${encodeURIComponent(code)}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setVipPasscodesList(data.passcodes || []);
+          setSaveSuccessMsg(`🗑️ Revoked VIP Passcode: ${code}`);
+          setTimeout(() => setSaveSuccessMsg(null), 3000);
+        }
+      }
+    } catch {}
   };
 
   const handleDeleteSuggestion = (id: string) => {
@@ -531,6 +699,8 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setAdminSuggestions(getStoredSuggestions());
     setAdminAccountsList(getStoredAdminAccounts());
     setCustomResponsesList(getStoredCustomResponses());
+    loadVipPasscodes();
+    loadNeuralBrainData();
   };
 
   useEffect(() => {
@@ -1269,6 +1439,37 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                 >
                   <Bot className="w-4 h-4 text-amber-300 animate-pulse" />
                   <span>🎭 AI Personas ({PERSONA_CONFIGS[currentPersonaMode]?.name.split(' ')[0]})</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundFX.playPop();
+                    setActiveTab('vip_passcodes');
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                    activeTab === 'vip_passcodes'
+                      ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500 text-slate-950 shadow-lg shadow-amber-500/25 font-black'
+                      : 'bg-slate-950/60 text-amber-300 hover:text-white border border-amber-500/30'
+                  }`}
+                >
+                  <Key className="w-4 h-4 text-amber-400" />
+                  <span>🎟️ VIP Passcodes ({vipPasscodesList.length})</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    soundFX.playWin();
+                    setActiveTab('teach_solas');
+                    loadNeuralBrainData();
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                    activeTab === 'teach_solas'
+                      ? 'bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-500 text-slate-950 shadow-lg shadow-cyan-500/25 font-black'
+                      : 'bg-slate-950/60 text-cyan-300 hover:text-white border border-cyan-500/30'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-cyan-400 animate-spin-slow" />
+                  <span>🧠 Teach Solas (Neural Memory)</span>
                 </button>
 
                 <button
@@ -2127,6 +2328,436 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: VIP PASSCODE FACTORY */}
+              {activeTab === 'vip_passcodes' && (
+                <div className="space-y-6">
+                  {/* Passcode Factory Header */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/70 via-yellow-950/50 to-slate-950/90 border border-amber-500/40 relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 via-yellow-400 to-orange-500 flex items-center justify-center text-slate-950 text-2xl font-black shadow-lg shadow-amber-500/30">
+                          🎟️
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-base font-black text-white">VIP Passcode Factory & Key Vault</h4>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              {vipPasscodesList.length} Active Keys
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-0.5">
+                            Generate VIP promo codes for Discord giveaways, subscribers, or VIP users to unlock unlimited searches.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Create New Passcode Form */}
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-4">
+                    <h5 className="text-xs font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                      <Key className="w-4 h-4 text-amber-400" />
+                      <span>Mint New VIP Passcode</span>
+                    </h5>
+
+                    <form onSubmit={handleCreatePasscode} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                      <div className="sm:col-span-4 space-y-1">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Passcode String</label>
+                        <input
+                          type="text"
+                          value={newPasscodeCode}
+                          onChange={(e) => setNewPasscodeCode(e.target.value.toUpperCase())}
+                          placeholder="E.G. PIRATE-KING-VIP"
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-mono uppercase focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-4 space-y-1">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Description / Label</label>
+                        <input
+                          type="text"
+                          value={newPasscodeLabel}
+                          onChange={(e) => setNewPasscodeLabel(e.target.value)}
+                          placeholder="Discord Member Giveaway"
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2 space-y-1">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Duration</label>
+                        <select
+                          value={newPasscodeDays}
+                          onChange={(e) => setNewPasscodeDays(parseInt(e.target.value, 10))}
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
+                        >
+                          <option value={7}>7 Days</option>
+                          <option value={30}>30 Days</option>
+                          <option value={90}>90 Days</option>
+                          <option value={365}>1 Year</option>
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <button
+                          type="submit"
+                          disabled={!newPasscodeCode.trim() || isCreatingPasscode}
+                          className="w-full py-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs transition-all shadow-md shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Mint Pass</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Passcodes Registry Table */}
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-3">
+                    <h5 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                      Active VIP Passcodes Registry ({vipPasscodesList.length})
+                    </h5>
+
+                    <div className="space-y-2">
+                      {vipPasscodesList.map((pass, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono font-black text-sm text-amber-300 bg-amber-950/50 px-2.5 py-0.5 rounded-lg border border-amber-500/30">
+                                {pass.code}
+                              </span>
+                              <span className="text-xs text-slate-200 font-semibold">{pass.label}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold">
+                                ACTIVE
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-3">
+                              <span>Redemptions: <strong className="text-white">{pass.redemptions}</strong></span>
+                              <span>Created by: <strong className="text-cyan-300">{pass.createdBy}</strong></span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                soundFX.playPop();
+                                navigator.clipboard.writeText(pass.code);
+                                setSaveSuccessMsg(`✓ Copied passcode: ${pass.code}`);
+                                setTimeout(() => setSaveSuccessMsg(null), 2500);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePasscode(pass.code)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors cursor-pointer"
+                              title="Revoke Passcode"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {vipPasscodesList.length === 0 && (
+                        <div className="p-8 text-center text-slate-500 text-xs font-bold">
+                          No VIP passcodes minted yet. Generate your first community pass above!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: TEACH SOLAS / AI DYNAMIC NEURAL MEMORY BANK */}
+              {activeTab === 'teach_solas' && (
+                <div className="space-y-6">
+                  {/* Neural Header Banner */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-950/70 via-indigo-950/50 to-purple-950/80 border border-cyan-500/40 relative overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-500 flex items-center justify-center text-slate-950 text-2xl font-black shadow-lg shadow-cyan-500/30">
+                          🧠
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-base font-black text-white">Dynamic Neural Memory & RLHF Bank</h4>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 animate-pulse">
+                              Mode: Silent Accumulator Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-0.5">
+                            Silently absorbing, categorizing, and indexing all player questions, combos, and trade values into an independent database (ai_neural_memory_bank.json) ready for future activation.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                        <a
+                          href="/ai_neural_memory_bank.json"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                          title="Open database raw JSON file in new tab"
+                        >
+                          <FileCode className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>View JSON</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            soundFX.playPop();
+                            const blob = new Blob([JSON.stringify(neuralStats || neuralEntriesList, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'ai_neural_memory_bank.json';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            setSaveSuccessMsg('💾 Downloaded ai_neural_memory_bank.json!');
+                            setTimeout(() => setSaveSuccessMsg(null), 2500);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                          title="Export database to local file"
+                        >
+                          <Download className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Export File</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            soundFX.playPop();
+                            loadNeuralBrainData();
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Refresh</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4 Neural Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1">
+                      <div className="text-[10px] uppercase font-black text-slate-400">Total Memories</div>
+                      <div className="text-xl sm:text-2xl font-black text-white font-mono">
+                        {neuralStats?.totalMemories ?? neuralEntriesList.length}
+                      </div>
+                      <div className="text-[10px] text-cyan-400 font-bold">Indexed Knowledge Nodes</div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1">
+                      <div className="text-[10px] uppercase font-black text-slate-400">High Confidence</div>
+                      <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
+                        {neuralStats?.highConfidenceNodes ?? neuralEntriesList.filter(e => e.confidence === 'verified_owner' || e.confidence === 'high_upvoted').length}
+                      </div>
+                      <div className="text-[10px] text-emerald-300 font-bold">Verified & Upvoted</div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1">
+                      <div className="text-[10px] uppercase font-black text-slate-400">Owner Lessons</div>
+                      <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono">
+                        {neuralStats?.totalOwnerLessons ?? neuralEntriesList.filter(e => e.type === 'owner_lesson').length}
+                      </div>
+                      <div className="text-[10px] text-amber-300 font-bold">1_solas Curated</div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-1">
+                      <div className="text-[10px] uppercase font-black text-slate-400">RLHF Community Votes</div>
+                      <div className="text-xl sm:text-2xl font-black text-purple-400 font-mono">
+                        👍 {neuralStats?.totalUpvotes ?? 0} <span className="text-xs text-slate-500 font-normal">/ 👎 {neuralStats?.totalDownvotes ?? 0}</span>
+                      </div>
+                      <div className="text-[10px] text-purple-300 font-bold">Live Feedback Loop</div>
+                    </div>
+                  </div>
+
+                  {/* Teach Solas Quick Ingestion Form */}
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-4">
+                    <h5 className="text-xs font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-cyan-400" />
+                      <span>Teach Solas (Direct Knowledge Injection)</span>
+                    </h5>
+
+                    <form onSubmit={handleTeachSolas} className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div className="sm:col-span-8 space-y-1">
+                          <label className="text-[11px] font-bold text-slate-400 uppercase">Knowledge Topic / Title</label>
+                          <input
+                            type="text"
+                            value={newLessonTitle}
+                            onChange={(e) => setNewLessonTitle(e.target.value)}
+                            placeholder="E.G. Kitsune + Yama True Stun Combo or Mirage Gear Spawn Timing"
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-4 space-y-1">
+                          <label className="text-[11px] font-bold text-slate-400 uppercase">Category</label>
+                          <select
+                            value={newLessonCategory}
+                            onChange={(e) => setNewLessonCategory(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                          >
+                            <option value="combos">⚔️ Combos & Builds</option>
+                            <option value="obtainment">🗺️ Obtainment & Quests</option>
+                            <option value="trading">💰 Trading & Values</option>
+                            <option value="pvp">🛡️ PvP & Mechanics</option>
+                            <option value="mechanics">⚙️ Awakenings & Stats</option>
+                            <option value="lore">📜 Lore & Secrets</option>
+                            <option value="general">✨ General Strategy</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase">Lesson Content / Execution Steps</label>
+                        <textarea
+                          rows={3}
+                          value={newLessonContent}
+                          onChange={(e) => setNewLessonContent(e.target.value)}
+                          placeholder="Detail the exact formula, damage values, combo sequence, island coordinates, or drop rate..."
+                          className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400 resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                        <div className="sm:col-span-8 space-y-1">
+                          <label className="text-[11px] font-bold text-slate-400 uppercase">Tags (comma-separated)</label>
+                          <input
+                            type="text"
+                            value={newLessonTags}
+                            onChange={(e) => setNewLessonTags(e.target.value)}
+                            placeholder="kitsune, yama, one_shot, combo"
+                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <button
+                            type="submit"
+                            disabled={!newLessonTitle.trim() || !newLessonContent.trim() || isSubmittingLesson}
+                            className="w-full py-2 bg-gradient-to-r from-cyan-400 via-indigo-500 to-purple-500 hover:from-cyan-300 hover:to-purple-400 disabled:opacity-50 text-slate-950 font-black rounded-xl text-xs transition-all shadow-md shadow-cyan-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Ingest Lesson into Solas</span>
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Neural Memory Explorer & Pruning Engine */}
+                  <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <h5 className="text-xs font-black uppercase tracking-wider text-slate-400">
+                        Ingested Neural Nodes ({neuralEntriesList.length})
+                      </h5>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={neuralSearchQuery}
+                          onChange={(e) => setNeuralSearchQuery(e.target.value)}
+                          placeholder="Filter memories..."
+                          className="px-3 py-1 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                        />
+
+                        <select
+                          value={neuralCategoryFilter}
+                          onChange={(e) => setNeuralCategoryFilter(e.target.value)}
+                          className="px-2.5 py-1 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                        >
+                          <option value="all">All Categories</option>
+                          <option value="combos">Combos</option>
+                          <option value="obtainment">Obtainment</option>
+                          <option value="trading">Trading</option>
+                          <option value="pvp">PvP</option>
+                          <option value="mechanics">Mechanics</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 max-h-[420px] overflow-y-auto no-scrollbar pr-1">
+                      {neuralEntriesList
+                        .filter(entry => {
+                          const matchesCat = neuralCategoryFilter === 'all' || entry.category === neuralCategoryFilter;
+                          const matchesSearch = !neuralSearchQuery || 
+                            entry.query.toLowerCase().includes(neuralSearchQuery.toLowerCase()) ||
+                            (entry.responseSnippet && entry.responseSnippet.toLowerCase().includes(neuralSearchQuery.toLowerCase())) ||
+                            entry.tags.some(t => t.toLowerCase().includes(neuralSearchQuery.toLowerCase()));
+                          return matchesCat && matchesSearch;
+                        })
+                        .map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-3"
+                          >
+                            <div className="space-y-1.5 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${
+                                  entry.confidence === 'verified_owner'
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                    : entry.confidence === 'high_upvoted'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                    : 'bg-slate-800 text-slate-300 border border-slate-700'
+                                }`}>
+                                  {entry.confidence === 'verified_owner' ? '👑 Owner Verified' : entry.confidence === 'high_upvoted' ? '⭐ High Upvoted' : '📦 Silent Log'}
+                                </span>
+
+                                <span className="text-[10px] px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-300 border border-cyan-500/30 uppercase font-mono">
+                                  {entry.category}
+                                </span>
+
+                                <span className="text-xs font-bold text-white truncate">
+                                  {entry.query}
+                                </span>
+                              </div>
+
+                              {entry.responseSnippet && (
+                                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed bg-slate-950/60 p-2 rounded-lg border border-slate-800/60">
+                                  {entry.responseSnippet}
+                                </p>
+                              )}
+
+                              <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-400">
+                                <span>Tags: {entry.tags.map(t => `#${t}`).join(' ') || 'none'}</span>
+                                <span>•</span>
+                                <span className="text-emerald-400 font-bold">👍 {entry.upvotes}</span>
+                                <span className="text-rose-400 font-bold">👎 {entry.downvotes}</span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteNeuralNode(entry.id)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-colors cursor-pointer shrink-0 self-end sm:self-start"
+                              title="Prune this memory node"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                      {neuralEntriesList.length === 0 && (
+                        <div className="p-8 text-center text-slate-500 text-xs font-bold">
+                          Neural Brain is initializing. Ask questions in the AI Oracle or submit a lesson above to seed the memory bank!
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

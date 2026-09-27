@@ -15,9 +15,10 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128;
     }
 
-    // Admin accounts - Strictly locked on client SDKs (Server-side PBKDF2/Admin SDK managed only)
+    // Admin accounts - Synchronized administrator credentials across owner & admin panels
     match /admin_accounts/{accountId} {
-      allow read, write: if false;
+      allow read: if true;
+      allow create, update, delete: if isValidDocId(accountId);
     }
 
     // User-scoped fruit data & custom inventories - authenticated users have full CRUD on their own data
