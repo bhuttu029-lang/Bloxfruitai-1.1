@@ -105,6 +105,23 @@ export function initRealtimeFirebaseSync(): () => void {
     }, (err) => console.warn('Realtime custom responses sync warning:', err));
     unsubscribes.push(unsubResponses);
 
+    // 4b. Live admin accounts listener
+    const unsubAdmins = onSnapshot(collection(db, ADMIN_ACCOUNTS_COLLECTION), (snapshot) => {
+      const accounts: AdminAccount[] = [];
+      snapshot.forEach((docSnap) => {
+        accounts.push(docSnap.data() as AdminAccount);
+      });
+      if (accounts.length > 0) {
+        const next = JSON.stringify(accounts);
+        const prev = localStorage.getItem(STORAGE_KEY_ADMIN_ACCOUNTS);
+        if (prev !== next) {
+          localStorage.setItem(STORAGE_KEY_ADMIN_ACCOUNTS, next);
+          window.dispatchEvent(new Event('blox_fruits_admin_accounts_updated'));
+        }
+      }
+    }, (err) => console.warn('Realtime admin accounts sync warning:', err));
+    unsubscribes.push(unsubAdmins);
+
     // 5. Live synchronized Global Broadcast, Disco & AI Directive listener
     const unsubGlobalEvents = onSnapshot(collection(db, GLOBAL_EVENTS_COLLECTION), (snapshot) => {
       const now = Date.now();
@@ -386,6 +403,28 @@ export async function clearGlobalEventFromFirebase(): Promise<void> {
   } catch (err) {
     console.error('Failed to clear global event from Firebase:', err);
     window.dispatchEvent(new CustomEvent('blox_fruits_global_event_cleared', { detail: { id: 'active_live_event' } }));
+  }
+}
+
+export async function pushAdminAccountsToFirebase(accounts: AdminAccount[]): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    for (const acc of accounts) {
+      if (acc.id) {
+        await setDoc(doc(db, ADMIN_ACCOUNTS_COLLECTION, acc.id), acc, { merge: true });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to push admin accounts to Firebase:', err);
+  }
+}
+
+export async function deleteAdminAccountFromFirebase(id: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    await deleteDoc(doc(db, ADMIN_ACCOUNTS_COLLECTION, id));
+  } catch (err) {
+    console.error('Failed to delete admin account from Firebase:', err);
   }
 }
 

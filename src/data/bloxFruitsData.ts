@@ -880,10 +880,13 @@ export function syncAdminAccountsWithServer(): void {
     .catch(() => {});
 }
 
+import { pushAdminAccountsToFirebase, deleteAdminAccountFromFirebase } from '../lib/firebaseSync';
+
 export function pushAdminAccountsToServer(): void {
   if (typeof window === 'undefined') return;
   try {
     const accounts = getStoredAdminAccounts();
+    pushAdminAccountsToFirebase(accounts).catch(() => {});
     const payload = { accounts };
     fetch('/api/owner/admin-accounts', {
       method: 'POST',
@@ -968,6 +971,7 @@ export function createOrUpdateAdminAccount(username: string, password?: string, 
 export function deleteAdminAccount(id: string): void {
   const accounts = getStoredAdminAccounts().filter(a => a.id !== id);
   saveAdminAccounts(accounts);
+  deleteAdminAccountFromFirebase(id).catch(() => {});
 }
 
 // Helper to check valid Grandmaster Owner credentials for resilient offline/Netlify access
