@@ -21,6 +21,7 @@ const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'bhuttu029@gmail.com').trim();
 const OWNER_MASTER_KEY = (process.env.OWNER_MASTER_KEY || 'mouse4770').trim();
 const OWNER_PRE_AUTH_CODE = (process.env.OWNER_PRE_AUTH_CODE || '477047704770').trim();
 const OWNER_COMBINED_KEY = `${OWNER_PRE_AUTH_CODE}${OWNER_MASTER_KEY}`;
+const OWNER_EMERGENCY_RECOVERY_KEY = (process.env.OWNER_EMERGENCY_RECOVERY_KEY || 'adbhaiisthevicecaptainofterra').trim();
 const HMAC_SECRET = (process.env.SESSION_SECRET || process.env.JWT_SECRET || 'solas_grandmaster_vault_netlify_hmac_secret_4770').trim();
 const DEFAULT_GMAIL_PASS = 'ucvfobkmfhtykdut';
 
@@ -161,6 +162,28 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
   if (action === 'login') {
     const providedKey = (typeof body.key === 'string' ? body.key : '').trim().toLowerCase();
     const providedPreAuth = (typeof body.preAuthCode === 'string' ? body.preAuthCode : '').trim();
+    const providedRecoveryKey = (typeof body.recoveryKey === 'string' ? body.recoveryKey : '').trim().toLowerCase();
+
+    // Check emergency recovery phrase
+    if (
+      timingSafeEqualStr(providedKey, OWNER_EMERGENCY_RECOVERY_KEY.toLowerCase()) ||
+      (providedRecoveryKey && timingSafeEqualStr(providedRecoveryKey, OWNER_EMERGENCY_RECOVERY_KEY.toLowerCase()))
+    ) {
+      return {
+        statusCode: 200,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({
+          success: true,
+          role: 'owner',
+          username: '1_solas',
+          displayName: 'Grandmaster Owner (Emergency Key)',
+          verified: true,
+          requiresOtp: false,
+          trustedAutoLogin: true,
+          message: '👑 Grandmaster Verified via Emergency Recovery Key! No email needed.'
+        })
+      };
+    }
 
     const isMasterKey = timingSafeEqualStr(providedKey, OWNER_MASTER_KEY.toLowerCase());
     const isPreAuthValid = timingSafeEqualStr(providedPreAuth, OWNER_PRE_AUTH_CODE);
@@ -303,6 +326,43 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
         success: true,
         otpToken: newOtpToken,
         message: `Fresh 6-digit OTP code dispatched to ${maskEmail(OWNER_EMAIL)}.`
+      })
+    };
+  }
+
+  // 4. ACTION: EMERGENCY_BYPASS (Instant recovery key authentication)
+  if (action === 'emergency_bypass') {
+    const { recoveryKey } = body;
+    const cleanKey = (typeof recoveryKey === 'string' ? recoveryKey : '').trim().toLowerCase();
+
+    if (!cleanKey) {
+      return {
+        statusCode: 400,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ success: false, error: 'Emergency recovery passphrase is required.' })
+      };
+    }
+
+    const isMatch = timingSafeEqualStr(cleanKey, OWNER_EMERGENCY_RECOVERY_KEY.toLowerCase());
+
+    if (!isMatch) {
+      return {
+        statusCode: 401,
+        headers: CORS_HEADERS,
+        body: JSON.stringify({ success: false, error: 'Invalid Emergency Recovery Passphrase.' })
+      };
+    }
+
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        success: true,
+        role: 'owner',
+        username: '1_solas',
+        displayName: 'Grandmaster Owner (Emergency Bypass)',
+        verified: true,
+        message: '👑 Grandmaster Verified via Emergency Recovery Key! Device recognized.'
       })
     };
   }

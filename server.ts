@@ -18,6 +18,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'blox_fruits_master_session
 const OWNER_PRE_AUTH_CODE = '477047704770';
 const OWNER_MASTER_KEY = process.env.OWNER_SECRET_KEY || 'mouse4770';
 const OWNER_COMBINED_KEY = '477047704770mouse4770';
+const OWNER_EMERGENCY_RECOVERY_KEY = process.env.OWNER_EMERGENCY_RECOVERY_KEY || 'adbhaiisthevicecaptainofterra';
 const OWNER_EMAIL = process.env.OWNER_EMAIL || 'bhuttu029@gmail.com';
 const VIP_SEARCH_CODE = process.env.VIP_SEARCH_CODE || 'BLOXLORD_INFINITY_2025';
 
@@ -997,9 +998,10 @@ app.post('/api/auth/owner/revoke-trusted', (req: Request, res: Response) => {
 app.post('/api/auth/owner/login', async (req: Request, res: Response) => {
   if (checkGlobalIpLockout(req, res)) return;
 
-  const { key, preAuthCode, armToken, trustedToken } = req.body || {};
+  const { key, preAuthCode, armToken, trustedToken, recoveryKey } = req.body || {};
   const providedKey = (typeof key === 'string' ? key : '').trim();
   const providedPreAuth = (typeof preAuthCode === 'string' ? preAuthCode : '').trim();
+  const providedRecoveryKey = (typeof recoveryKey === 'string' ? recoveryKey : '').trim();
   const providedArmToken = typeof armToken === 'string' ? armToken.trim() : '';
   const clientIp = getClientIp(req);
   const now = Date.now();
@@ -1037,6 +1039,42 @@ app.post('/api/auth/owner/login', async (req: Request, res: Response) => {
   }
 
   const cleanKeyLower = providedKey.toLowerCase();
+  const cleanRecoveryLower = providedRecoveryKey.toLowerCase();
+
+  // Check direct Emergency Recovery Key entry (No email OTP needed)
+  const isEmergencyDirect = timingSafeCompare(cleanKeyLower, OWNER_EMERGENCY_RECOVERY_KEY.toLowerCase()) ||
+                            (cleanRecoveryLower && timingSafeCompare(cleanRecoveryLower, OWNER_EMERGENCY_RECOVERY_KEY.toLowerCase()));
+  if (isEmergencyDirect) {
+    recordIpSuccessfulLogin(req);
+    const trustedDeviceRecord = registerTrustedOwnerDevice(clientIp, req.headers['user-agent']);
+    const session: UserSession = {
+      role: 'owner',
+      username: '1_solas',
+      displayName: 'Grandmaster Owner (Emergency Key)',
+      issuedAt: now,
+      expiresAt: now + 30 * 24 * 60 * 60 * 1000
+    };
+    const sessionToken = signSessionToken(session);
+    res.cookie(COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000
+    });
+    return res.json({
+      success: true,
+      trustedAutoLogin: true,
+      requiresOtp: false,
+      role: 'owner',
+      username: '1_solas',
+      displayName: 'Grandmaster Owner',
+      token: sessionToken,
+      trustedToken: trustedDeviceRecord?.deviceToken,
+      remainingDays: 30,
+      message: `👑 Emergency Recovery Key Verified! Device (${clientIp}) trusted for 30 days. No email required.`
+    });
+  }
+
   const isMasterKey = timingSafeCompare(cleanKeyLower, OWNER_MASTER_KEY.toLowerCase());
   const isCombinedKey = timingSafeCompare(cleanKeyLower, OWNER_COMBINED_KEY.toLowerCase()) ||
                         timingSafeCompare(cleanKeyLower, `${OWNER_PRE_AUTH_CODE} ${OWNER_MASTER_KEY}`.toLowerCase());
@@ -1226,6 +1264,86 @@ app.post('/api/auth/owner/resend-otp', async (req: Request, res: Response) => {
     success: true,
     message: `New 6-digit OTP code has been dispatched to ${maskEmail(OWNER_EMAIL)}.`,
     expiresIn: 300
+  });
+});
+
+// POST /api/auth/owner/emergency-bypass: Instant Emergency Recovery Key Authorization (No Email Needed)
+app.post('/api/auth/owner/emergency-bypass', async (req: Request, res: Response) => {
+  if (checkGlobalIpLockout(req, res)) return;
+
+  const { recoveryKey, otpToken, remember30Days } = req.body || {};
+  const cleanRecoveryKey = (typeof recoveryKey === 'string' ? recoveryKey : '').trim();
+  const cleanToken = typeof otpToken === 'string' ? otpToken.trim() : '';
+  const shouldRemember = remember30Days !== false;
+  const clientIp = getClientIp(req);
+  const now = Date.now();
+
+  if (!cleanRecoveryKey) {
+    return res.status(400).json({
+      success: false,
+      error: 'Emergency recovery passphrase is required.'
+    });
+  }
+
+  // Constant-time comparison against master emergency passphrase
+  const isMatch = timingSafeCompare(cleanRecoveryKey.toLowerCase(), OWNER_EMERGENCY_RECOVERY_KEY.toLowerCase());
+
+  if (!isMatch) {
+    await artificialDefenseDelay(250);
+    const lockoutStatus = recordIpFailedLogin(req);
+    if (lockoutStatus.locked) {
+      return res.status(429).json({
+        success: false,
+        error: 'Security Lockout Triggered. 5 failed attempts reached. Cooldown lock active for 10 minutes.'
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      error: `Invalid Emergency Recovery Passphrase (Attempt ${lockoutStatus.attempts}/5 before 10m lock)`
+    });
+  }
+
+  // Successfully verified! Reset lockout & clean pending OTP
+  recordIpSuccessfulLogin(req);
+  if (cleanToken && pendingOwnerOtpStore.has(cleanToken)) {
+    pendingOwnerOtpStore.delete(cleanToken);
+  }
+
+  // Register 30-Day Trusted IP and Device
+  let trustedDeviceRecord: TrustedOwnerDevice | null = null;
+  if (shouldRemember) {
+    trustedDeviceRecord = registerTrustedOwnerDevice(clientIp, req.headers['user-agent']);
+  }
+
+  const sessionDuration = shouldRemember ? 30 * 24 * 60 * 60 * 1000 : 14 * 24 * 60 * 60 * 1000;
+  const session: UserSession = {
+    role: 'owner',
+    username: '1_solas',
+    displayName: 'Grandmaster Owner (Emergency Bypass)',
+    issuedAt: now,
+    expiresAt: now + sessionDuration
+  };
+
+  const token = signSessionToken(session);
+
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: sessionDuration
+  });
+
+  return res.json({
+    success: true,
+    role: 'owner',
+    username: '1_solas',
+    displayName: 'Grandmaster Owner',
+    token,
+    remembered30Days: shouldRemember,
+    trustedToken: trustedDeviceRecord?.deviceToken,
+    clientIp,
+    expiresInDays: shouldRemember ? 30 : 14,
+    message: `👑 Grandmaster Verified via Emergency Recovery Passphrase! Your device (${clientIp}) is trusted for 30 days.`
   });
 });
 

@@ -167,6 +167,13 @@ export const TopHud: React.FC<TopHudProps> = ({
           tag: '1_solas Engine',
           color: 'from-amber-400 via-cyan-400 to-indigo-500'
         };
+      case 'stock':
+        return {
+          title: 'Live Discord Stock Bot Feed',
+          subtitle: 'Real-time monitoring of Discord bot stock embeds and dealer rotation messages',
+          tag: 'Live Bot Connected',
+          color: 'from-cyan-400 via-blue-400 to-indigo-500'
+        };
       default:
         return {
           title: 'Blox Fruits Master Hub',

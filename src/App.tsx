@@ -17,6 +17,7 @@ import { AiOracleChat } from './components/AiOracleChat';
 import { TradeLadderNavigator } from './components/TradeLadderNavigator';
 import { MutationLab } from './components/MutationLab';
 import { SuggestionsBoard } from './components/SuggestionsBoard';
+import { LiveStockTrackerTab } from './components/LiveStockTrackerTab';
 import { LandingPage } from './components/LandingPage';
 import { ItemDetailModal } from './components/ItemDetailModal';
 import { ItemSelectorModal } from './components/ItemSelectorModal';
@@ -521,6 +522,10 @@ export default function App() {
               {/* 11. Community Suggestions Hub (Remembered for Life) */}
               {activeTab === 'suggestions' && (
                 <SuggestionsBoard />
+              )}
+
+              {activeTab === 'stock' && (
+                <LiveStockTrackerTab />
               )}
             </motion.div>
           </AnimatePresence>

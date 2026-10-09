@@ -105,6 +105,14 @@ export const APP_ROUTES: RouteConfig[] = [
     title: 'Community Suggestions Hub • Blox Fruits Master Hub',
     shortTitle: 'Visitor Suggestions',
     description: 'Submit, review, and upvote community ideas and feature requests for the Blox Fruits Master Hub.'
+  },
+  {
+    id: 'stock',
+    path: '/stock',
+    aliases: ['/stock', '/bot', '/discord', '/live-stock', '/dealer'],
+    title: 'Live Discord Stock Bot Feed • Blox Fruits Master Hub',
+    shortTitle: 'Discord Stock Bot',
+    description: 'Live real-time feed of stock embeds and messages captured from your Discord bot connection.'
   }
 ];
 

@@ -18,6 +18,7 @@
     "canvas-confetti": "^1.9.4",
     "cookie-parser": "^1.4.7",
     "d3": "^7.9.0",
+    "discord.js": "^14.27.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.17.1",

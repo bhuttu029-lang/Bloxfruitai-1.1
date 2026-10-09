@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShieldCheck, 
+  Shield,
   Lock, 
   Unlock, 
   Key, 
@@ -50,6 +51,7 @@ import {
   getEffectiveFruitList, 
   loginOwnerWithServer,
   verifyOwnerOtpWithServer,
+  verifyOwnerEmergencyKeyWithServer,
   resendOwnerOtpWithServer,
   logoutFromServer,
   getOwnerAuthStatus, 
@@ -131,6 +133,13 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
   const [remember30Days, setRemember30Days] = useState<boolean>(true);
+  
+  // Emergency Master Recovery Key (Zero-email access on any device)
+  const [showEmergencyRecovery, setShowEmergencyRecovery] = useState<boolean>(false);
+  const [emergencyRecoveryInput, setEmergencyRecoveryInput] = useState<string>('');
+  const [showEmergencyText, setShowEmergencyText] = useState<boolean>(false);
+  const [isVerifyingEmergency, setIsVerifyingEmergency] = useState<boolean>(false);
+
   const [trustedIpInfo, setTrustedIpInfo] = useState<{ isTrusted: boolean; remainingDays: number; ip?: string } | null>(() => {
     if (typeof window === 'undefined') return null;
     const expStr = localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY);
@@ -624,7 +633,28 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     const cleanStep1 = step1Input.trim();
     const cleanKey = keyInput.trim();
 
-    if (!cleanKey && !cleanStep1) return;
+    if (!cleanKey && !cleanStep1 && !emergencyRecoveryInput.trim()) return;
+
+    // Direct check if emergency recovery key was entered in ANY input
+    const possibleEmergency = (cleanKey.toLowerCase() === 'adbhaiisthevicecaptainofterra' ? cleanKey : '') ||
+                              (cleanStep1.toLowerCase() === 'adbhaiisthevicecaptainofterra' ? cleanStep1 : '') ||
+                              emergencyRecoveryInput.trim();
+
+    if (possibleEmergency) {
+      const emergencyRes = await verifyOwnerEmergencyKeyWithServer(possibleEmergency, undefined, remember30Days);
+      if (emergencyRes.success) {
+        setIsAuthenticated(true);
+        setIsOtpPending(false);
+        setShowEmergencyRecovery(false);
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        setSaveSuccessMsg(`👑 Verified via Emergency Master Passphrase! Your device is remembered for 30 days.`);
+        setTimeout(() => setSaveSuccessMsg(null), 4000);
+        soundFX.playWin();
+        reloadData();
+        return;
+      }
+    }
 
     // Check if combined key was entered in either field
     const effectiveKey = cleanKey || cleanStep1;
@@ -714,6 +744,47 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
     setOtpInput('');
     setAuthError(null);
     setResendMessage(null);
+  };
+
+  const handleVerifyEmergencyKey = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanKey = emergencyRecoveryInput.trim();
+    if (!cleanKey) {
+      setAuthError('Please enter your Emergency Master Recovery Passphrase.');
+      return;
+    }
+
+    setIsVerifyingEmergency(true);
+    setAuthError(null);
+
+    const res = await verifyOwnerEmergencyKeyWithServer(cleanKey, otpToken || undefined, remember30Days);
+    setIsVerifyingEmergency(false);
+
+    if (res.success) {
+      setIsOtpPending(false);
+      setShowEmergencyRecovery(false);
+      setOwnerAuthStatus(true);
+      setAdminAuthStatus(true);
+      setIsAuthenticated(true);
+      if (remember30Days) {
+        setTrustedIpInfo({
+          isTrusted: true,
+          remainingDays: 30,
+          ip: res.clientIp
+        });
+        setSaveSuccessMsg(`👑 Verified via Emergency Master Passphrase! Your device (${res.clientIp || 'this device'}) is remembered for 30 days — email code bypassed.`);
+      } else {
+        setSaveSuccessMsg('👑 Grandmaster Clearance Verified via Emergency Passphrase!');
+      }
+      setTimeout(() => setSaveSuccessMsg(null), 4500);
+      setEmergencyRecoveryInput('');
+      setAuthError(null);
+      soundFX.playWin();
+      reloadData();
+    } else {
+      setAuthError(res.error || 'Invalid Emergency Recovery Passphrase. Please check your spelling.');
+      soundFX.playPop();
+    }
   };
 
   const handleLogout = async () => {
@@ -1005,8 +1076,15 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
             isOtpPending ? (
               /* STEP 3: GMAIL OTP VERIFICATION */
               <div className="max-w-md mx-auto py-6 text-center space-y-5">
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-400/20 via-blue-500/20 to-indigo-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 relative shadow-lg shadow-cyan-500/20">
-                  <Mail className="w-10 h-10 animate-bounce text-cyan-300" />
+                <div 
+                  onClick={() => {
+                    soundFX.playPop();
+                    setShowEmergencyRecovery(!showEmergencyRecovery);
+                  }}
+                  className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-400/20 via-blue-500/20 to-indigo-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 relative shadow-lg shadow-cyan-500/20 cursor-pointer hover:border-cyan-400 hover:scale-105 active:scale-95 transition-all select-none"
+                  title="Security Gate"
+                >
+                  <Mail className="w-10 h-10 animate-bounce text-cyan-300 pointer-events-none" />
                   <div className="absolute -bottom-1 -right-1 p-1 bg-amber-400 rounded-full text-slate-950">
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
@@ -1112,6 +1190,79 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                         <span>{resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend OTP'}</span>
                       </button>
                     </div>
+
+                    {/* Blended Stealth Seal Toggle */}
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/80 select-none">
+                      <span className="font-mono text-[10px] text-slate-600">Gate #4770 • Node TLS</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playPop();
+                          setShowEmergencyRecovery(!showEmergencyRecovery);
+                          setAuthError(null);
+                        }}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800/90 text-slate-500 hover:text-cyan-400 hover:border-slate-700 transition-colors cursor-pointer"
+                        title="Secondary Override Seal"
+                        aria-label="Security Seal"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400" />
+                        <span className="text-[10px] font-mono">Seal</span>
+                      </button>
+                    </div>
+
+                    {/* Covert Secondary Override Terminal */}
+                    {showEmergencyRecovery && (
+                      <div className="mt-3 p-4 rounded-2xl bg-slate-950 border-2 border-cyan-500/50 space-y-3 text-left shadow-2xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Key className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-mono font-bold text-cyan-300">SECONDARY CLEARANCE OVERRIDE</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              soundFX.playPop();
+                              setShowEmergencyRecovery(false);
+                            }}
+                            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type={showEmergencyText ? 'text' : 'password'}
+                            value={emergencyRecoveryInput}
+                            onChange={(e) => setEmergencyRecoveryInput(e.target.value)}
+                            placeholder="Enter clearance passphrase..."
+                            autoFocus
+                            className="w-full pl-3 pr-10 py-2.5 bg-slate-900 border border-cyan-500/40 focus:border-cyan-400 rounded-xl text-xs font-mono text-cyan-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowEmergencyText(!showEmergencyText)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                          >
+                            {showEmergencyText ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isVerifyingEmergency || !emergencyRecoveryInput.trim()}
+                          onClick={handleVerifyEmergencyKey}
+                          className="w-full py-2.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 disabled:opacity-40 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isVerifyingEmergency ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Unlock className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isVerifyingEmergency ? 'Authenticating...' : 'Submit Override & Unlock'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </form>
 
@@ -1122,8 +1273,16 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
             ) : (
               /* STEPS 1 & 2: PRE-AUTH + MASTER KEY */
               <div className="max-w-md mx-auto py-8 text-center space-y-6">
-                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400/20 via-cyan-400/20 to-indigo-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
-                  <Lock className="w-10 h-10 animate-pulse" />
+                <div 
+                  onClick={() => {
+                    soundFX.playPop();
+                    setShowEmergencyRecovery(!showEmergencyRecovery);
+                    setAuthError(null);
+                  }}
+                  className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400/20 via-cyan-400/20 to-indigo-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 cursor-pointer hover:border-cyan-400 hover:scale-105 active:scale-95 transition-all select-none"
+                  title="Authorization Gate"
+                >
+                  <Lock className="w-10 h-10 animate-pulse pointer-events-none" />
                 </div>
 
                 <div>
@@ -1198,6 +1357,79 @@ export const SecretOwnerVaultModal: React.FC<SecretOwnerVaultModalProps> = ({
                       <Unlock className="w-4 h-4" />
                       <span>Proceed to Step 3 (Mandatory OTP)</span>
                     </button>
+
+                    {/* Blended Stealth Seal Toggle */}
+                    <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800/80 select-none">
+                      <span className="font-mono text-[10px] text-slate-600">Access Terminal • Clearance Engine</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playPop();
+                          setShowEmergencyRecovery(!showEmergencyRecovery);
+                          setAuthError(null);
+                        }}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800/90 text-slate-500 hover:text-cyan-400 hover:border-slate-700 transition-colors cursor-pointer"
+                        title="Secondary Override Seal"
+                        aria-label="Security Seal"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400" />
+                        <span className="text-[10px] font-mono">Seal</span>
+                      </button>
+                    </div>
+
+                    {/* Covert Secondary Override Terminal */}
+                    {showEmergencyRecovery && (
+                      <div className="mt-3 p-4 rounded-2xl bg-slate-950 border-2 border-cyan-500/50 space-y-3 text-left shadow-2xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Key className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-mono font-bold text-cyan-300">SECONDARY CLEARANCE OVERRIDE</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              soundFX.playPop();
+                              setShowEmergencyRecovery(false);
+                            }}
+                            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type={showEmergencyText ? 'text' : 'password'}
+                            value={emergencyRecoveryInput}
+                            onChange={(e) => setEmergencyRecoveryInput(e.target.value)}
+                            placeholder="Enter clearance passphrase..."
+                            autoFocus
+                            className="w-full pl-3 pr-10 py-2.5 bg-slate-900 border border-cyan-500/40 focus:border-cyan-400 rounded-xl text-xs font-mono text-cyan-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowEmergencyText(!showEmergencyText)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                          >
+                            {showEmergencyText ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={isVerifyingEmergency || !emergencyRecoveryInput.trim()}
+                          onClick={handleVerifyEmergencyKey}
+                          className="w-full py-2.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 disabled:opacity-40 text-slate-950 font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {isVerifyingEmergency ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Unlock className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isVerifyingEmergency ? 'Authenticating...' : 'Submit Override & Unlock'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </form>
 

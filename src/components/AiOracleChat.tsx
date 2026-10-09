@@ -65,6 +65,7 @@ import {
   setAdminAuthStatus,
   loginOwnerWithServer, 
   verifyOwnerOtpWithServer,
+  verifyOwnerEmergencyKeyWithServer,
   armOwnerSequenceOnServer,
   loginAdminWithServer,
   SolasPersonaMode,
@@ -611,6 +612,62 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
             id: (Date.now() + 1).toString(),
             sender: 'ai',
             text: `❌ **Invalid OTP Code**\n${verifyRes.error || 'The 6-digit code does not match.'}\n\nPlease check the verification email sent to **bhuttu029@gmail.com**, or restart the authorization sequence.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // 0. Emergency Master Recovery Passphrase in chat (Instant Zero-Email Bypass)
+    const isEmergencyRecoveryInput = 
+      lower === 'adbhaiisthevicecaptainofterra' ||
+      lower === '/emergency adbhaiisthevicecaptainofterra' ||
+      lower === 'emergency: adbhaiisthevicecaptainofterra' ||
+      lower === 'emergency:adbhaiisthevicecaptainofterra' ||
+      lower === 'recovery: adbhaiisthevicecaptainofterra';
+
+    if (isEmergencyRecoveryInput) {
+      const verifyRes = await verifyOwnerEmergencyKeyWithServer('adbhaiisthevicecaptainofterra', ownerOtpTokenRef.current || undefined, true);
+      if (verifyRes.success) {
+        ownerOtpTokenRef.current = null;
+        ownerOtpExpiresRef.current = 0;
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        const unlockedProfile = unlockOwnerSession(authProfile);
+        setAuthProfile(unlockedProfile);
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('blox_fruits_open_owner_vault', { 
+            detail: { 
+              authenticated: true,
+              otpPending: false 
+            } 
+          }));
+        }
+
+        soundFX.playWin();
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            sender: 'ai',
+            text: `👑 **EMERGENCY MASTER CLEARANCE ACCEPTED — ZERO-EMAIL BYPASS ACTIVE**\n\n• **Clearance:** Grandmaster Verified (1_solas Owner Core)\n• **Method:** Emergency Master Recovery Passphrase\n• **Device Status:** Trusted for 30 Days (${verifyRes.clientIp || 'This Device'})\n• **Privileges:** Unlimited AI Inquiries & Full Vault Overrides Granted\n\n⚡ *Opening Grandmaster Control Center now...*`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setIsLoading(false);
+        return;
+      } else {
+        soundFX.playPop();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            sender: 'ai',
+            text: `❌ **Emergency Passphrase Verification Failed**\n${verifyRes.error || 'Invalid recovery key.'}`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }
         ]);

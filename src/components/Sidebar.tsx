@@ -43,6 +43,7 @@ export type NavTabType =
   | 'tradeladder'
   | 'mutationlab'
   | 'suggestions'
+  | 'stock'
   | 'faq' 
   | 'obtainment' 
   | 'progression' 
@@ -173,6 +174,16 @@ const NAV_ITEMS: NavItemConfig[] = [
     badgeColor: 'bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-200 border-amber-400/40',
     accentColor: 'from-amber-400 via-purple-400 to-cyan-500',
     description: 'Remembered for life by Solas AI'
+  },
+  {
+    id: 'stock',
+    label: '🤖 Discord Stock Bot Feed',
+    shortLabel: 'Discord Bot',
+    icon: Radio,
+    badge: 'LIVE BOT',
+    badgeColor: 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border-cyan-400/40',
+    accentColor: 'from-cyan-400 via-blue-400 to-indigo-500',
+    description: 'Real-time Discord stock bot captures'
   }
 ];
 

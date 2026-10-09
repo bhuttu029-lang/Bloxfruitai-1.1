@@ -1129,12 +1129,18 @@ export async function revokeTrustedOwnerOnServer(): Promise<boolean> {
   return true;
 }
 
-export async function loginOwnerWithServer(key: string, preAuthCode?: string, armToken?: string): Promise<OwnerLoginResponse> {
+export async function loginOwnerWithServer(
+  key: string,
+  preAuthCode?: string,
+  armToken?: string,
+  recoveryKey?: string
+): Promise<OwnerLoginResponse> {
   const cleanKey = (key || '').trim();
   const cleanPre = (preAuthCode || '').trim();
+  const cleanRecovery = (recoveryKey || '').trim();
   const trustedToken = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN) || undefined : undefined;
 
-  if (!cleanKey && !cleanPre && !trustedToken) {
+  if (!cleanKey && !cleanPre && !cleanRecovery && !trustedToken) {
     return { success: false, error: 'Pre-authorization code and Master Clearance Key are required.' };
   }
 
@@ -1143,7 +1149,7 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
     const res = await fetch('/api/auth/owner/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: cleanKey, preAuthCode: cleanPre, armToken, trustedToken })
+      body: JSON.stringify({ key: cleanKey, preAuthCode: cleanPre, armToken, trustedToken, recoveryKey: cleanRecovery })
     });
     if (res.ok) {
       const data = await res.json();
@@ -1151,6 +1157,11 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
         if (data.trustedAutoLogin) {
           setOwnerAuthStatus(true);
           setAdminAuthStatus(true);
+          if (data.trustedToken && typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN, data.trustedToken);
+            const expiryTime = Date.now() + 30 * 24 * 60 * 60 * 1000;
+            localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY, expiryTime.toString());
+          }
           return {
             success: true,
             requiresOtp: false,
@@ -1184,11 +1195,22 @@ export async function loginOwnerWithServer(key: string, preAuthCode?: string, ar
     const netlifyRes = await fetch('/.netlify/functions/owner-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'login', key: cleanKey, preAuthCode: cleanPre, armToken })
+      body: JSON.stringify({ action: 'login', key: cleanKey, preAuthCode: cleanPre, armToken, recoveryKey: cleanRecovery })
     });
     if (netlifyRes.ok) {
       const netlifyData = await netlifyRes.json();
       if (netlifyData.success) {
+        if (netlifyData.trustedAutoLogin) {
+          setOwnerAuthStatus(true);
+          setAdminAuthStatus(true);
+          return {
+            success: true,
+            requiresOtp: false,
+            trustedAutoLogin: true,
+            remainingDays: 30,
+            message: netlifyData.message
+          };
+        }
         if (netlifyData.requiresOtp && netlifyData.otpToken) {
           return {
             success: true,
@@ -1317,6 +1339,76 @@ export async function resendOwnerOtpWithServer(otpToken: string): Promise<{ succ
   } catch {}
 
   return { success: false, error: 'Failed to resend OTP code. Please retry in a few moments.' };
+}
+
+export async function verifyOwnerEmergencyKeyWithServer(
+  recoveryKey: string,
+  otpToken?: string,
+  remember30Days: boolean = true
+): Promise<{ success: boolean; error?: string; remembered30Days?: boolean; clientIp?: string; message?: string }> {
+  const cleanKey = (recoveryKey || '').trim();
+  if (!cleanKey) {
+    return { success: false, error: 'Please enter your emergency recovery passphrase.' };
+  }
+
+  // 1. Try Express backend
+  try {
+    const res = await fetch('/api/auth/owner/emergency-bypass', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recoveryKey: cleanKey, otpToken, remember30Days })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success) {
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        if (data.trustedToken && typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_TOKEN, data.trustedToken);
+        }
+        if (data.remembered30Days && typeof window !== 'undefined') {
+          const expiryTime = Date.now() + 30 * 24 * 60 * 60 * 1000;
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_EXPIRY, expiryTime.toString());
+        }
+        if (data.clientIp && typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY_OWNER_TRUSTED_IP, data.clientIp);
+        }
+        return {
+          success: true,
+          remembered30Days: data.remembered30Days,
+          clientIp: data.clientIp,
+          message: data.message
+        };
+      }
+      return { success: false, error: data.error || 'Invalid Emergency Recovery Passphrase.' };
+    }
+  } catch {
+    // Fallback to Netlify serverless function
+  }
+
+  // 2. Try Netlify function
+  try {
+    const netlifyRes = await fetch('/.netlify/functions/owner-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'emergency_bypass', recoveryKey: cleanKey })
+    });
+    if (netlifyRes.ok) {
+      const netlifyData = await netlifyRes.json();
+      if (netlifyData.success) {
+        setOwnerAuthStatus(true);
+        setAdminAuthStatus(true);
+        return {
+          success: true,
+          remembered30Days: true,
+          message: netlifyData.message || '👑 Grandmaster Verified via Emergency Recovery Passphrase!'
+        };
+      }
+      return { success: false, error: netlifyData.error || 'Invalid Emergency Recovery Passphrase.' };
+    }
+  } catch {}
+
+  return { success: false, error: 'Failed to verify emergency recovery passphrase. Please verify server connection.' };
 }
 
 export async function logoutFromServer(): Promise<void> {
