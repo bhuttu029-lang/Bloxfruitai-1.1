@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+gemini_keys_store.json
+*.key
+*.pem
