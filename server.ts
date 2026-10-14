@@ -735,59 +735,65 @@ async function callGeminiWithKeyRotation(params: {
       let modelToUse = targetModel;
       let response: any = null;
 
-      // Configure low-latency thinking levels for instant generation speed
-      const isLite = modelToUse === 'gemini-3.1-flash-lite';
-      const thinkingLevel = isLite ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW;
+      // Primary and fallback models to try before giving up on this key
+      const candidateModels = Array.from(new Set([
+        modelToUse,
+        'gemini-3.1-flash-lite',
+        'gemini-3-flash-preview',
+        'gemini-flash-lite-latest',
+        'gemini-3.8-flash'
+      ]));
 
-      try {
-        response = await ai.models.generateContent({
-          model: modelToUse,
-          contents: params.contents,
-          config: {
-            systemInstruction: params.systemInstruction || undefined,
-            thinkingConfig: {
-              thinkingLevel
+      let modelSuccess = false;
+      let lastModelError: any = null;
+
+      for (const candModel of candidateModels) {
+        try {
+          const isLite = candModel.includes('lite') || candModel.includes('3.1');
+          const thinkingLevel = isLite ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW;
+
+          response = await ai.models.generateContent({
+            model: candModel,
+            contents: params.contents,
+            config: {
+              systemInstruction: params.systemInstruction || undefined,
+              thinkingConfig: {
+                thinkingLevel
+              }
             }
+          });
+
+          if (response?.text) {
+            modelToUse = candModel as StrictGeminiModel;
+            modelSuccess = true;
+            break;
           }
-        });
-      } catch (modelErr: any) {
-        const errMsg = String(modelErr?.message || modelErr).toLowerCase();
-        // Fallback within strict 3.x models
-        if (modelToUse === 'gemini-3.1-flash-lite' && (errMsg.includes('not found') || errMsg.includes('unsupported') || errMsg.includes('404'))) {
-          console.warn('gemini-3.1-flash-lite unavailable in region, falling back strictly to gemini-3.8-flash...');
-          modelToUse = 'gemini-3.8-flash';
-          response = await ai.models.generateContent({
-            model: modelToUse,
-            contents: params.contents,
-            config: {
-              systemInstruction: params.systemInstruction || undefined,
-              thinkingConfig: {
-                thinkingLevel: ThinkingLevel.LOW
-              }
-            }
-          });
-        } else if (modelToUse === 'gemini-3.6-flash' && (errMsg.includes('not found') || errMsg.includes('unsupported') || errMsg.includes('404'))) {
-          console.warn('gemini-3.6-flash not found in region, falling back strictly to gemini-3.1-flash-lite...');
-          modelToUse = 'gemini-3.1-flash-lite';
-          response = await ai.models.generateContent({
-            model: modelToUse,
-            contents: params.contents,
-            config: {
-              systemInstruction: params.systemInstruction || undefined,
-              thinkingConfig: {
-                thinkingLevel: ThinkingLevel.MINIMAL
-              }
-            }
-          });
-        } else {
-          throw modelErr;
+        } catch (candErr: any) {
+          lastModelError = candErr;
+          const candErrMsg = String(candErr?.message || candErr).toLowerCase();
+          // If 503, 404, or unavailable, try the next candidate model on this same key
+          const isModelSpecific = 
+            candErrMsg.includes('503') || 
+            candErrMsg.includes('404') || 
+            candErrMsg.includes('not found') || 
+            candErrMsg.includes('high demand') || 
+            candErrMsg.includes('unavailable') ||
+            candErrMsg.includes('unsupported');
+
+          if (isModelSpecific) {
+            continue;
+          } else {
+            // General auth/quota error: throw to outer handler to cycle keys
+            throw candErr;
+          }
         }
       }
 
-      const text = response?.text || '';
-      if (!text) {
-        throw new Error('Gemini returned empty response text');
+      if (!modelSuccess || !response?.text) {
+        throw lastModelError || new Error('All model candidates failed on this key');
       }
+
+      const text = response.text;
 
       // Mark success
       keyEntry.status = 'active';
@@ -813,13 +819,14 @@ async function callGeminiWithKeyRotation(params: {
         errStr.includes('429') ||
         errStr.includes('resource_exhausted') ||
         errStr.includes('quota') ||
-        errStr.includes('rate limit') ||
-        errStr.includes('exhausted') ||
+        errStr.includes('rate limit');
+
+      const isAuthError =
         errStr.includes('api key not valid') ||
         errStr.includes('unauthorized') ||
         errStr.includes('forbidden');
 
-      if (isQuotaOrExhausted) {
+      if (isQuotaOrExhausted || isAuthError) {
         keyEntry.status = 'exhausted';
         keyEntry.exhaustedUntil = Date.now() + 10 * 60 * 1000; // 10 min cooldown
         keyEntry.failureCount = (keyEntry.failureCount || 0) + 1;
@@ -834,8 +841,9 @@ async function callGeminiWithKeyRotation(params: {
         console.log(`🔄 [GEMINI AUTO-CYCLE] Key exhausted. Auto-cycled to Key #${currentIndex + 1} (${geminiPoolState.keys[currentIndex]?.maskedKey})`);
         continue;
       } else {
+        // Transient server spike (503 / Network): Increment count, cycle to next key WITHOUT long ban
         keyEntry.failureCount = (keyEntry.failureCount || 0) + 1;
-        keyEntry.lastError = err?.message || 'Error occurred';
+        keyEntry.lastError = err?.message || 'Temporary server spike';
         currentIndex = (currentIndex + 1) % geminiPoolState.keys.length;
         geminiPoolState.activeKeyIndex = currentIndex;
         rotated = true;
@@ -844,7 +852,7 @@ async function callGeminiWithKeyRotation(params: {
     }
   }
 
-  throw new Error(`All Gemini API keys in pool exhausted or unavailable (${attempts} keys tried). ${lastError?.message || 'Rate limit'}`);
+  throw new Error(`All Gemini API keys in pool exhausted or temporarily unavailable (${attempts} keys tried). ${lastError?.message || 'Server busy'}`);
 }
 
 // API: Health check
@@ -2890,6 +2898,7 @@ Provide a direct, accurate, and well-structured answer immediately. Avoid unnece
       keyUsed: result.keyUsedMasked,
       keyRotated: result.rotated,
       attempts: result.attempts,
+      totalKeysInPool: geminiPoolState.keys.length,
       source: result.modelUsed,
       latencyMs
     });
@@ -2898,6 +2907,7 @@ Provide a direct, accurate, and well-structured answer immediately. Avoid unnece
     return res.status(503).json({
       success: false,
       error: err?.message || 'AI service temporarily unavailable (all keys exhausted)',
+      totalKeysInPool: geminiPoolState.keys.length,
       domain,
       fallbackRequired: domain === 'blox_fruits',
       latencyMs: Date.now() - startTime
@@ -3372,13 +3382,43 @@ app.post('/api/owner/gemini-keys/test', requireOwner, async (req: Request, res: 
       httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
     });
 
-    const modelToUse = geminiPoolState.preferredModel || 'gemini-3.8-flash';
-    const testRes = await ai.models.generateContent({
-      model: modelToUse,
-      contents: [{ role: 'user', parts: [{ text: 'Respond with exactly: "GEMINI_POOL_VERIFIED_ONLINE"' }] }]
-    });
+    const testModels = Array.from(new Set([
+      geminiPoolState.preferredModel || 'gemini-3.1-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3-flash-preview',
+      'gemini-flash-lite-latest',
+      'gemini-3.8-flash'
+    ]));
 
-    const text = testRes.text || '';
+    let text = '';
+    let verifiedModel = '';
+    let lastErr: any = null;
+
+    for (const m of testModels) {
+      try {
+        const testRes = await ai.models.generateContent({
+          model: m,
+          contents: [{ role: 'user', parts: [{ text: 'Respond with exactly: "GEMINI_POOL_VERIFIED_ONLINE"' }] }]
+        });
+        if (testRes.text) {
+          text = testRes.text;
+          verifiedModel = m;
+          break;
+        }
+      } catch (err: any) {
+        lastErr = err;
+        const errMsg = String(err?.message || err).toLowerCase();
+        if (errMsg.includes('503') || errMsg.includes('404') || errMsg.includes('not found') || errMsg.includes('high demand') || errMsg.includes('unavailable')) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!text) {
+      throw lastErr || new Error('All model verification attempts failed');
+    }
+
     targetKey.status = 'active';
     targetKey.lastUsedAt = Date.now();
     targetKey.successCount = (targetKey.successCount || 0) + 1;
@@ -3387,9 +3427,9 @@ app.post('/api/owner/gemini-keys/test', requireOwner, async (req: Request, res: 
 
     return res.json({
       success: true,
-      message: `Key ${targetKey.maskedKey} successfully verified with model ${modelToUse}!`,
+      message: `Key ${targetKey.maskedKey} successfully verified with model ${verifiedModel}!`,
       response: text.trim(),
-      model: modelToUse
+      model: verifiedModel
     });
   } catch (err: any) {
     targetKey.failureCount = (targetKey.failureCount || 0) + 1;

@@ -255,6 +255,7 @@ interface GeminiResponseData {
   keyUsed?: string;
   keyRotated?: boolean;
   error?: string;
+  totalKeysInPool?: number;
   latencyMs?: number;
   cached?: boolean;
 }
@@ -966,8 +967,14 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
         sourceCategory = 'gemini';
       } else if (!isBlox) {
         // NON-BLOX FRUITS TOPIC: Strictly use Gemini API, do NOT use hardcoded Blox Fruits fallbacks
+        const keysCount = geminiResult?.totalKeysInPool;
         const errorDetail = geminiResult?.error ? `\n\n*Diagnostics: ${geminiResult.error}*` : '';
-        replyText = `⚡ **Gemini AI Intelligence Engine**\n\nThis inquiry was identified as a general topic. All answers for general inquiries are routed strictly through the Google Gemini API key pool (strictly models 3.8, 3.1, and 3.6).${errorDetail}\n\n🔑 *Please ensure at least one valid Gemini API key is configured in the Owner Vault Key Pool.*`;
+        
+        if (typeof keysCount === 'number' && keysCount > 0) {
+          replyText = `⚡ **Gemini AI Intelligence Engine**\n\nAll **${keysCount} Gemini API keys** are installed and active in your pool, but Google's Gemini API is currently experiencing a temporary high-demand spike (503 Service Unavailable).${errorDetail}\n\n🔄 *The key pool is auto-cycling. Please resend your message in a few moments, or toggle between Turbo and Balanced speed mode.*`;
+        } else {
+          replyText = `⚡ **Gemini AI Intelligence Engine**\n\nThis inquiry was identified as a general topic and requires the Google Gemini API.${errorDetail}\n\n🔑 *Please configure at least one valid Gemini API key in the Owner Vault Key Pool.*`;
+        }
         sourceCategory = 'gemini';
       }
     }
