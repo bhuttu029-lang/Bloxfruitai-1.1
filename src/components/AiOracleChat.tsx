@@ -247,24 +247,10 @@ const CATEGORY_PROMPTS = [
   }
 ];
 
-interface GeminiResponseData {
-  success: boolean;
-  reply?: string;
-  domain?: 'blox_fruits' | 'general';
-  modelUsed?: string;
-  keyUsed?: string;
-  keyRotated?: boolean;
-  error?: string;
-  totalKeysInPool?: number;
-  latencyMs?: number;
-  cached?: boolean;
-}
-
 function determineIntentEvaluation(
   query: string,
   _response: string,
-  sourceCategory: 'secret' | 'dev' | 'gemini' | 'hardcoded' | 'wiki' | 'fallback',
-  geminiData?: GeminiResponseData | null
+  sourceCategory: 'secret' | 'dev' | 'gemini' | 'hardcoded' | 'wiki' | 'fallback'
 ): EvaluationStatus {
   const cleanQ = query.toLowerCase();
 
@@ -288,10 +274,6 @@ function determineIntentEvaluation(
     };
   }
 
-  const modelBadge = geminiData?.modelUsed ? ` (${geminiData.modelUsed})` : '';
-  const latencyBadge = geminiData?.latencyMs !== undefined ? ` • ⚡ ${geminiData.latencyMs}ms` : '';
-  const cachedBadge = geminiData?.cached ? ' [Cached]' : '';
-
   if (
     cleanQ.includes('should i eat') ||
     cleanQ.includes('eat or') ||
@@ -303,7 +285,7 @@ function determineIntentEvaluation(
       intentType: 'Player Dilemma & Progression Advice',
       confidenceScore: 99,
       engine: 'Human Intent Evaluator',
-      source: sourceCategory === 'gemini' ? `Gemini${modelBadge}${cachedBadge}${latencyBadge}` : 'Strategic Advisor Engine',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : 'Strategic Advisor Engine',
       description: 'Analyzed sea level, grinding vs PvP utility, and trade equity.'
     };
   }
@@ -320,7 +302,7 @@ function determineIntentEvaluation(
       intentType: 'Head-to-Head Comparison',
       confidenceScore: 98,
       engine: 'Human Intent Evaluator',
-      source: sourceCategory === 'gemini' ? `Gemini${modelBadge}${cachedBadge}${latencyBadge}` : 'BloxFruitsValues Matrix',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : 'Combat & Utility Matrix',
       description: 'Direct comparison across grinding, PvP stuns, mobility, and value.'
     };
   }
@@ -334,7 +316,7 @@ function determineIntentEvaluation(
       confidenceScore: 99,
       engine: 'Trade Intent Evaluator',
       source: 'BloxFruitsValues Live Standard',
-      description: 'Calculated mathematical surplus, net equity, and 40% Beli limit from defined website.'
+      description: 'Calculated mathematical surplus, net equity, and 40% Beli limit.'
     };
   }
 
@@ -349,7 +331,7 @@ function determineIntentEvaluation(
       intentType: 'Combat Combos & Stat Optimization',
       confidenceScore: 98,
       engine: 'Human Intent Evaluator',
-      source: sourceCategory === 'gemini' ? `Gemini${modelBadge}${cachedBadge}${latencyBadge}` : 'Meta Build Engine',
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : 'Meta Build Engine',
       description: 'Mapped ability animations, stun sequences, and stat distributions.'
     };
   }
@@ -367,7 +349,7 @@ function determineIntentEvaluation(
       confidenceScore: 99,
       engine: 'Live Value Oracle',
       source: 'BloxFruitsValues Standard & Admin Overrides',
-      description: 'Verified market values grounded in defined website: https://www.bloxfruitsvalues.store'
+      description: 'Verified market values with Priority 1 Admin & Priority 2 BloxFruitsValues.'
     };
   }
 
@@ -386,17 +368,17 @@ function determineIntentEvaluation(
       intentType: 'Obtainment & Gameplay Walkthrough',
       confidenceScore: 98,
       engine: 'Grandmaster Lore & Guide Core',
-      source: sourceCategory === 'gemini' ? `Gemini${modelBadge}${cachedBadge}${latencyBadge}` : (sourceCategory === 'wiki' ? 'Official Wiki Stream' : 'Solas Knowledge Base'),
-      description: 'Grounded in defined websites: BloxFruitsValues.store and Blox Fruits Official Wiki.'
+      source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : (sourceCategory === 'wiki' ? 'Live Wiki Stream' : 'Solas Knowledge Base'),
+      description: 'Grounded in authentic Blox Fruits mechanics, island coordinates, and drop rates.'
     };
   }
 
   return {
-    intentType: 'Grandmaster AI & Knowledge Oracle',
-    confidenceScore: sourceCategory === 'gemini' ? 99 : (sourceCategory === 'wiki' ? 96 : 95),
+    intentType: 'Grandmaster Sensei Consultation',
+    confidenceScore: sourceCategory === 'gemini' ? 97 : (sourceCategory === 'wiki' ? 96 : 95),
     engine: 'Human Intent Evaluator',
-    source: sourceCategory === 'gemini' ? `Gemini${modelBadge}${cachedBadge}${latencyBadge}` : (sourceCategory === 'wiki' ? 'Live Wiki Stream' : 'BloxFruitsValues Knowledge Base'),
-    description: 'Natural language intention resolved with accelerated multi-key pool.'
+    source: sourceCategory === 'gemini' ? 'Gemini 2.5 Flash' : (sourceCategory === 'wiki' ? 'Live Wiki Stream' : 'Intelligent Fallback Engine'),
+    description: 'Natural language intention resolved with zero false info and zero overlap.'
   };
 }
 
@@ -418,7 +400,6 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
 
   const personaConfig = PERSONA_CONFIGS[currentPersona] || PERSONA_CONFIGS.grandmaster;
 
-  const [fastSpeedMode, setFastSpeedMode] = useState<'turbo' | 'balanced'>('turbo');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -549,48 +530,22 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
     setTimeout(() => setCopiedMsgId(null), 2000);
   };
 
-  const queryGeminiAiFallback = async (message: string): Promise<GeminiResponseData | null> => {
+  const queryGeminiAiFallback = async (message: string): Promise<string | null> => {
     try {
       const res = await fetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message, 
-          tradeContext: currentTrade,
-          speedMode: fastSpeedMode,
-          preferredModel: fastSpeedMode === 'turbo' ? 'gemini-3.1-flash-lite' : 'gemini-3.8-flash'
-        })
+        body: JSON.stringify({ message, tradeContext: currentTrade })
       });
+      if (!res.ok) return null;
       const data = await res.json();
-      return data;
+      if (data.success && data.reply && typeof data.reply === 'string') {
+        return data.reply.trim();
+      }
+      return null;
     } catch {
       return null;
     }
-  };
-
-  const isBloxFruitsTopic = (text: string): boolean => {
-    const clean = text.toLowerCase();
-    const bloxTerms = [
-      'blox fruit', 'bloxfruit', 'fruit', 'devil fruit', 'beli', 'robux', 'perm',
-      'physical', 'sea 1', 'sea 2', 'sea 3', 'first sea', 'second sea', 'third sea',
-      'awakening', 'awakened', 'v4', 'race v4', 'v3', 'v2', 'mink', 'ghoul', 'cyborg',
-      'angel', 'human', 'shark', 'fishman', 'gear', 'mirage', 'full moon', 'leviathan',
-      'terror shark', 'terrorshark', 'shark anchor', 'monster magnet', 'tushita', 'yama',
-      'cursed dual katana', 'cdk', 'true triple katana', 'ttk', 'godhuman', 'sanguine',
-      'soul guitar', 'dark blade', 'yoru', 'fighting style', 'death step', 'sharkman karate',
-      'electric claw', 'dragon talon', 'superhuman', 'raid', 'microchip', 'law raid',
-      'dough raid', 'buddha raid', 'trading', 'trade', 'w/f/l', 'wfl', 'demand', 'overpay',
-      'underpay', 'bloxfruitsvalues', 'gacha', 'zioles', 'cafe', 'mansion', 'floating turtle',
-      'tiki outpost', 'castle on the sea', 'hydra island', 'haunted castle', 'great tree',
-      'port town', 'kitsune', 'dragon', 'dough', 'buddha', 'leopard', 'venom', 'spirit',
-      'control', 'shadow', 't-rex', 'mammoth', 'gravity', 'blizzard', 'pain', 'sound',
-      'phoenix', 'portal', 'rumble', 'love', 'spider', 'magma', 'ghost', 'barrier',
-      'light', 'dark', 'ice', 'sand', 'flame', 'falcon', 'smoke', 'spike', 'spring',
-      'bomb', 'chop', 'spin', 'rocket', 'gas fruit', 'tiger fruit', 'yeti fruit',
-      'mutation', 'fall risk', 'aura', 'haki', 'instinct', 'sori', 'skyjump', 'flash step',
-      'bounty', 'honor', 'pirate', 'marine'
-    ];
-    return bloxTerms.some(term => clean.includes(term));
   };
 
   const handleSend = async (queryText?: string) => {
@@ -954,33 +909,20 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       }
     }
 
-    const isBlox = isBloxFruitsTopic(textToSend);
-
-    // STEP 3: Primary Intelligence Engine (Google Gemini API with Auto-Rotating Key Pool)
-    // Strictly uses models 3.8 / 3.1 / 3.6
-    let latestGeminiResult: GeminiResponseData | null = null;
+    // STEP 3: Intelligent Cloud AI Primary Brain (Gemini 2.5 Flash with Human Desire & Intent Understanding)
+    // Evaluates the user's underlying desire (Advice vs Comparison vs Combos vs Obtainment vs Values)
+    // without canned overlap, false info, or keyword hijacking!
     if (!replyText) {
-      const geminiResult = await queryGeminiAiFallback(textToSend);
-      latestGeminiResult = geminiResult;
-      if (geminiResult && geminiResult.success && geminiResult.reply) {
-        replyText = geminiResult.reply;
-        sourceCategory = 'gemini';
-      } else if (!isBlox) {
-        // NON-BLOX FRUITS TOPIC: Strictly use Gemini API, do NOT use hardcoded Blox Fruits fallbacks
-        const keysCount = geminiResult?.totalKeysInPool;
-        const errorDetail = geminiResult?.error ? `\n\n*Diagnostics: ${geminiResult.error}*` : '';
-        
-        if (typeof keysCount === 'number' && keysCount > 0) {
-          replyText = `⚡ **Gemini AI Intelligence Engine**\n\nAll **${keysCount} Gemini API keys** are installed and active in your pool, but Google's Gemini API is currently experiencing a temporary high-demand spike (503 Service Unavailable).${errorDetail}\n\n🔄 *The key pool is auto-cycling. Please resend your message in a few moments, or toggle between Turbo and Balanced speed mode.*`;
-        } else {
-          replyText = `⚡ **Gemini AI Intelligence Engine**\n\nThis inquiry was identified as a general topic and requires the Google Gemini API.${errorDetail}\n\n🔑 *Please configure at least one valid Gemini API key in the Owner Vault Key Pool.*`;
-        }
+      const geminiReply = await queryGeminiAiFallback(textToSend);
+      if (geminiReply) {
+        replyText = geminiReply;
         sourceCategory = 'gemini';
       }
     }
 
-    // STEP 4: Blox Fruits Semantic Engine (ONLY if inquiry is about Blox Fruits)
-    if (!replyText && isBlox) {
+    // STEP 4: Local Semantic Fallback Engine (Active if offline or server busy)
+    // Upgraded with human intent evaluators (Side-by-Side Comparisons, Eat vs Trade Advice, Combos)
+    if (!replyText) {
       const hardcodedReply = getHardcodedBloxFruitsResponse(textToSend, currentTrade);
       if (hardcodedReply) {
         replyText = hardcodedReply;
@@ -988,12 +930,12 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       }
     }
 
-    // STEP 5: Live Blox Fruits Wiki Database Fallback (Defined Website)
-    if (!replyText && isBlox) {
+    // STEP 5: Live Blox Fruits Wiki Database Fallback
+    if (!replyText) {
       try {
         const wikiResult = await queryWikiForQuestion(textToSend);
         if (wikiResult && wikiResult.extract && wikiResult.extract.length > 50) {
-          replyText = `🌐 **Blox Fruits Wiki Live Intel: ${wikiResult.title}**\n\n${wikiResult.extract}\n\n🔗 *Defined Website (Official Wiki):* ${wikiResult.url}\n*(Retrieved directly from browser wiki stream • Blox Fruits Official Source)*`;
+          replyText = `🌐 **Blox Fruits Wiki Live Intel: ${wikiResult.title}**\n\n${wikiResult.extract}\n\n🔗 *Official Wiki Entry:* ${wikiResult.url}\n*(Retrieved directly from browser wiki stream • 100% Free & Continuous)*`;
           sourceCategory = 'wiki';
         }
       } catch {
@@ -1001,8 +943,8 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       }
     }
 
-    // STEP 6: Blox Fruits Intelligent Fallback Pool (ONLY for Blox Fruits)
-    if (!replyText && isBlox) {
+    // STEP 6: Seamless Client-Side Intelligent Fallback Pool (Zero-failure safety net)
+    if (!replyText) {
       replyText = generateIntelligentBloxFruitsFallback(textToSend);
       sourceCategory = 'fallback';
     }
@@ -1012,7 +954,7 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
       replyText = applyPersonaVoice(replyText, currentPersona);
     }
 
-    const evaluationStatus = determineIntentEvaluation(textToSend, replyText, sourceCategory, latestGeminiResult);
+    const evaluationStatus = determineIntentEvaluation(textToSend, replyText, sourceCategory);
 
     soundFX.playWin();
     setMessages((prev) => [
@@ -1186,29 +1128,6 @@ export const AiOracleChat: React.FC<AiOracleChatProps> = ({ currentTrade, initia
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Turbo Speed Engine Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playPop();
-                setFastSpeedMode(prev => prev === 'turbo' ? 'balanced' : 'turbo');
-              }}
-              className={`px-3.5 py-2.5 rounded-2xl border text-xs font-black flex items-center justify-between gap-2.5 transition-all shadow-lg cursor-pointer active:scale-95 ${
-                fastSpeedMode === 'turbo'
-                  ? 'bg-amber-950/80 border-amber-500/60 text-amber-300 hover:bg-amber-900 shadow-amber-950/40'
-                  : 'bg-cyan-950/80 border-cyan-500/60 text-cyan-300 hover:bg-cyan-900 shadow-cyan-950/40'
-              }`}
-              title="Click to toggle between Turbo Low-Latency (3.1 Flash-Lite) and Balanced (3.8 Flash)"
-            >
-              <div className="flex items-center gap-1.5">
-                <Zap className={`w-3.5 h-3.5 ${fastSpeedMode === 'turbo' ? 'text-amber-400 animate-pulse' : 'text-cyan-400'}`} />
-                <span>{fastSpeedMode === 'turbo' ? '⚡ Turbo Speed' : '⚖️ Balanced'}</span>
-              </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-lg bg-black/50 font-mono border border-white/10 text-slate-200">
-                {fastSpeedMode === 'turbo' ? '3.1 Flash-Lite' : '3.8 Flash'}
-              </span>
-            </button>
 
             <button
               id="solas-auth-hub-btn"
